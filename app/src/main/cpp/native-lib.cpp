@@ -37,10 +37,8 @@ int getMaxIndex(float arr[], int length);
 extern "C"
 JNIEXPORT jint
 JNICALL
-Java_me_daquexian_nnapiexample_MainActivity_stringFromJNI(
+Java_me_daquexian_nnapiexample_MainActivity_predict(
         JNIEnv *env,
-        jobject /* this */) {
-    std::string hello = "Hello from C++";
 
     ANeuralNetworksModel* model = nullptr;
     if (ANeuralNetworksModel_create(&model) != ANEURALNETWORKS_NO_ERROR) {
@@ -255,21 +253,18 @@ Java_me_daquexian_nnapiexample_MainActivity_stringFromJNI(
     ANeuralNetworksMemory_free(ip2WeightsMem);
     ANeuralNetworksMemory_free(ip2BiasesMem);
 
-
-
     for (auto value : prob) {
         LOGD("prob: %f", value);
     }
 
     return getMaxIndex(prob, LENGTH(prob));
-    // return env->NewStringUTF(hello.c_str());
 }
 
 ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims) {
     ANeuralNetworksOperandType type;
     type.type = ANEURALNETWORKS_TENSOR_FLOAT32;
-    type.scale = 0.f;    // These fields are useful for quantized tensors.
-    type.zeroPoint = 0;  // These fields are useful for quantized tensors.
+    type.scale = 0.f;
+    type.zeroPoint = 0;
     type.dimensionCount = static_cast<uint32_t>(dims.size());
     type.dimensions = &dims[0];
 
@@ -279,8 +274,8 @@ ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &
 ANeuralNetworksOperandType getInt32OperandType() {
     ANeuralNetworksOperandType type;
     type.type = ANEURALNETWORKS_TENSOR_INT32;
-    type.scale = 0.f;    // These fields are useful for quantized tensors.
-    type.zeroPoint = 0;  // These fields are useful for quantized tensors.
+    type.scale = 0.f;
+    type.zeroPoint = 0;
     type.dimensionCount = 0;
     type.dimensions = nullptr;
 
@@ -290,8 +285,8 @@ ANeuralNetworksOperandType getInt32OperandType() {
 ANeuralNetworksOperandType getFloat32OperandType() {
     ANeuralNetworksOperandType type;
     type.type = ANEURALNETWORKS_TENSOR_FLOAT32;
-    type.scale = 0.f;    // These fields are useful for quantized tensors.
-    type.zeroPoint = 0;  // These fields are useful for quantized tensors.
+    type.scale = 0.f;
+    type.zeroPoint = 0;
     type.dimensionCount = 0;
     type.dimensions = nullptr;
 
