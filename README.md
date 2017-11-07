@@ -6,7 +6,7 @@ Android 8.1 introduces Neural Networks API (NNAPI). Though it is in beta, it's v
 
 This project is a simple demo of NNAPI. It uses extracted weights of LeNet and recongnize a handwritten number.
 
-**Now it is just a simple demo about how to use NNAPI. More efforts are needed.**
+![Screenshot](screenshot.png)
 
 ## Preparation
 
