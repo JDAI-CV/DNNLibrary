@@ -9,6 +9,8 @@
 #include <android/NeuralNetworks.h>
 #include <android/log.h>
 #include <string.h>
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedMacroInspection"
@@ -27,12 +29,13 @@ using namespace std;
 jint throwException( JNIEnv *env, string message );
 ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims);
 
-uint32_t product(const vector<uint32_t> &v) ;
-
 ANeuralNetworksOperandType getInt32OperandType();
 ANeuralNetworksOperandType getFloat32OperandType();
 
 int getMaxIndex(float arr[], int length);
+
+char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
+                                const char* filename);
 
 extern "C"
 JNIEXPORT jint
@@ -40,6 +43,7 @@ JNICALL
 Java_me_daquexian_nnapiexample_MainActivity_predict(
         JNIEnv *env,
         jobject /* this */,
+        jobject javaAssetManager,
         jfloatArray dataArrayObject) {
     jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
     jsize len = env->GetArrayLength(dataArrayObject);
@@ -112,54 +116,17 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     ANeuralNetworksModel_addOperand(model, &probBlobType);  // operand 20, prob
     ANeuralNetworksModel_addOperand(model, &float32Type);  // operand 21, float one
 
-    ANeuralNetworksMemory* conv1WeightsMem = nullptr;
-    ANeuralNetworksMemory* conv1BiasesMem = nullptr;
-    ANeuralNetworksMemory* conv2WeightsMem = nullptr;
-    ANeuralNetworksMemory* conv2BiasesMem = nullptr;
-    ANeuralNetworksMemory* ip1WeightsMem = nullptr;
-    ANeuralNetworksMemory* ip1BiasesMem = nullptr;
-    ANeuralNetworksMemory* ip2WeightsMem = nullptr;
-    ANeuralNetworksMemory* ip2BiasesMem = nullptr;
+    AAssetManager *mgr = AAssetManager_fromJava(env, javaAssetManager);
 
-    int fd = open("/sdcard/conv1_weights", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(conv1WeightsDims) * 4, PROT_READ, fd, 0, &conv1WeightsMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 7, conv1WeightsMem, 0, product(conv1WeightsDims) * 4);
-    close(fd);
-
-    fd = open("/sdcard/conv1_biases", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(conv1BiasesDims) * 4, PROT_READ, fd, 0, &conv1BiasesMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 8, conv1BiasesMem, 0, product(conv1BiasesDims) * 4);
-    close(fd);
-
-    fd = open("/sdcard/conv2_weights", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(conv2WeightsDims) * 4, PROT_READ, fd, 0, &conv2WeightsMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 9, conv2WeightsMem, 0, product(conv2WeightsDims) * 4);
-    close(fd);
-
-    fd = open("/sdcard/conv2_biases", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(conv2BiasesDims) * 4, PROT_READ, fd, 0, &conv2BiasesMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 10, conv2BiasesMem, 0, product(conv2BiasesDims) * 4);
-    close(fd);
-
-    fd = open("/sdcard/ip1_weights", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(ip1WeightsDims) * 4, PROT_READ, fd, 0, &ip1WeightsMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 11, ip1WeightsMem, 0, product(ip1WeightsDims) * 4);
-    close(fd);
-
-    fd = open("/sdcard/ip1_biases", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(ip1BiasesDims) * 4, PROT_READ, fd, 0, &ip1BiasesMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 12, ip1BiasesMem, 0, product(ip1BiasesDims) * 4);
-    close(fd);
-
-    fd = open("/sdcard/ip2_weights", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(ip2WeightsDims) * 4, PROT_READ, fd, 0, &ip2WeightsMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 13, ip2WeightsMem, 0, product(ip2WeightsDims) * 4);
-    close(fd);
-
-    fd = open("/sdcard/ip2_biases", O_RDONLY);
-    ANeuralNetworksMemory_createFromFd(product(ip2BiasesDims) * 4, PROT_READ, fd, 0, &ip2BiasesMem);
-    ANeuralNetworksModel_setOperandValueFromMemory(model, 14, ip2BiasesMem, 0, product(ip2BiasesDims) * 4);
-    close(fd);
+    vector<char*> bufferPointers;
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 7, "weights_and_biases/conv1_weights"));
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 8, "weights_and_biases/conv1_biases"));
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 9, "weights_and_biases/conv2_weights"));
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 10, "weights_and_biases/conv2_biases"));
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 11, "weights_and_biases/ip1_weights"));
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 12, "weights_and_biases/ip1_biases"));
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 13, "weights_and_biases/ip2_weights"));
+    bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 14, "weights_and_biases/ip2_biases"));
 
     int32_t intOne = 1;
     ANeuralNetworksModel_setOperandValue(model, 15, &intOne, sizeof(intOne));
@@ -245,20 +212,35 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     // Cleanup
     ANeuralNetworksCompilation_free(compilation);
     ANeuralNetworksModel_free(model);
-    ANeuralNetworksMemory_free(conv1WeightsMem);
-    ANeuralNetworksMemory_free(conv1BiasesMem);
-    ANeuralNetworksMemory_free(conv2WeightsMem);
-    ANeuralNetworksMemory_free(conv2BiasesMem);
-    ANeuralNetworksMemory_free(ip1WeightsMem);
-    ANeuralNetworksMemory_free(ip1BiasesMem);
-    ANeuralNetworksMemory_free(ip2WeightsMem);
-    ANeuralNetworksMemory_free(ip2BiasesMem);
+    for (auto pointer : bufferPointers) {
+        delete [] pointer;
+    }
 
     for (auto value : prob) {
         LOGD("prob: %f", value);
     }
 
     return getMaxIndex(prob, LENGTH(prob));
+}
+
+/**
+ * set operand value from file in assets
+ * @param model
+ * @param mgr A pointer to AAssetManager got from Java's AssetManager
+ * @param index The index of operand
+ * @param filename The filename of weight or bias
+ * @return a pointer to the buffer of weights or bias, according to the doc, the buffer should not
+ * be modified until all executions complete, so please delete the buffer after the executions
+ * complete.
+ */
+char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
+                                const char* filename) {
+    AAsset* asset = AAssetManager_open(mgr, filename, AASSET_MODE_UNKNOWN);
+    size_t size = static_cast<size_t>(AAsset_getLength(asset));
+    char* buffer = new char[size];
+    AAsset_read(asset, buffer, static_cast<size_t>(size));
+    ANeuralNetworksModel_setOperandValue(model, index, buffer, size);
+    return buffer;
 }
 
 ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims) {
@@ -292,10 +274,6 @@ ANeuralNetworksOperandType getFloat32OperandType() {
     type.dimensions = nullptr;
 
     return type;
-}
-
-uint32_t product(const vector<uint32_t> &v) {
-    return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, multiplies<uint32_t>()));
 }
 
 int getMaxIndex(float arr[], int length) {

@@ -1,6 +1,7 @@
 package me.daquexian.nnapiexample;
 
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.v7.app.AppCompatActivity;
@@ -83,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
                 float[] inputData = getInputData(selectedImage);
 
-                int predictNumber = predict(inputData);
+                int predictNumber = predict(getAssets(), inputData);
                 textView.setText(getResources().getString(R.string.predict_text, predictNumber));
 
             } catch (Exception e) {
@@ -128,5 +129,5 @@ public class MainActivity extends AppCompatActivity {
      * A native method that is implemented by the 'native-lib' native library,
      * which is packaged with this application.
      */
-    public native int predict(float[] data);
+    public native int predict(AssetManager assetManager, float[] data);
 }
