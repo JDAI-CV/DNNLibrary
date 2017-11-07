@@ -54,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 
         initListener();
+
+        initModel(getAssets());
     }
 
     private void initListener() {
@@ -84,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
 
                 float[] inputData = getInputData(selectedImage);
 
-                int predictNumber = predict(getAssets(), inputData);
+                int predictNumber = predict(inputData);
                 textView.setText(getResources().getString(R.string.predict_text, predictNumber));
 
             } catch (Exception e) {
@@ -125,9 +127,14 @@ public class MainActivity extends AppCompatActivity {
         return _mat;
     }
 
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    public native int predict(AssetManager assetManager, float[] data);
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        clearModel();
+    }
+
+    public native void initModel(AssetManager assetManager);
+    public native int predict(float[] data);
+    public native int clearModel();
 }

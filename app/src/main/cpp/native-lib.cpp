@@ -37,18 +37,17 @@ int getMaxIndex(float arr[], int length);
 char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
                                 const char* filename);
 
+ANeuralNetworksModel* model = nullptr;
+ANeuralNetworksCompilation* compilation = nullptr;
+vector<char*> bufferPointers;
+
 extern "C"
-JNIEXPORT jint
+JNIEXPORT void
 JNICALL
-Java_me_daquexian_nnapiexample_MainActivity_predict(
+Java_me_daquexian_nnapiexample_MainActivity_initModel(
         JNIEnv *env,
         jobject /* this */,
-        jobject javaAssetManager,
-        jfloatArray dataArrayObject) {
-    jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
-    jsize len = env->GetArrayLength(dataArrayObject);
-
-    ANeuralNetworksModel* model = nullptr;
+        jobject javaAssetManager) {
     if (ANeuralNetworksModel_create(&model) != ANEURALNETWORKS_NO_ERROR) {
         throwException(env, "Create model error");
     }
@@ -120,7 +119,6 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     // ---------- Set operands' value ----------
     AAssetManager *mgr = AAssetManager_fromJava(env, javaAssetManager);
 
-    vector<char*> bufferPointers;
     bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 7, "weights_and_biases/conv1_weights"));
     bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 8, "weights_and_biases/conv1_biases"));
     bufferPointers.push_back(setOperandValueFromAssets(model, mgr, 9, "weights_and_biases/conv2_weights"));
@@ -186,14 +184,23 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
         throwException(env, "Finish model error");
     }
 
-
-    // ---------- Run the model ----------
-    ANeuralNetworksCompilation* compilation;
     ANeuralNetworksCompilation_create(model, &compilation);
 
     ANeuralNetworksCompilation_setPreference(compilation, ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
 
     ANeuralNetworksCompilation_finish(compilation);
+}
+
+
+extern "C"
+JNIEXPORT jint
+JNICALL
+Java_me_daquexian_nnapiexample_MainActivity_predict(
+        JNIEnv *env,
+        jobject /* this */,
+        jfloatArray dataArrayObject) {
+    jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
+    jsize len = env->GetArrayLength(dataArrayObject);
 
     ANeuralNetworksExecution* execution = nullptr;
     ANeuralNetworksExecution_create(compilation, &execution);
@@ -215,19 +222,24 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     ANeuralNetworksEvent_free(event);
     ANeuralNetworksExecution_free(execution);
 
-
-    // ---------- Cleanup ----------
-    ANeuralNetworksCompilation_free(compilation);
-    ANeuralNetworksModel_free(model);
-    for (auto pointer : bufferPointers) {
-        delete [] pointer;
-    }
-
     for (auto value : prob) {
         LOGD("prob: %f", value);
     }
 
     return getMaxIndex(prob, LENGTH(prob));
+}
+
+extern "C"
+JNIEXPORT void
+JNICALL
+Java_me_daquexian_nnapiexample_MainActivity_clearModel(
+        JNIEnv *env,
+        jobject /* this */) {
+    ANeuralNetworksCompilation_free(compilation);
+    ANeuralNetworksModel_free(model);
+    for (auto pointer : bufferPointers) {
+        delete[] pointer;
+    }
 }
 
 /**
