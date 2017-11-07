@@ -34,7 +34,6 @@ public class MainActivity extends AppCompatActivity {
     private ImageView imageView;
     private Bitmap selectedImage;
 
-    // Used to load the 'native-lib' library on application startup.
     static {
         OpenCVLoader.initDebug();
         System.loadLibrary("native-lib");
