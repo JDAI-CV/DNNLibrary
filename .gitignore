@@ -9,3 +9,6 @@
 .externalNativeBuild
 
 .idea/
+
+*.swp
+*.swo
