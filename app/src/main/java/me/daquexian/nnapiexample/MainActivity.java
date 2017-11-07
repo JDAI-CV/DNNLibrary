@@ -1,9 +1,11 @@
 package me.daquexian.nnapiexample;
 
+import android.Manifest;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -21,13 +23,19 @@ import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.InputStream;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+import pub.devrel.easypermissions.EasyPermissions;
+
+public class MainActivity extends AppCompatActivity
+    implements EasyPermissions.PermissionCallbacks {
 
     @SuppressWarnings("unused")
     private static final String TAG = "NNAPI Example";
     private static final int PICK_IMAGE = 123;
     private static final int INPUT_LENGTH = 28;
+
+    String[] perms = {Manifest.permission.READ_EXTERNAL_STORAGE};
 
     private TextView textView;
     private Button button;
@@ -52,9 +60,15 @@ public class MainActivity extends AppCompatActivity {
         button.setText(R.string.button_text);
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 
-        initListener();
+        if (EasyPermissions.hasPermissions(this, perms)) {
+            initListener();
 
-        initModel(getAssets());
+            initModel(getAssets());
+        } else {
+            // Do not have permissions, request them now
+            EasyPermissions.requestPermissions(this, "Please grant",
+                    321, perms);
+        }
     }
 
     private void initListener() {
@@ -131,6 +145,24 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         clearModel();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // Forward results to EasyPermissions
+        EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
+    }
+
+    @Override
+    public void onPermissionsGranted(int requestCode, List<String> perms) {
+        recreate();
+    }
+
+    @Override
+    public void onPermissionsDenied(int requestCode, List<String> perms) {
+        finish();
     }
 
     public native void initModel(AssetManager assetManager);
