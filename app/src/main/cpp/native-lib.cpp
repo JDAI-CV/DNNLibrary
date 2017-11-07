@@ -53,6 +53,7 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
         throwException(env, "Create model error");
     }
 
+    // ---------- Add operands ----------
     vector<uint32_t> dataDims{1, 28, 28, 1};
     vector<uint32_t> conv1BlobDims{1, 24, 24, 20};
     vector<uint32_t> pool1BlobDims{1, 12, 12, 20};
@@ -92,7 +93,6 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     ANeuralNetworksOperandType int32Type = getInt32OperandType();
     ANeuralNetworksOperandType float32Type = getFloat32OperandType();
 
-    // Now we add the seven operands, in the same order defined in the diagram.
     ANeuralNetworksModel_addOperand(model, &dataType);  // operand 0
     ANeuralNetworksModel_addOperand(model, &conv1BlobType);  // operand 1
     ANeuralNetworksModel_addOperand(model, &pool1BlobType); // operand 2
@@ -116,6 +116,8 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     ANeuralNetworksModel_addOperand(model, &probBlobType);  // operand 20, prob
     ANeuralNetworksModel_addOperand(model, &float32Type);  // operand 21, float one
 
+
+    // ---------- Set operands' value ----------
     AAssetManager *mgr = AAssetManager_fromJava(env, javaAssetManager);
 
     vector<char*> bufferPointers;
@@ -131,6 +133,12 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     int32_t intOne = 1;
     ANeuralNetworksModel_setOperandValue(model, 15, &intOne, sizeof(intOne));
 
+    int32_t intTwo = 2;
+    ANeuralNetworksModel_setOperandValue(model, 19, &intTwo, sizeof(intTwo));
+
+    float floatOne = 1;
+    ANeuralNetworksModel_setOperandValue(model, 21, &floatOne, sizeof(floatOne));
+
     int32_t validPadding = ANEURALNETWORKS_PADDING_VALID;
     ANeuralNetworksModel_setOperandValue(model, 16, &validPadding, sizeof(validPadding));
 
@@ -140,12 +148,8 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     int32_t reluActivation = ANEURALNETWORKS_FUSED_RELU;
     ANeuralNetworksModel_setOperandValue(model, 18, &reluActivation, sizeof(reluActivation));
 
-    int32_t two = 2;
-    ANeuralNetworksModel_setOperandValue(model, 19, &two, sizeof(two));
 
-    float floatOne = 1;
-    ANeuralNetworksModel_setOperandValue(model, 21, &floatOne, sizeof(floatOne));
-
+    // ---------- Add operations ----------
     uint32_t conv1InputIndexes[] = {0, 7, 8, 16, 15, 15, 17};
     uint32_t conv1OutputIndexes[] = {1};
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONV_2D, 7, conv1InputIndexes, 1, conv1OutputIndexes);
@@ -182,10 +186,12 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
         throwException(env, "Finish model error");
     }
 
+
+    // ---------- Run the model ----------
     ANeuralNetworksCompilation* compilation;
     ANeuralNetworksCompilation_create(model, &compilation);
 
-    ANeuralNetworksCompilation_setPreference(compilation, ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+    ANeuralNetworksCompilation_setPreference(compilation, ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
 
     ANeuralNetworksCompilation_finish(compilation);
 
@@ -209,7 +215,8 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     ANeuralNetworksEvent_free(event);
     ANeuralNetworksExecution_free(execution);
 
-    // Cleanup
+
+    // ---------- Cleanup ----------
     ANeuralNetworksCompilation_free(compilation);
     ANeuralNetworksModel_free(model);
     for (auto pointer : bufferPointers) {
