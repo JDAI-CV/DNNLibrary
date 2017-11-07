@@ -39,6 +39,10 @@ JNIEXPORT jint
 JNICALL
 Java_me_daquexian_nnapiexample_MainActivity_predict(
         JNIEnv *env,
+        jobject /* this */,
+        jfloatArray dataArrayObject) {
+    jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
+    jsize len = env->GetArrayLength(dataArrayObject);
 
     ANeuralNetworksModel* model = nullptr;
     if (ANeuralNetworksModel_create(&model) != ANEURALNETWORKS_NO_ERROR) {
@@ -221,10 +225,7 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     ANeuralNetworksExecution* execution = nullptr;
     ANeuralNetworksExecution_create(compilation, &execution);
 
-    float data[28][28];
-    memset(data, 0, sizeof(data));
-
-    ANeuralNetworksExecution_setInput(execution, 0, NULL, data, sizeof(data));
+    ANeuralNetworksExecution_setInput(execution, 0, NULL, data, static_cast<size_t>(len));
 
     float prob[10];
     ANeuralNetworksExecution_setOutput(execution, 0, NULL, prob, sizeof(prob));
