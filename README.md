@@ -4,7 +4,7 @@
 
 Android 8.1 introduces Neural Networks API (NNAPI). Though it is in beta, it's very exciting to run a model in the "native" way supported by Android System. :)
 
-This project is a simple demo of NNAPI. It uses extracted weights of LeNet and recongnize a handwritten number.
+This project is a simple demo of NNAPI. It uses extracted weights of LeNet and recongnize a handwritten number. I extracted the pretrained weights using pycaffe and then changed the data layout according to the [document](https://developer.android.com/ndk/reference/group___neural_networks.html#gab95e96267e0f955086b87a743dad44ca).
 
 ![Screenshot](screenshot.png)
 
