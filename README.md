@@ -14,7 +14,7 @@ Please make sure the Android System on your phone is 8.1+
 
 Please push the weights and biases in the folder `weights_and_biases` to your phone. And modify the path in `native-lib.cpp` if necessary.
 
-## Workaround for UnsatisfiedLinkError
+### Workaround for UnsatisfiedLinkError
 
 You will get a `UnsatisfiedLinkError` about `ANeuralNetworksModel_identifyInputsAndOutputs` if you compile the project. It is a known bug. Please use the following workaround from [this](https://stackoverflow.com/questions/46987602/unsatisfiedlinkerror-on-aneuralnetworksmodel-identifyinputsandoutputs-in-nnapi-o):
 
