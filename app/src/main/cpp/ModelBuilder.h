@@ -12,6 +12,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include "Model.h"
 
 class ModelBuilder {
 private:
@@ -29,6 +30,7 @@ private:
 
     static const uint32_t WRONG_INPUT = UINT32_MAX -1;
     static const uint32_t WRONG_POOLING_TYPE = UINT32_MAX -2;
+    static const int WRONG_OPERAND_INDEX = -10;
 
     uint32_t addOperand(ANeuralNetworksOperandType *type);
 
@@ -73,10 +75,18 @@ public:
     uint32_t addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
     void addIndexIntoOutput(uint32_t index);
     int finish();
+    Model prepareForExecution();
+    std::vector<uint32_t> getInputIndexes();
+    std::vector<uint32_t> getOutputIndexes();
+    int setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
+    int setOutputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
     void clear();
 
     ModelBuilder();
+
 };
+
+
 
 // TODO: Remove when O MR1 Beta 2 is available.
 __attribute__((weak))

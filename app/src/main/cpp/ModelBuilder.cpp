@@ -282,6 +282,8 @@ int ModelBuilder::finish() {
     return 0;
 }
 
+
+
 void ModelBuilder::clear() {
     ANeuralNetworksCompilation_free(compilation);
     ANeuralNetworksModel_free(model);
@@ -292,6 +294,46 @@ void ModelBuilder::clear() {
 }
 
 ModelBuilder::ModelBuilder() {
+}
+
+int ModelBuilder::setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length) {
+    for (auto i = 0; i < inputIndexVector.size(); i++) {
+        int32_t opIndex = inputIndexVector[i];
+        if (opIndex == index) {
+            return ANeuralNetworksExecution_setInput(model.execution, i, NULL, buffer, length);
+        }
+    }
+
+    return WRONG_OPERAND_INDEX;
+}
+
+
+int ModelBuilder::setOutputBuffer(const Model& model, int32_t index, void *buffer, size_t length) {
+    for (auto i = 0; i < outputIndexVector.size(); i++) {
+        int32_t opIndex = outputIndexVector[i];
+        if (opIndex == index) {
+            return ANeuralNetworksExecution_setOutput(model.execution, i, NULL, buffer, length);
+        }
+    }
+
+    return WRONG_OPERAND_INDEX;
+}
+
+Model ModelBuilder::prepareForExecution() {
+    ANeuralNetworksExecution *execution = nullptr;
+    // From document this method only fails when the compilation is invalid, which is already
+    // impossible
+    ANeuralNetworksExecution_create(compilation, &execution);
+
+    return Model(execution);
+}
+
+vector<uint32_t> ModelBuilder::getInputIndexes() {
+    return inputIndexVector;
+}
+
+vector<uint32_t> ModelBuilder::getOutputIndexes() {
+    return outputIndexVector;
 }
 
 uint32_t product(const vector<uint32_t> &v) {

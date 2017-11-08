@@ -30,8 +30,6 @@ jint throwException( JNIEnv *env, string message );
 
 int getMaxIndex(float arr[], int length);
 
-ANeuralNetworksCompilation* compilation = nullptr;
-
 ModelBuilder builder;
 
 extern "C"
@@ -58,7 +56,6 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
     uint32_t ip2 = builder.addFC("ip2", ip1, 10, ModelBuilder::ACTIVATION_NONE);
 
     builder.addIndexIntoOutput(ip2);
-    builder.addIndexIntoOutput(conv1);
 
     int ret;
     if ((ret = builder.finish()) != ANEURALNETWORKS_NO_ERROR) {
@@ -66,7 +63,6 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
         return;
     }
 
-    compilation = builder.compilation;
 }
 
 
@@ -80,28 +76,13 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
     jsize len = env->GetArrayLength(dataArrayObject);
 
-    ANeuralNetworksExecution* execution = nullptr;
-    ANeuralNetworksExecution_create(compilation, &execution);
-
-    ANeuralNetworksExecution_setInput(execution, 0, NULL, data, static_cast<size_t>(len));
+    Model model = builder.prepareForExecution();
+    builder.setInputBuffer(model, builder.getInputIndexes()[0], data, static_cast<size_t>(len));
 
     float prob[10];
-    ANeuralNetworksExecution_setOutput(execution, 0, NULL, prob, sizeof(prob));
+    builder.setOutputBuffer(model, builder.getOutputIndexes()[0], prob, sizeof(prob));
 
-    float conv1[24][24][20];
-    ANeuralNetworksExecution_setOutput(execution, 1, NULL, conv1, sizeof(conv1));
-
-    ANeuralNetworksEvent* event = NULL;
-    if (ANeuralNetworksExecution_startCompute(execution, &event) != ANEURALNETWORKS_NO_ERROR) {
-        throwException(env, "Start running model error");
-    }
-
-    if (ANeuralNetworksEvent_wait(event) != ANEURALNETWORKS_NO_ERROR) {
-        throwException(env, "Run model error");
-    }
-
-    ANeuralNetworksEvent_free(event);
-    ANeuralNetworksExecution_free(execution);
+    model.predict();
 
     return getMaxIndex(prob, LENGTH(prob));
 }
