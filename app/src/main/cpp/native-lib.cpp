@@ -11,6 +11,7 @@
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #include "ModelBuilder.h"
+#include <sstream>
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedMacroInspection"
@@ -30,6 +31,9 @@ jint throwException( JNIEnv *env, string message );
 
 int getMaxIndex(float arr[], int length);
 
+template <typename T>
+std::string to_string(T value);
+
 ModelBuilder builder;
 
 extern "C"
@@ -43,6 +47,7 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
     AAssetManager *mgrr = AAssetManager_fromJava(env, javaAssetManager);
     if (builder.init(mgrr) != ANEURALNETWORKS_NO_ERROR) {
         throwException(env, "Create model error");
+
     }
 
     uint32_t data = builder.addInput(28, 28);
@@ -60,10 +65,8 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
     int ret;
     if ((ret = builder.compile(ModelBuilder::PREFERENCE_SUSTAINED_SPEED)) !=
             ANEURALNETWORKS_NO_ERROR) {
-        LOGD("ERROR!!!! %d", ret);
-        return;
+        throwException(env, "Create model error, code: " + to_string(ret));
     }
-
 }
 
 
@@ -172,6 +175,14 @@ jint throwException(JNIEnv *env, std::string message) {
 
     return env->ThrowNew(exClass, message.c_str());
 }
+
+template<typename T>
+string to_string(T value) {
+    ostringstream os ;
+    os << value ;
+    return os.str() ;
+}
+
 
 
 #pragma clang diagnostic pop
