@@ -7,6 +7,7 @@
 
 #include <android/asset_manager.h>
 #include <android/NeuralNetworks.h>
+#include <android/log.h>
 #include <string>
 #include <vector>
 #include <array>
@@ -18,15 +19,13 @@ private:
     AAssetManager *mgr;
     std::vector<char*> bufferPointers;
     // NHWC
-    std::vector<std::vector<uint32_t>> dimensVector;
+    std::map<uint32_t, std::vector<uint32_t>> dimensMap;
     std::vector<uint32_t> inputIndexVector;
     std::vector<uint32_t> outputIndexVector;
     std::map<uint32_t, ANeuralNetworksOperandType> uint32OperandTypeMap;
     std::map<float, ANeuralNetworksOperandType> float32OperandTypeMap;
 
     uint32_t nextIndex = 0;
-    static const int MAX_POOL = 0;
-    static const int AVE_POOL = 1;
 
     static const uint32_t WRONG_INPUT = UINT32_MAX -1;
     static const uint32_t WRONG_POOLING_TYPE = UINT32_MAX -2;
@@ -52,22 +51,31 @@ private:
 
     char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
                                     std::string filename);
-public:
-    ANeuralNetworksCompilation* compilation = nullptr;
-    ModelBuilder(AAssetManager *mgr);
 
-    int init();
+public:
+    static const int MAX_POOL = 0;
+    static const int AVE_POOL = 1;
+
+    static const uint32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
+    static const uint32_t ACTIVATION_RELU = ANEURALNETWORKS_FUSED_RELU;
+
+    ANeuralNetworksCompilation* compilation = nullptr;
+
+    int init(AAssetManager *mgr);
     uint32_t addInput(uint32_t height, uint32_t width);
     uint32_t addConv(std::string name, uint32_t input, uint32_t strideX, uint32_t strideY,
                      uint32_t paddingW, uint32_t paddingH, uint32_t height, uint32_t width,
                      uint32_t activation, uint32_t outputDepth);
-    uint32_t addPool(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t height,
-                         uint32_t paddingW, uint32_t paddingH, uint32_t width,
-                         uint32_t activation, uint32_t poolingType);
+    uint32_t addPool(uint32_t input, uint32_t strideX, uint32_t strideY,
+                     uint32_t paddingW, uint32_t paddingH,
+                     uint32_t height,uint32_t width,
+                     uint32_t activation, uint32_t poolingType);
     uint32_t addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
     void addIndexIntoOutput(uint32_t index);
     int finish();
     void clear();
+
+    ModelBuilder();
 };
 
 // TODO: Remove when O MR1 Beta 2 is available.
@@ -82,4 +90,5 @@ extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
         uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
         const uint32_t* outputs);
 
+uint32_t product(const std::vector<uint32_t> &v);
 #endif //NNAPIEXAMPLE_MODELBUILDER_H

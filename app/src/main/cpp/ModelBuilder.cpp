@@ -2,17 +2,24 @@
 // Created by daquexian on 2017/11/8.
 //
 
+#include <numeric>
 #include "ModelBuilder.h"
 
 using namespace std;
 
+#define  LOG_TAG    "NNAPI Demo"
+
+#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#define  LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
+#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 
 uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width) {
     vector<uint32_t> dimen{1, width, height, 1};
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t index = addOperand(&type);
 
-    dimensVector.push_back(dimen);
+    dimensMap[index] = dimen;
     inputIndexVector.push_back(index);
     return index;
 }
@@ -30,7 +37,7 @@ ModelBuilder::addConv(std::string name, uint32_t input, uint32_t strideX, uint32
     uint32_t activationOperandIndex = addUInt32Operand(activation);
 
     // NHWC
-    vector<uint32_t> inputDimen = dimensVector[input];
+    vector<uint32_t> inputDimen = dimensMap[input];
 
     uint32_t weightOperandIndex = addConvWeight(name, height, width, inputDimen[3], outputDepth);
     uint32_t biasOperandIndex = addBias(name, outputDepth);
@@ -43,7 +50,7 @@ ModelBuilder::addConv(std::string name, uint32_t input, uint32_t strideX, uint32
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addOperand(&outputBlobType);
 
-    dimensVector.push_back(outputDimen);
+    dimensMap[outputOperandIndex] = outputDimen;
 
     array<uint32_t, 10> inputOperandsArr{{input, weightOperandIndex, biasOperandIndex,
                                             paddingWOperandIndex, paddingWOperandIndex,
@@ -59,9 +66,9 @@ ModelBuilder::addConv(std::string name, uint32_t input, uint32_t strideX, uint32
 uint32_t ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNum,
                              uint32_t activation) {
     // NHWC
-    vector<uint32_t> inputDimen = dimensVector[input];
+    vector<uint32_t> inputDimen = dimensMap[input];
 
-    uint32_t weightOperandIndex = addFcWeight(name, inputDimen[1] * inputDimen[2] * inputDimen[3],
+    uint32_t weightOperandIndex = addFcWeight(name, product(inputDimen),
                                               outputNum);
     uint32_t biasOperandIndex = addBias(name, outputNum);
 
@@ -72,6 +79,8 @@ uint32_t ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNu
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addOperand(&outputBlobType);
 
+    dimensMap[outputOperandIndex] = outputDimen;
+
     array<uint32_t, 10> inputOperandsArr{{input, weightOperandIndex, biasOperandIndex,
                                                  activationOperandIndex}};
 
@@ -81,8 +90,9 @@ uint32_t ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNu
     return outputOperandIndex;
 }
 
-uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t height,
-                               uint32_t paddingW, uint32_t paddingH, uint32_t width,
+uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t strideY,
+                               uint32_t paddingW, uint32_t paddingH,
+                               uint32_t height, uint32_t width,
                                uint32_t activation, uint32_t poolingType) {
 
     if (input >= nextIndex) return WRONG_INPUT;
@@ -96,7 +106,7 @@ uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t stride
     uint32_t activationOperandIndex = addUInt32Operand(activation);
 
     // NHWC
-    vector<uint32_t> inputDimen = dimensVector[input];
+    vector<uint32_t> inputDimen = dimensMap[input];
     vector<uint32_t> outputDimen{1,
                                  (inputDimen[1] - height + 2 * paddingH) / strideY + 1,
                                  (inputDimen[2] - width + 2 * paddingW) / strideX + 1,
@@ -105,7 +115,7 @@ uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t stride
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addOperand(&type);
 
-    dimensVector.push_back(outputDimen);
+    dimensMap[outputOperandIndex] = outputDimen;
 
     array<uint32_t, 10> inputOperandsArr{{input, paddingWOperandIndex, paddingWOperandIndex,
                                                  paddingHOperandIndex, paddingHOperandIndex,
@@ -183,6 +193,7 @@ uint32_t ModelBuilder::addUInt32Operand(uint32_t value) {
         uint32OperandTypeMap[value] = getInt32OperandType();
     }
     uint32_t index = addOperand(&uint32OperandTypeMap[value]);
+    ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
     return index;
 }
 
@@ -195,7 +206,10 @@ uint32_t ModelBuilder::addFloat32Operand(float value) {
 }
 
 uint32_t ModelBuilder::addOperand(ANeuralNetworksOperandType *type) {
-    ANeuralNetworksModel_addOperand(model, type);
+    int ret;
+    if ((ret = ANeuralNetworksModel_addOperand(model, type)) != ANEURALNETWORKS_NO_ERROR) {
+        return UINT32_MAX - ret;
+    }
     return nextIndex++;
 }
 
@@ -229,11 +243,8 @@ uint32_t ModelBuilder::addWeight(std::string name, std::vector<uint32_t> dimen) 
     return weightIndex;
 }
 
-ModelBuilder::ModelBuilder(AAssetManager *mgr): mgr(mgr) {
-
-}
-
-int ModelBuilder::init() {
+int ModelBuilder::init(AAssetManager *mgr) {
+    this->mgr = mgr;
     return ANeuralNetworksModel_create(&model);
 }
 
@@ -280,6 +291,13 @@ void ModelBuilder::clear() {
     bufferPointers.clear();
 }
 
+ModelBuilder::ModelBuilder() {
+}
+
+uint32_t product(const vector<uint32_t> &v) {
+    return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, multiplies<uint32_t>()));
+}
+
 extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
         ANeuralNetworksModel* model,
         uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
@@ -288,3 +306,4 @@ extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
     return ANeuralNetworksModel_setInputsAndOutputs(
             model, inputCount, inputs, outputCount, outputs);
 }
+
