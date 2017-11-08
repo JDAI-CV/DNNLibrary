@@ -65,5 +65,16 @@ public:
     int addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
 };
 
+// TODO: Remove when O MR1 Beta 2 is available.
+__attribute__((weak))
+extern "C" int ANeuralNetworksModel_setInputsAndOutputs(
+        ANeuralNetworksModel* model,
+        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
+        const uint32_t* outputs);
+
+extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
+        ANeuralNetworksModel* model,
+        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
+        const uint32_t* outputs);
 
 #endif //NNAPIEXAMPLE_MODELBUILDER_H

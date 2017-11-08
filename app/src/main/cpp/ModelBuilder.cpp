@@ -235,3 +235,12 @@ int ModelBuilder::init() {
     return ANeuralNetworksModel_create(&model);
 }
 
+
+extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
+        ANeuralNetworksModel* model,
+        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
+        const uint32_t* outputs) {
+
+    return ANeuralNetworksModel_setInputsAndOutputs(
+            model, inputCount, inputs, outputCount, outputs);
+}
