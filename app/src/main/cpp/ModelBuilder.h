@@ -24,8 +24,8 @@ private:
     std::map<uint32_t, std::vector<uint32_t>> dimensMap;
     std::vector<uint32_t> inputIndexVector;
     std::vector<uint32_t> outputIndexVector;
-    std::map<uint32_t, ANeuralNetworksOperandType> uint32OperandTypeMap;
-    std::map<float, ANeuralNetworksOperandType> float32OperandTypeMap;
+    std::map<uint32_t, uint32_t> uint32OperandMap;
+    std::map<float, uint32_t> float32OperandMap;
 
     uint32_t nextIndex = 0;
 

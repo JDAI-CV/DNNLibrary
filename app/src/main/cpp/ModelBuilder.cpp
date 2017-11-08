@@ -189,20 +189,24 @@ char* ModelBuilder::setOperandValueFromAssets(ANeuralNetworksModel *model, AAsse
 }
 
 uint32_t ModelBuilder::addUInt32Operand(uint32_t value) {
-    if (uint32OperandTypeMap.find(value) == uint32OperandTypeMap.end()) {
-        uint32OperandTypeMap[value] = getInt32OperandType();
+    if (uint32OperandMap.find(value) == uint32OperandMap.end()) {
+        ANeuralNetworksOperandType type = getInt32OperandType();
+        uint32_t index = addOperand(&type);
+        ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
+        uint32OperandMap[value] = index;
     }
-    uint32_t index = addOperand(&uint32OperandTypeMap[value]);
-    ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
-    return index;
+    return uint32OperandMap[value];
 }
 
 uint32_t ModelBuilder::addFloat32Operand(float value) {
-    if (float32OperandTypeMap.find(value) == float32OperandTypeMap.end()) {
-        float32OperandTypeMap[value] = getFloat32OperandType();
+    if (float32OperandMap.find(value) == float32OperandMap.end()) {
+        ANeuralNetworksOperandType type = getFloat32OperandType();
+        uint32_t index = addOperand(&type);
+        ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
+        float32OperandMap[value] = index;
     }
-    uint32_t index = addOperand(&float32OperandTypeMap[value]);
-    return index;
+    return float32OperandMap[value];
+
 }
 
 uint32_t ModelBuilder::addOperand(ANeuralNetworksOperandType *type) {
