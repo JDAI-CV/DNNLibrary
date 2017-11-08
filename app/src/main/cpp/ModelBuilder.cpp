@@ -252,7 +252,7 @@ void ModelBuilder::addIndexIntoOutput(uint32_t index) {
     outputIndexVector.push_back(index);
 }
 
-int ModelBuilder::finish() {
+int ModelBuilder::compile(uint32_t preference) {
     ANeuralNetworksModel_identifyInputsAndOutputs(
             model,
             static_cast<uint32_t>(inputIndexVector.size()), &inputIndexVector[0],
@@ -269,7 +269,7 @@ int ModelBuilder::finish() {
         return ret;
     }
 
-    ret = ANeuralNetworksCompilation_setPreference(compilation, ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+    ret = ANeuralNetworksCompilation_setPreference(compilation, preference);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
         return ret;
     }

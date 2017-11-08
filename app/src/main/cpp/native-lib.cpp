@@ -58,7 +58,8 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
     builder.addIndexIntoOutput(ip2);
 
     int ret;
-    if ((ret = builder.finish()) != ANEURALNETWORKS_NO_ERROR) {
+    if ((ret = builder.compile(ModelBuilder::PREFERENCE_SUSTAINED_SPEED)) !=
+            ANEURALNETWORKS_NO_ERROR) {
         LOGD("ERROR!!!! %d", ret);
         return;
     }

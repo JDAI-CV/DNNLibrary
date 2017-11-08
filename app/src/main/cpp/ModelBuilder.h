@@ -12,6 +12,7 @@
 #include <vector>
 #include <array>
 #include <map>
+#include <linux/stat.h>
 #include "Model.h"
 
 class ModelBuilder {
@@ -61,6 +62,10 @@ public:
     static const uint32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
     static const uint32_t ACTIVATION_RELU = ANEURALNETWORKS_FUSED_RELU;
 
+    static const uint32_t PREFERENCE_FAST_SINGLE_ANSWER = ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER;
+    static const uint32_t PREFERENCE_SUSTAINED_SPEED = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
+    static const uint32_t PREFERENCE_LOW_POWER = ANEURALNETWORKS_PREFER_LOW_POWER;
+
     ANeuralNetworksCompilation* compilation = nullptr;
 
     int init(AAssetManager *mgr);
@@ -74,7 +79,7 @@ public:
                      uint32_t activation, uint32_t poolingType);
     uint32_t addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
     void addIndexIntoOutput(uint32_t index);
-    int finish();
+    int compile(uint32_t preference);
     Model prepareForExecution();
     std::vector<uint32_t> getInputIndexes();
     std::vector<uint32_t> getOutputIndexes();
@@ -83,7 +88,6 @@ public:
     void clear();
 
     ModelBuilder();
-
 };
 
 
