@@ -14,12 +14,13 @@
 
 class ModelBuilder {
 private:
-    ANeuralNetworksModel* model;
+    ANeuralNetworksModel* model = nullptr;
     AAssetManager *mgr;
     std::vector<char*> bufferPointers;
     // NHWC
     std::vector<std::vector<uint32_t>> dimensVector;
-    std::vector<ANeuralNetworksOperandType> operandTypeVector;
+    std::vector<uint32_t> inputIndexVector;
+    std::vector<uint32_t> outputIndexVector;
     std::map<uint32_t, ANeuralNetworksOperandType> uint32OperandTypeMap;
     std::map<float, ANeuralNetworksOperandType> float32OperandTypeMap;
 
@@ -52,6 +53,7 @@ private:
     char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
                                     std::string filename);
 public:
+    ANeuralNetworksCompilation* compilation = nullptr;
     ModelBuilder(AAssetManager *mgr);
 
     int init();
@@ -62,7 +64,10 @@ public:
     uint32_t addPool(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t height,
                          uint32_t paddingW, uint32_t paddingH, uint32_t width,
                          uint32_t activation, uint32_t poolingType);
-    int addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
+    uint32_t addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
+    void addIndexIntoOutput(uint32_t index);
+    int finish();
+    void clear();
 };
 
 // TODO: Remove when O MR1 Beta 2 is available.

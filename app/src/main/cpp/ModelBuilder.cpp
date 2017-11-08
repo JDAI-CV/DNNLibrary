@@ -13,6 +13,7 @@ uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width) {
     uint32_t index = addOperand(&type);
 
     dimensVector.push_back(dimen);
+    inputIndexVector.push_back(index);
     return index;
 }
 
@@ -55,7 +56,8 @@ ModelBuilder::addConv(std::string name, uint32_t input, uint32_t strideX, uint32
     return outputOperandIndex;
 }
 
-int ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation) {
+uint32_t ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNum,
+                             uint32_t activation) {
     // NHWC
     vector<uint32_t> inputDimen = dimensVector[input];
 
@@ -235,6 +237,48 @@ int ModelBuilder::init() {
     return ANeuralNetworksModel_create(&model);
 }
 
+void ModelBuilder::addIndexIntoOutput(uint32_t index) {
+    outputIndexVector.push_back(index);
+}
+
+int ModelBuilder::finish() {
+    ANeuralNetworksModel_identifyInputsAndOutputs(
+            model,
+            static_cast<uint32_t>(inputIndexVector.size()), &inputIndexVector[0],
+            static_cast<uint32_t>(outputIndexVector.size()), &outputIndexVector[0]
+    );
+
+    int ret = ANeuralNetworksModel_finish(model);
+    if (ret != ANEURALNETWORKS_NO_ERROR) {
+        return ret;
+    }
+
+    ret = ANeuralNetworksCompilation_create(model, &compilation);
+    if (ret != ANEURALNETWORKS_NO_ERROR) {
+        return ret;
+    }
+
+    ret = ANeuralNetworksCompilation_setPreference(compilation, ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+    if (ret != ANEURALNETWORKS_NO_ERROR) {
+        return ret;
+    }
+
+    ret = ANeuralNetworksCompilation_finish(compilation);
+    if (ret != ANEURALNETWORKS_NO_ERROR) {
+        return ret;
+    }
+
+    return 0;
+}
+
+void ModelBuilder::clear() {
+    ANeuralNetworksCompilation_free(compilation);
+    ANeuralNetworksModel_free(model);
+    for (auto pointer : bufferPointers) {
+        delete[] pointer;
+    }
+    bufferPointers.clear();
+}
 
 extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
         ANeuralNetworksModel* model,

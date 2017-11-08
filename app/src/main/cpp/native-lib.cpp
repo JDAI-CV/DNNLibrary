@@ -6,11 +6,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <android/NeuralNetworks.h>
 #include <android/log.h>
 #include <string.h>
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
+#include "ModelBuilder.h"
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedMacroInspection"
@@ -48,6 +48,31 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
         JNIEnv *env,
         jobject /* this */,
         jobject javaAssetManager) {
+
+    AAssetManager *mgrr = AAssetManager_fromJava(env, javaAssetManager);
+    /*
+    ModelBuilder builder(mgrr);
+    if (builder.init() != ANEURALNETWORKS_NO_ERROR) {
+        throwException(env, "Create model error");
+    }
+
+    uint32_t data = builder.addInput(28, 28);
+    uint32_t conv1 = builder.addConv("conv1", data, 1, 1, 0, 0, 5, 5, ANEURALNETWORKS_FUSED_NONE, 20);
+    uint32_t pool1 = builder.addPool(conv1, 2, 2, 0, 0, 2, 2, ANEURALNETWORKS_FUSED_NONE,
+                                     ANEURALNETWORKS_MAX_POOL_2D);
+    uint32_t conv2 = builder.addConv("conv2", pool1, 1, 1, 0, 0, 5, 5, ANEURALNETWORKS_FUSED_NONE, 50);
+    uint32_t pool2 = builder.addPool(conv2, 2, 2, 0, 0, 2, 2, ANEURALNETWORKS_FUSED_NONE,
+                                     ANEURALNETWORKS_MAX_POOL_2D);
+    uint32_t ip1 = builder.addFC("ip1", pool2, 500, ANEURALNETWORKS_FUSED_RELU);
+    uint32_t ip2 = builder.addFC("ip2", ip1, 10, ANEURALNETWORKS_FUSED_NONE);
+
+    builder.addIndexIntoOutput(ip2);
+    builder.finish();
+
+    compilation = builder.compilation;
+     */
+
+
     if (ANeuralNetworksModel_create(&model) != ANEURALNETWORKS_NO_ERROR) {
         throwException(env, "Create model error");
     }
@@ -235,11 +260,7 @@ JNICALL
 Java_me_daquexian_nnapiexample_MainActivity_clearModel(
         JNIEnv *env,
         jobject /* this */) {
-    ANeuralNetworksCompilation_free(compilation);
-    ANeuralNetworksModel_free(model);
-    for (auto pointer : bufferPointers) {
-        delete[] pointer;
-    }
+
 }
 
 /**
