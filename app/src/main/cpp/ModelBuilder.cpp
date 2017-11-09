@@ -134,6 +134,24 @@ uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t stride
     return outputOperandIndex;
 }
 
+uint32_t ModelBuilder::addSoftMax(uint32_t input) {
+    vector<uint32_t> inputDimen = dimensMap[input];
+    vector<uint32_t> outputDimen = inputDimen;
+
+    uint32_t betaIndex = addFloat32Operand(1.f);
+
+    ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
+    uint32_t outputOperandIndex = addOperand(&type);
+
+    dimensMap[outputOperandIndex] = outputDimen;
+
+    array<uint32_t, 2> inputOperandsArr{{input, betaIndex}};
+
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_SOFTMAX, 2, &inputOperandsArr[0],
+                                      1, &outputOperandIndex);
+
+    return outputOperandIndex;
+}
 
 ANeuralNetworksOperandType ModelBuilder::getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims) {
     ANeuralNetworksOperandType type;

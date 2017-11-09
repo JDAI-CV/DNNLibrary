@@ -60,7 +60,9 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
     uint32_t ip1 = builder.addFC("ip1", pool2, 500, ModelBuilder::ACTIVATION_RELU);
     uint32_t ip2 = builder.addFC("ip2", ip1, 10, ModelBuilder::ACTIVATION_NONE);
 
-    builder.addIndexIntoOutput(ip2);
+    uint32_t prob = builder.addSoftMax(ip2);
+
+    builder.addIndexIntoOutput(prob);
 
     int ret;
     if ((ret = builder.compile(ModelBuilder::PREFERENCE_SUSTAINED_SPEED)) !=
@@ -87,6 +89,10 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     builder.setOutputBuffer(model, builder.getOutputIndexes()[0], prob, sizeof(prob));
 
     model.predict();
+
+    for (auto value : prob) {
+        LOGD("prob: %f", value);
+    }
 
     return getMaxIndex(prob, LENGTH(prob));
 }

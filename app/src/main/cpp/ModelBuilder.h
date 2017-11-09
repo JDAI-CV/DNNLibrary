@@ -78,6 +78,7 @@ public:
                      uint32_t height,uint32_t width,
                      uint32_t activation, uint32_t poolingType);
     uint32_t addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
+    uint32_t addSoftMax(uint32_t input);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     Model prepareForExecution();
