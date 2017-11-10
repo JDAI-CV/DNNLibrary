@@ -2,7 +2,7 @@
 // Created by daquexian on 2017/11/8.
 //
 
-#include <numeric>
+#include <sstream>
 #include "ModelBuilder.h"
 
 using namespace std;
@@ -14,10 +14,256 @@ using namespace std;
 #define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
 #define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
 
-uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width) {
-    vector<uint32_t> dimen{1, width, height, 1};
+
+ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
+    vector<uint32_t> layerToBlob;
+    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
+    size_t size = static_cast<size_t>(AAsset_getLength(asset));
+    char* buffer = new char[size];
+    uint32_t *intPt = reinterpret_cast<uint32_t *>(buffer);
+    AAsset_read(asset, buffer, static_cast<size_t>(size));
+
+
+    uint32_t layerType;
+    while ((layerType = *intPt++) != MF_LAYER_END) {
+        uint32_t index;
+        string topName;
+        switch (layerType) {
+            case MF_INPUT: {
+                intPt++;    // skip N
+                uint32_t depth = *intPt++;
+                uint32_t height = *intPt++;
+                uint32_t width = *intPt++;
+
+                assert(depth == 1 && height == 28 && width == 28);
+
+                layerToBlob.push_back(addInput(height, width, depth));
+
+                while (*intPt++ != MF_TOP_NAME) ;
+
+                break;
+            }
+            case MF_CONV: {
+                uint32_t input = layerToBlob[*intPt++];
+                vector<uint32_t> inputDim = dimensMap[input];
+                uint32_t paddingLeft = 0, paddingRight = 0, paddingTop = 0, paddingBottom = 0,
+                        strideX = 1, strideY = 1, filterHeight, filterWidth, numOutput,
+                        activation = ACTIVATION_NONE;
+                uint32_t weightIndex, biasIndex = UINT32_MAX;
+                uint32_t paramType;
+                while ((paramType = *intPt++) != MF_TOP_NAME) {
+                    LOGD("param type: %u", paramType);
+                    switch (paramType) {
+                        case MF_PADDING_LEFT:
+                            paddingLeft = *intPt++;
+                            break;
+                        case MF_PADDING_RIGHT:
+                            paddingRight = *intPt++;
+                            break;
+                        case MF_PADDING_TOP:
+                            paddingTop = *intPt++;
+                            break;
+                        case MF_PADDING_BOTTOM:
+                            paddingBottom = *intPt++;
+                            break;
+                        case MF_STRIDE_X:
+                            strideX = *intPt++;
+                            break;
+                        case MF_STRIDE_Y:
+                            strideY = *intPt++;
+                            break;
+                        case MF_FILTER_HEIGHT:
+                            filterHeight = *intPt++;
+                            break;
+                        case MF_FILTER_WIDTH:
+                            filterWidth = *intPt++;
+                            break;
+                        case MF_NUM_OUTPUT:
+                            numOutput = *intPt++;
+                            break;
+                        case MF_WEIGHT: {
+                            vector<uint32_t> weightDim{numOutput, filterHeight, filterWidth,
+                                                       inputDim[3]};
+                            weightIndex = addWeightOrBiasFromBuffer(intPt, weightDim);
+                            intPt += product(weightDim);
+
+                            break;
+                        }
+                        case MF_BIAS: {
+                            biasIndex = addWeightOrBiasFromBuffer(intPt,
+                                                                  vector<uint32_t>{numOutput});
+                            intPt += numOutput;
+                            break;
+                        }
+                        case MF_ACTIVATION: {
+                            uint32_t mfActType = *intPt++;
+                            if (mfActType == MF_ACTIVATION_NONE) {
+                                activation = ACTIVATION_NONE;
+                            } else if (mfActType == MF_ACTIVATION_RELU) {
+                                activation = ACTIVATION_RELU;
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if (biasIndex == UINT32_MAX) {
+                    biasIndex = addFloat32NullOperand();
+                }
+
+                index = addConv(input, strideX, strideY, paddingLeft, paddingRight,
+                                paddingBottom, paddingTop,
+                                filterHeight, filterWidth,
+                                activation, numOutput, weightIndex,
+                                biasIndex);
+                LOGD("%u", index);
+                layerToBlob.push_back(index);
+                break;
+            }
+            case MF_MAX_POOL:
+            case MF_AVE_POOL: {
+                uint32_t input = layerToBlob[*intPt++];
+                uint32_t paddingLeft = 0, paddingRight = 0, paddingTop = 0, paddingBottom = 0,
+                        strideX = 1, strideY = 1, filterHeight, filterWidth,
+                        activation = ACTIVATION_NONE, poolingType;
+                vector<uint32_t> inputDim = dimensMap[input];
+                uint32_t paramType;
+                while ((paramType = *intPt++) != MF_TOP_NAME) {
+                    LOGD("param type: %u", paramType);
+                    switch (paramType) {
+                        case MF_PADDING_LEFT:
+                            paddingLeft = *intPt++;
+                            break;
+                        case MF_PADDING_RIGHT:
+                            paddingRight = *intPt++;
+                            break;
+                        case MF_PADDING_TOP:
+                            paddingTop = *intPt++;
+                            break;
+                        case MF_PADDING_BOTTOM:
+                            paddingBottom = *intPt++;
+                            break;
+                        case MF_STRIDE_X:
+                            strideX = *intPt++;
+                            break;
+                        case MF_STRIDE_Y:
+                            strideY = *intPt++;
+                            break;
+                        case MF_FILTER_HEIGHT:
+                            filterHeight = *intPt++;
+                            break;
+                        case MF_FILTER_WIDTH:
+                            filterWidth = *intPt++;
+                            break;
+                        case MF_ACTIVATION:
+                            uint32_t mfActType = *intPt++;
+                            if (mfActType == MF_ACTIVATION_NONE) {
+                                activation = ACTIVATION_NONE;
+                            } else if (mfActType == MF_ACTIVATION_RELU) {
+                                activation = ACTIVATION_RELU;
+                            }
+                            break;
+                    }
+                }
+
+                poolingType = layerType == MF_MAX_POOL ? MAX_POOL : AVE_POOL;
+
+                index = addPool(input, strideX, strideY,
+                                paddingLeft, paddingRight, paddingTop, paddingBottom,
+                                filterHeight, filterWidth, activation, poolingType);
+
+                LOGD("%u", index);
+
+                layerToBlob.push_back(index);
+                break;
+            }
+
+            case MF_FC: {
+                uint32_t input = layerToBlob[*intPt++];
+                vector<uint32_t> inputDim = dimensMap[input];
+                uint32_t numOutput, activation = ACTIVATION_NONE;
+                uint32_t weightIndex, biasIndex;
+                uint32_t paramType;
+                while ((paramType = *intPt++) != MF_TOP_NAME) {
+                    switch (paramType) {
+                        case MF_NUM_OUTPUT: {
+                            numOutput = *intPt++;
+
+                            break;
+                        }
+                        case MF_WEIGHT: {
+                            vector<uint32_t> weightDim{numOutput, product(inputDim)};
+                            weightIndex = addWeightOrBiasFromBuffer(intPt, weightDim);
+                            intPt += product(weightDim);
+
+                            break;
+                        }
+                        case MF_BIAS: {
+                            biasIndex = addWeightOrBiasFromBuffer(intPt,
+                                                                  vector<uint32_t>{numOutput});
+                            intPt += numOutput;
+                            break;
+                        }
+                        case MF_ACTIVATION: {
+                            uint32_t mfActType = *intPt++;
+                            if (mfActType == MF_ACTIVATION_NONE) {
+                                activation = ACTIVATION_NONE;
+                            } else if (mfActType == MF_ACTIVATION_RELU) {
+                                activation = ACTIVATION_RELU;
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if (biasIndex == UINT32_MAX) {
+                    biasIndex = addFloat32NullOperand();
+                }
+
+                index = addFC(input, numOutput, activation, weightIndex, biasIndex);
+
+                layerToBlob.push_back(index);
+                break;
+            }
+            case MF_SOFTMAX: {
+                uint32_t input = layerToBlob[*intPt++];
+                float beta = 1.f;
+                uint32_t paramType;
+                while ((paramType = *intPt++) != MF_TOP_NAME) {
+                    switch (paramType) {
+                        case MF_BETA: {
+                            beta = *reinterpret_cast<float *>(intPt++);
+                            break;
+                        }
+                    }
+                }
+                index = addSoftMax(input, beta);
+                layerToBlob.push_back(index);
+                break;
+            }
+            default:
+                throw "Unsupport layer";
+        }
+        stringstream ss;
+        char c;
+        while ((c = static_cast<char>(*intPt++)) != MF_STRING_END) {
+            ss << c;
+        }
+
+        topName = ss.str();
+        blobNameToIndex[topName] = index;
+        LOGD("%s", topName.c_str());
+        while (*intPt++ != MF_PARAM_END) ;
+    }
+
+
+    return *this;
+}
+
+uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width, uint32_t depth) {
+    vector<uint32_t> dimen{1, width, height, depth};
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
-    uint32_t index = addOperand(&type);
+    uint32_t index = addNewOperand(&type);
 
     dimensMap[index] = dimen;
     inputIndexVector.push_back(index);
@@ -25,42 +271,57 @@ uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width) {
 }
 
 uint32_t
-ModelBuilder::addConv(std::string name, uint32_t input, uint32_t strideX, uint32_t strideY,
-                      uint32_t paddingW, uint32_t paddingH, uint32_t height, uint32_t width,
-                      uint32_t activation, uint32_t outputDepth) {
+ModelBuilder::addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
+                      uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
+                      uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
+                      uint32_t weightIndex, uint32_t biasIndex) {
     if (input >= nextIndex) return WRONG_INPUT;
 
     uint32_t strideXOperandIndex = addUInt32Operand(strideX);
     uint32_t strideYOperandIndex = addUInt32Operand(strideY);
-    uint32_t paddingWOperandIndex = addUInt32Operand(paddingW);
-    uint32_t paddingHOperandIndex = addUInt32Operand(paddingH);
+    uint32_t paddingLeftOperandIndex = addUInt32Operand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addUInt32Operand(paddingRight);
+    uint32_t paddingTopOperandIndex = addUInt32Operand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addUInt32Operand(paddingBottom);
     uint32_t activationOperandIndex = addUInt32Operand(activation);
 
+    // NHWC
+    vector<uint32_t> inputDimen = dimensMap[input];
+
+    vector<uint32_t> outputDimen{1,
+                                 (inputDimen[1] - height + 2 * paddingTop) / strideY + 1,
+                                 (inputDimen[2] - width + 2 * paddingLeft) / strideX + 1,
+                                 outputDepth};
+
+    ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
+    uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
+
+    dimensMap[outputOperandIndex] = outputDimen;
+
+    array<uint32_t, 10> inputOperandsArr{{input, weightIndex, biasIndex,
+                                                 paddingLeftOperandIndex, paddingRightOperandIndex,
+                                                 paddingTopOperandIndex, paddingBottomOperandIndex,
+                                                 strideXOperandIndex, strideYOperandIndex,
+                                                 activationOperandIndex}};
+
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONV_2D, 10, &inputOperandsArr[0], 1,
+                                      &outputOperandIndex);
+    return outputOperandIndex;
+}
+
+uint32_t
+ModelBuilder::addConv(std::string name, uint32_t input, uint32_t strideX, uint32_t strideY,
+                      uint32_t paddingW, uint32_t paddingH, uint32_t height, uint32_t width,
+                      uint32_t activation, uint32_t outputDepth) {
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
 
     uint32_t weightOperandIndex = addConvWeight(name, height, width, inputDimen[3], outputDepth);
     uint32_t biasOperandIndex = addBias(name, outputDepth);
 
-    vector<uint32_t> outputDimen{1,
-                                 (inputDimen[1] - height + 2 * paddingH) / strideY + 1,
-                                 (inputDimen[2] - width + 2 * paddingW) / strideX + 1,
-                                 outputDepth};
+    return addConv(input, strideX, strideY, paddingW, paddingW, paddingH, paddingH, height, width,
+                   activation, outputDepth, weightOperandIndex, biasOperandIndex);
 
-    ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
-    uint32_t outputOperandIndex = addOperand(&outputBlobType);
-
-    dimensMap[outputOperandIndex] = outputDimen;
-
-    array<uint32_t, 10> inputOperandsArr{{input, weightOperandIndex, biasOperandIndex,
-                                            paddingWOperandIndex, paddingWOperandIndex,
-                                            paddingHOperandIndex, paddingHOperandIndex,
-                                            strideXOperandIndex, strideYOperandIndex,
-                                            activationOperandIndex}};
-
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONV_2D, 10, &inputOperandsArr[0], 1,
-                                      &outputOperandIndex);
-    return outputOperandIndex;
 }
 
 uint32_t ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNum,
@@ -72,26 +333,12 @@ uint32_t ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNu
                                               outputNum);
     uint32_t biasOperandIndex = addBias(name, outputNum);
 
-    uint32_t activationOperandIndex = addUInt32Operand(activation);
-
-    vector<uint32_t> outputDimen{1, outputNum};
-
-    ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
-    uint32_t outputOperandIndex = addOperand(&outputBlobType);
-
-    dimensMap[outputOperandIndex] = outputDimen;
-
-    array<uint32_t, 10> inputOperandsArr{{input, weightOperandIndex, biasOperandIndex,
-                                                 activationOperandIndex}};
-
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_FULLY_CONNECTED,
-                                      4, &inputOperandsArr[0], 1, &outputOperandIndex);
-
-    return outputOperandIndex;
+    return addFC(input, outputNum, activation, weightOperandIndex, biasOperandIndex);
 }
 
 uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t strideY,
-                               uint32_t paddingW, uint32_t paddingH,
+                               uint32_t paddingLeft, uint32_t paddingRight,
+                               uint32_t paddingTop, uint32_t paddingBottom,
                                uint32_t height, uint32_t width,
                                uint32_t activation, uint32_t poolingType) {
 
@@ -101,24 +348,26 @@ uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t stride
     uint32_t heightOperandIndex = addUInt32Operand(height);
     uint32_t strideXOperandIndex = addUInt32Operand(strideX);
     uint32_t strideYOperandIndex = addUInt32Operand(strideY);
-    uint32_t paddingWOperandIndex = addUInt32Operand(paddingW);
-    uint32_t paddingHOperandIndex = addUInt32Operand(paddingH);
+    uint32_t paddingLeftOperandIndex = addUInt32Operand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addUInt32Operand(paddingRight);
+    uint32_t paddingTopOperandIndex = addUInt32Operand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addUInt32Operand(paddingBottom);
     uint32_t activationOperandIndex = addUInt32Operand(activation);
 
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
     vector<uint32_t> outputDimen{1,
-                                 (inputDimen[1] - height + 2 * paddingH) / strideY + 1,
-                                 (inputDimen[2] - width + 2 * paddingW) / strideX + 1,
+                                 (inputDimen[1] - height + 2 * paddingTop) / strideY + 1,
+                                 (inputDimen[2] - width + 2 * paddingLeft) / strideX + 1,
                                  inputDimen[3]};
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
-    uint32_t outputOperandIndex = addOperand(&type);
+    uint32_t outputOperandIndex = addNewOperand(&type);
 
     dimensMap[outputOperandIndex] = outputDimen;
 
-    array<uint32_t, 10> inputOperandsArr{{input, paddingWOperandIndex, paddingWOperandIndex,
-                                                 paddingHOperandIndex, paddingHOperandIndex,
+    array<uint32_t, 10> inputOperandsArr{{input, paddingLeftOperandIndex, paddingRightOperandIndex,
+                                                 paddingTopOperandIndex, paddingBottomOperandIndex,
                                                  strideXOperandIndex, strideYOperandIndex,
                                                  widthOperandIndex, heightOperandIndex,
                                                  activationOperandIndex}};
@@ -134,14 +383,14 @@ uint32_t ModelBuilder::addPool(uint32_t input, uint32_t strideX, uint32_t stride
     return outputOperandIndex;
 }
 
-uint32_t ModelBuilder::addSoftMax(uint32_t input) {
+uint32_t ModelBuilder::addSoftMax(uint32_t input, float beta) {
     vector<uint32_t> inputDimen = dimensMap[input];
     vector<uint32_t> outputDimen = inputDimen;
 
-    uint32_t betaIndex = addFloat32Operand(1.f);
+    uint32_t betaIndex = addFloat32Operand(beta);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
-    uint32_t outputOperandIndex = addOperand(&type);
+    uint32_t outputOperandIndex = addNewOperand(&type);
 
     dimensMap[outputOperandIndex] = outputDimen;
 
@@ -209,7 +458,7 @@ char* ModelBuilder::setOperandValueFromAssets(ANeuralNetworksModel *model, AAsse
 uint32_t ModelBuilder::addUInt32Operand(uint32_t value) {
     if (uint32OperandMap.find(value) == uint32OperandMap.end()) {
         ANeuralNetworksOperandType type = getInt32OperandType();
-        uint32_t index = addOperand(&type);
+        uint32_t index = addNewOperand(&type);
         ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
         uint32OperandMap[value] = index;
     }
@@ -219,7 +468,7 @@ uint32_t ModelBuilder::addUInt32Operand(uint32_t value) {
 uint32_t ModelBuilder::addFloat32Operand(float value) {
     if (float32OperandMap.find(value) == float32OperandMap.end()) {
         ANeuralNetworksOperandType type = getFloat32OperandType();
-        uint32_t index = addOperand(&type);
+        uint32_t index = addNewOperand(&type);
         ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
         float32OperandMap[value] = index;
     }
@@ -227,7 +476,25 @@ uint32_t ModelBuilder::addFloat32Operand(float value) {
 
 }
 
-uint32_t ModelBuilder::addOperand(ANeuralNetworksOperandType *type) {
+uint32_t ModelBuilder::addInt32NullOperand() {
+    if (missingInt32OperandIndex == UINT32_MAX) {
+        ANeuralNetworksOperandType type = getInt32OperandType();
+        missingInt32OperandIndex = addNewOperand(&type);
+        ANeuralNetworksModel_setOperandValue(model, missingInt32OperandIndex, nullptr, 0);
+    }
+    return missingInt32OperandIndex;
+}
+
+uint32_t ModelBuilder::addFloat32NullOperand(){
+    if (missingFloat32OperandIndex == UINT32_MAX) {
+        ANeuralNetworksOperandType type = getFloat32OperandType();
+        missingFloat32OperandIndex = addNewOperand(&type);
+        ANeuralNetworksModel_setOperandValue(model, missingFloat32OperandIndex, nullptr, 0);
+    }
+    return missingFloat32OperandIndex;
+}
+
+uint32_t ModelBuilder::addNewOperand(ANeuralNetworksOperandType *type) {
     int ret;
     if ((ret = ANeuralNetworksModel_addOperand(model, type)) != ANEURALNETWORKS_NO_ERROR) {
         return UINT32_MAX - ret;
@@ -250,7 +517,7 @@ uint32_t ModelBuilder::addFcWeight(std::string name, uint32_t inputSize, uint32_
 uint32_t ModelBuilder::addBias(std::string name, uint32_t outputDepth) {
     vector<uint32_t> biasDimen{outputDepth};
     ANeuralNetworksOperandType biasType = getFloat32OperandTypeWithDims(biasDimen);
-    uint32_t biasIndex = addOperand(&biasType);
+    uint32_t biasIndex = addNewOperand(&biasType);
     bufferPointers.push_back(setOperandValueFromAssets(
             model, mgr, biasIndex, "weights_and_biases/" + name + "_biases"));
     return biasIndex;
@@ -258,11 +525,18 @@ uint32_t ModelBuilder::addBias(std::string name, uint32_t outputDepth) {
 
 uint32_t ModelBuilder::addWeight(std::string name, std::vector<uint32_t> dimen) {
     ANeuralNetworksOperandType weightType = getFloat32OperandTypeWithDims(dimen);
-    uint32_t weightIndex = addOperand(&weightType);
+    uint32_t weightIndex = addNewOperand(&weightType);
     bufferPointers.push_back(setOperandValueFromAssets(
             model, mgr, weightIndex, "weights_and_biases/" + name + "_weights"));
 
     return weightIndex;
+}
+
+uint32_t ModelBuilder::addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen) {
+    ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
+    uint32_t index = addNewOperand(&type);
+    ANeuralNetworksModel_setOperandValue(model, index, buffer, product(dimen) * sizeof(uint32_t));
+    return index;
 }
 
 int ModelBuilder::init(AAssetManager *mgr) {
@@ -341,13 +615,13 @@ int ModelBuilder::setOutputBuffer(const Model& model, int32_t index, void *buffe
     return WRONG_OPERAND_INDEX;
 }
 
-Model ModelBuilder::prepareForExecution() {
+void ModelBuilder::prepareForExecution(Model &model) {
     ANeuralNetworksExecution *execution = nullptr;
     // From document this method only fails when the compilation is invalid, which is already
     // impossible
     ANeuralNetworksExecution_create(compilation, &execution);
 
-    return Model(execution);
+    model.execution = execution;
 }
 
 vector<uint32_t> ModelBuilder::getInputIndexes() {
@@ -356,6 +630,32 @@ vector<uint32_t> ModelBuilder::getInputIndexes() {
 
 vector<uint32_t> ModelBuilder::getOutputIndexes() {
     return outputIndexVector;
+}
+
+uint32_t
+ModelBuilder::addFC(uint32_t input, uint32_t outputNum, uint32_t activation, uint32_t weightIndex,
+                    uint32_t biasIndex) {
+
+    uint32_t activationOperandIndex = addUInt32Operand(activation);
+
+    vector<uint32_t> outputDimen{1, outputNum};
+
+    ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
+    uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
+
+    dimensMap[outputOperandIndex] = outputDimen;
+
+    array<uint32_t, 10> inputOperandsArr{{input, weightIndex, biasIndex,
+                                                 activationOperandIndex}};
+
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_FULLY_CONNECTED,
+                                      4, &inputOperandsArr[0], 1, &outputOperandIndex);
+
+    return outputOperandIndex;
+}
+
+uint32_t ModelBuilder::getBlobIndex(std::string blobName) {
+    return blobNameToIndex[blobName];
 }
 
 uint32_t product(const vector<uint32_t> &v) {

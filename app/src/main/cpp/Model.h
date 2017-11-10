@@ -15,6 +15,7 @@ private:
     Model(ANeuralNetworksExecution *execution);
     ANeuralNetworksExecution *execution;
 public:
+    Model();
     int predict();
 };
 

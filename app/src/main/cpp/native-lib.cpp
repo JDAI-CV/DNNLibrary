@@ -50,19 +50,10 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
 
     }
 
-    uint32_t data = builder.addInput(28, 28);
-    uint32_t conv1 = builder.addConv("conv1", data, 1, 1, 0, 0, 5, 5, ModelBuilder::ACTIVATION_NONE, 20);
-    uint32_t pool1 = builder.addPool(conv1, 2, 2, 0, 0, 2, 2, ModelBuilder::ACTIVATION_NONE,
-                                     ModelBuilder::MAX_POOL);
-    uint32_t conv2 = builder.addConv("conv2", pool1, 1, 1, 0, 0, 5, 5, ModelBuilder::ACTIVATION_NONE, 50);
-    uint32_t pool2 = builder.addPool(conv2, 2, 2, 0, 0, 2, 2, ModelBuilder::ACTIVATION_NONE,
-                                     ModelBuilder::MAX_POOL);
-    uint32_t ip1 = builder.addFC("ip1", pool2, 500, ModelBuilder::ACTIVATION_RELU);
-    uint32_t ip2 = builder.addFC("ip2", ip1, 10, ModelBuilder::ACTIVATION_NONE);
+    builder.readFromFile("nnmodel");
 
-    uint32_t prob = builder.addSoftMax(ip2);
-
-    builder.addIndexIntoOutput(prob);
+    builder.addIndexIntoOutput(builder.getBlobIndex("ip2"));
+    builder.addIndexIntoOutput(builder.getBlobIndex("prob"));
 
     int ret;
     if ((ret = builder.compile(ModelBuilder::PREFERENCE_SUSTAINED_SPEED)) !=
@@ -82,13 +73,20 @@ Java_me_daquexian_nnapiexample_MainActivity_predict(
     jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
     jsize len = env->GetArrayLength(dataArrayObject);
 
-    Model model = builder.prepareForExecution();
+    Model model;
+    builder.prepareForExecution(model);
     builder.setInputBuffer(model, builder.getInputIndexes()[0], data, static_cast<size_t>(len));
 
+    float ip2[10];
+    builder.setOutputBuffer(model, builder.getOutputIndexes()[0], ip2, sizeof(ip2));
     float prob[10];
-    builder.setOutputBuffer(model, builder.getOutputIndexes()[0], prob, sizeof(prob));
+    builder.setOutputBuffer(model, builder.getOutputIndexes()[1], prob, sizeof(prob));
 
     model.predict();
+
+    for (auto value : ip2) {
+        LOGD("ip2: %f", value);
+    }
 
     for (auto value : prob) {
         LOGD("prob: %f", value);

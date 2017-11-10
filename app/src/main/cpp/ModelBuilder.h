@@ -13,6 +13,8 @@
 #include <array>
 #include <map>
 #include <linux/stat.h>
+#include <numeric>
+#include <cassert>
 #include "Model.h"
 
 class ModelBuilder {
@@ -27,16 +29,23 @@ private:
     std::map<uint32_t, uint32_t> uint32OperandMap;
     std::map<float, uint32_t> float32OperandMap;
 
+    std::map<std::string, uint32_t> blobNameToIndex;
+
+    uint32_t missingInt32OperandIndex = UINT32_MAX;
+    uint32_t missingFloat32OperandIndex = UINT32_MAX;
+
     uint32_t nextIndex = 0;
 
     static const uint32_t WRONG_INPUT = UINT32_MAX -1;
     static const uint32_t WRONG_POOLING_TYPE = UINT32_MAX -2;
     static const int WRONG_OPERAND_INDEX = -10;
 
-    uint32_t addOperand(ANeuralNetworksOperandType *type);
+    uint32_t addNewOperand(ANeuralNetworksOperandType *type);
 
     uint32_t addUInt32Operand(uint32_t value);
     uint32_t addFloat32Operand(float value);
+    uint32_t addInt32NullOperand();
+    uint32_t addFloat32NullOperand();
 
     uint32_t addConvWeight(std::string name, uint32_t height, uint32_t width, uint32_t inputDepth,
                            uint32_t outputDepth);
@@ -47,6 +56,13 @@ private:
 
     uint32_t addBias(std::string name, uint32_t outputDepth);
 
+    uint32_t addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
+    uint32_t addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
+                         uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
+                         uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
+                         uint32_t weightIndex, uint32_t biasIndex);
+    uint32_t addFC(uint32_t input, uint32_t outputNum, uint32_t activation,
+                   uint32_t weightIndex, uint32_t biasIndex);
     ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims);
 
     ANeuralNetworksOperandType getInt32OperandType();
@@ -66,22 +82,52 @@ public:
     static const uint32_t PREFERENCE_SUSTAINED_SPEED = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
     static const uint32_t PREFERENCE_LOW_POWER = ANEURALNETWORKS_PREFER_LOW_POWER;
 
+    static const uint32_t MF_LAYER_END = 0;
+    static const uint32_t MF_CONV = 1;
+    static const uint32_t MF_MAX_POOL = 2;
+    static const uint32_t MF_AVE_POOL = 3;
+    static const uint32_t MF_FC = 4;
+    static const uint32_t MF_SOFTMAX = 5;
+    static const uint32_t MF_INPUT = 6;
+
+    static const uint32_t MF_ACTIVATION_NONE = 0;
+    static const uint32_t MF_ACTIVATION_RELU = 1;
+
+    static const uint32_t MF_STRING_END = 0;
+
+    static const uint32_t MF_PARAM_END = 0;
+    static const uint32_t MF_PADDING_LEFT = 1;
+    static const uint32_t MF_PADDING_RIGHT = 2;
+    static const uint32_t MF_PADDING_TOP = 3;
+    static const uint32_t MF_PADDING_BOTTOM = 4;
+    static const uint32_t MF_STRIDE_X = 5;
+    static const uint32_t MF_STRIDE_Y = 6;
+    static const uint32_t MF_FILTER_HEIGHT = 7;
+    static const uint32_t MF_FILTER_WIDTH = 8;
+    static const uint32_t MF_NUM_OUTPUT = 9;
+    static const uint32_t MF_WEIGHT = 10;
+    static const uint32_t MF_BIAS = 11;
+    static const uint32_t MF_ACTIVATION = 12;
+    static const uint32_t MF_TOP_NAME = 13;
+    static const uint32_t MF_BETA = 14;
+
     ANeuralNetworksCompilation* compilation = nullptr;
 
     int init(AAssetManager *mgr);
-    uint32_t addInput(uint32_t height, uint32_t width);
+    ModelBuilder& readFromFile(std::string filename);
+    uint32_t getBlobIndex(std::string blobName);
+    uint32_t addInput(uint32_t height, uint32_t width, uint32_t depth);
     uint32_t addConv(std::string name, uint32_t input, uint32_t strideX, uint32_t strideY,
                      uint32_t paddingW, uint32_t paddingH, uint32_t height, uint32_t width,
                      uint32_t activation, uint32_t outputDepth);
-    uint32_t addPool(uint32_t input, uint32_t strideX, uint32_t strideY,
-                     uint32_t paddingW, uint32_t paddingH,
-                     uint32_t height,uint32_t width,
-                     uint32_t activation, uint32_t poolingType);
+    uint32_t addPool(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
+                         uint32_t paddingRight, uint32_t paddingTop, uint32_t paddingBottom,
+                         uint32_t height, uint32_t width, uint32_t activation, uint32_t poolingType);
     uint32_t addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
-    uint32_t addSoftMax(uint32_t input);
+    uint32_t addSoftMax(uint32_t input, float beta);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
-    Model prepareForExecution();
+    void prepareForExecution(Model &model);
     std::vector<uint32_t> getInputIndexes();
     std::vector<uint32_t> getOutputIndexes();
     int setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
@@ -90,6 +136,7 @@ public:
 
     ModelBuilder();
 };
+
 
 
 

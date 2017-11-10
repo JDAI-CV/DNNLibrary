@@ -4,6 +4,10 @@
 
 #include "Model.h"
 
+Model::Model() {
+
+}
+
 Model::Model(ANeuralNetworksExecution *execution) :execution(execution){
 
 }
