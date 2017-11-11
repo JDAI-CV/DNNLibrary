@@ -35,8 +35,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 uint32_t height = *intPt++;
                 uint32_t width = *intPt++;
 
-                assert(depth == 1 && height == 28 && width == 28);
-
                 layerToBlob.push_back(addInput(height, width, depth));
 
                 while (*intPt++ != MF_TOP_NAME) ;
@@ -52,7 +50,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 uint32_t weightIndex, biasIndex = UINT32_MAX;
                 uint32_t paramType;
                 while ((paramType = *intPt++) != MF_TOP_NAME) {
-                    LOGD("param type: %u", paramType);
                     switch (paramType) {
                         case MF_PADDING_LEFT:
                             paddingLeft = *intPt++;
@@ -116,7 +113,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                                 filterHeight, filterWidth,
                                 activation, numOutput, weightIndex,
                                 biasIndex);
-                LOGD("%u", index);
                 layerToBlob.push_back(index);
                 break;
             }
@@ -129,7 +125,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 vector<uint32_t> inputDim = dimensMap[input];
                 uint32_t paramType;
                 while ((paramType = *intPt++) != MF_TOP_NAME) {
-                    LOGD("param type: %u", paramType);
                     switch (paramType) {
                         case MF_PADDING_LEFT:
                             paddingLeft = *intPt++;
@@ -171,8 +166,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 index = addPool(input, strideX, strideY,
                                 paddingLeft, paddingRight, paddingTop, paddingBottom,
                                 filterHeight, filterWidth, activation, poolingType);
-
-                LOGD("%u", index);
 
                 layerToBlob.push_back(index);
                 break;
@@ -252,7 +245,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
 
         topName = ss.str();
         blobNameToIndex[topName] = index;
-        LOGD("%s", topName.c_str());
         while (*intPt++ != MF_PARAM_END) ;
     }
 
@@ -397,8 +389,10 @@ uint32_t ModelBuilder::addSoftMax(uint32_t input, float beta) {
     array<uint32_t, 2> inputOperandsArr{{input, betaIndex}};
 
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_SOFTMAX, 2, &inputOperandsArr[0],
+                                      // 1, &input);
                                       1, &outputOperandIndex);
 
+    // return input;
     return outputOperandIndex;
 }
 
@@ -549,13 +543,16 @@ void ModelBuilder::addIndexIntoOutput(uint32_t index) {
 }
 
 int ModelBuilder::compile(uint32_t preference) {
-    ANeuralNetworksModel_identifyInputsAndOutputs(
+    int ret;
+    if ((ret = ANeuralNetworksModel_identifyInputsAndOutputs(
             model,
             static_cast<uint32_t>(inputIndexVector.size()), &inputIndexVector[0],
-            static_cast<uint32_t>(outputIndexVector.size()), &outputIndexVector[0]
-    );
+            static_cast<uint32_t>(outputIndexVector.size()), &outputIndexVector[0] )) != ANEURALNETWORKS_NO_ERROR) {
 
-    int ret = ANeuralNetworksModel_finish(model);
+        return ret;
+    }
+
+    ret = ANeuralNetworksModel_finish(model);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
         return ret;
     }
@@ -593,6 +590,8 @@ ModelBuilder::ModelBuilder() {
 }
 
 int ModelBuilder::setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length) {
+    LOGD("%d", model.execution == nullptr);
+    LOGD("%d", buffer == nullptr);
     for (auto i = 0; i < inputIndexVector.size(); i++) {
         int32_t opIndex = inputIndexVector[i];
         if (opIndex == index) {
@@ -656,6 +655,32 @@ ModelBuilder::addFC(uint32_t input, uint32_t outputNum, uint32_t activation, uin
 
 uint32_t ModelBuilder::getBlobIndex(std::string blobName) {
     return blobNameToIndex[blobName];
+}
+
+uint32_t ModelBuilder::addMulScalarInplace(uint32_t input, float scalar) {
+    uint32_t scalarIndex = addFloat32Operand(scalar);
+    array<uint32_t, 3> inputOperands{{input, scalarIndex, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_MUL, 3, &inputOperands[0], 1, &input);
+    return input;
+}
+
+uint32_t ModelBuilder::addAddScalarInplace(uint32_t input, float scalar) {
+    uint32_t scalarIndex = addFloat32Operand(scalar);
+    array<uint32_t, 3> inputOperands{{input, scalarIndex, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_ADD, 3, &inputOperands[0], 1, &input);
+    return input;
+}
+
+uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
+    uint32_t scalarIndex = addFloat32Operand(scalar);
+    array<uint32_t, 3> inputOperands{{input, scalarIndex, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+
+    ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input]);
+    uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
+    dimensMap[outputOperandIndex] = dimensMap[input];
+
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_ADD, 3, &inputOperands[0], 1, &outputOperandIndex);
+    return outputOperandIndex;
 }
 
 uint32_t product(const vector<uint32_t> &v) {

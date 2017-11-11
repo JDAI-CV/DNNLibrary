@@ -56,13 +56,6 @@ private:
 
     uint32_t addBias(std::string name, uint32_t outputDepth);
 
-    uint32_t addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
-    uint32_t addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
-                         uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
-                         uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
-                         uint32_t weightIndex, uint32_t biasIndex);
-    uint32_t addFC(uint32_t input, uint32_t outputNum, uint32_t activation,
-                   uint32_t weightIndex, uint32_t biasIndex);
     ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims);
 
     ANeuralNetworksOperandType getInt32OperandType();
@@ -120,11 +113,23 @@ public:
     uint32_t addConv(std::string name, uint32_t input, uint32_t strideX, uint32_t strideY,
                      uint32_t paddingW, uint32_t paddingH, uint32_t height, uint32_t width,
                      uint32_t activation, uint32_t outputDepth);
+    uint32_t addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
+                     uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
+                     uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
+                     uint32_t weightIndex, uint32_t biasIndex);
+    uint32_t addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
+    uint32_t addFC(uint32_t input, uint32_t outputNum, uint32_t activation,
+                   uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addPool(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
                          uint32_t paddingRight, uint32_t paddingTop, uint32_t paddingBottom,
                          uint32_t height, uint32_t width, uint32_t activation, uint32_t poolingType);
     uint32_t addFC(std::string name, uint32_t input, uint32_t outputNum, uint32_t activation);
     uint32_t addSoftMax(uint32_t input, float beta);
+    uint32_t addAddScalarInplace(uint32_t input, float scalar);
+    uint32_t addAddScalar(uint32_t input, float scalar);
+    uint32_t addAddTensor(uint32_t input1, uint32_t input2);
+    uint32_t addMulScalarInplace(uint32_t input, float scalar);
+    uint32_t addMulTensor(uint32_t input1, uint32_t input2);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);
