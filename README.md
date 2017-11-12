@@ -22,6 +22,8 @@ This screenshot is from `LeNet` branch, which uses camera.
 
 
 
+
+
 ## Preparation
 
-Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. The beta version of NDK is necessary for NNAPI. If you want to compile the demo please use Android Studio 3.0+.
+Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. The [beta version of NDK](https://developer.android.com/ndk/downloads/index.html#beta-downloads) is necessary for NNAPI. If you want to compile the demo please use Android Studio 3.0+.
