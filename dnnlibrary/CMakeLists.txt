@@ -11,13 +11,13 @@ cmake_minimum_required(VERSION 3.4.1)
 # Gradle automatically packages shared libraries with your APK.
 
 add_library( # Sets the name of the library.
-             native-lib
+             dnnlibrary
 
              # Sets the library as a shared library.
              SHARED
 
              # Provides a relative path to your source file(s).
-             src/main/cpp/native-lib.cpp
+             src/main/cpp/JavaWrapper.cpp
              src/main/cpp/ModelBuilder.cpp
              src/main/cpp/ModelBuilder.h
              src/main/cpp/Model.cpp
@@ -44,7 +44,7 @@ find_library( neural-networks-lib
 # build script, prebuilt third-party libraries, or system libraries.
 
 target_link_libraries( # Specifies the target library.
-                       native-lib
+                       dnnlibrary
 
                        android
 

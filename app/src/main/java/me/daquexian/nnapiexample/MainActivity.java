@@ -25,6 +25,7 @@ import org.opencv.imgproc.Imgproc;
 import java.io.InputStream;
 import java.util.List;
 
+import me.daquexian.dnnlibrary.ModelWrapper;
 import pub.devrel.easypermissions.EasyPermissions;
 
 public class MainActivity extends AppCompatActivity
@@ -44,7 +45,6 @@ public class MainActivity extends AppCompatActivity
 
     static {
         OpenCVLoader.initDebug();
-        System.loadLibrary("native-lib");
     }
 
     @Override
@@ -64,8 +64,9 @@ public class MainActivity extends AppCompatActivity
             initListener();
 
             // initModel(getAssets());
-            testSpeedInit(getAssets());
-            testSpeedRun();
+            ModelWrapper.readFile(getAssets(), "nnmodel");
+            ModelWrapper.setOutput("prob");
+            ModelWrapper.compile(ModelWrapper.PREFERENCE_FAST_SINGLE_ANSWER);
         } else {
             // Do not have permissions, request them now
             EasyPermissions.requestPermissions(this, "Please grant",
@@ -101,7 +102,14 @@ public class MainActivity extends AppCompatActivity
 
                 float[] inputData = getInputData(selectedImage);
 
-                int predictNumber = predict(inputData);
+                float[] result = ModelWrapper.predict(inputData);
+
+                for (int i = 0; i < result.length; i++) {
+                    LogUtils.d(TAG, "onActivityResult: " + result[i]);
+                }
+
+                int predictNumber = getMaxIndex(result);
+
                 textView.setText(getResources().getString(R.string.predict_text, predictNumber));
 
             } catch (Exception e) {
@@ -142,11 +150,26 @@ public class MainActivity extends AppCompatActivity
         return _mat;
     }
 
+    private int getMaxIndex(float[] arr) {
+        if (arr.length == 0) {
+            return -1;
+        }
+        float max = arr[0];
+        int maxIndex = 0;
+        for (int i = 1; i < arr.length; i++) {
+            if (arr[i] > max) {
+                max = arr[i];
+                maxIndex = i;
+            }
+        }
+
+        return maxIndex;
+    }
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        clearModel();
+        ModelWrapper.clear();
     }
 
     @Override
@@ -167,9 +190,4 @@ public class MainActivity extends AppCompatActivity
         finish();
     }
 
-    public native void initModel(AssetManager assetManager);
-    public native int predict(float[] data);
-    public native int clearModel();
-    public native void testSpeedInit(AssetManager assetManager);
-    public native void testSpeedRun();
 }

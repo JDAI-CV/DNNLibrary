@@ -17,6 +17,7 @@
 #include <cassert>
 #include <sstream>
 #include <cmath>
+#include <jni.h>
 #include "Model.h"
 
 class ModelBuilder {
@@ -121,6 +122,7 @@ public:
     ModelBuilder& readFromFile(std::string filename);
     uint32_t getBlobIndex(std::string blobName);
     std::vector<uint32_t> getBlobDim(std::string blobName);
+    std::vector<uint32_t> getBlobDim(uint32_t index);
     uint32_t addInput(uint32_t height, uint32_t width, uint32_t depth);
     uint32_t addDepthWiseConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
                               uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
