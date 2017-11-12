@@ -39,6 +39,121 @@ ModelBuilder builder;
 extern "C"
 JNIEXPORT void
 JNICALL
+Java_me_daquexian_nnapiexample_MainActivity_testSpeedInit(
+        JNIEnv *env,
+        jobject /* this */,
+        jobject javaAssetManager) {
+
+    AAssetManager *mgrr = AAssetManager_fromJava(env, javaAssetManager);
+    if (builder.init(mgrr) != ANEURALNETWORKS_NO_ERROR) {
+        throwException(env, "Create model error");
+    }
+
+    // uint32_t input = builder.addInput(224, 224, 20);
+
+    /*
+    float weight[5 * 5 * 20];
+    for (auto i = 0; i < 5 * 5 * 20; i++) {
+        weight[i] = 10.f * i / (5 * 5 * 20) - 5.f;
+    }
+    uint32_t weightInd = builder.addWeightOrBiasFromBuffer(weight, vector<uint32_t>{1, 5, 5, 20});
+    float bias[20];
+    for (auto i = 0; i < 20; i++) {
+        bias[i] = i;
+    }
+    uint32_t biasInd = builder.addWeightOrBiasFromBuffer(bias, vector<uint32_t>{20});
+     */
+
+    builder.readFromFile("resnet18");
+
+    // builder.addIndexIntoOutput(builder.getBlobIndex("res3a_branch1"));
+    // builder.addIndexIntoOutput(builder.getBlobIndex("prob"));
+    builder.addIndexIntoOutput(builder.getBlobIndex("fc1000"));
+    builder.addIndexIntoOutput(builder.getBlobIndex("prob"));
+
+    // uint32_t dw = builder.addDepthWiseConv(input, 1, 1, 0, 0, 0, 0, 5, 5,
+                                           // ModelBuilder::ACTIVATION_NONE, 20, 1, weightInd, biasInd);
+
+    /* uint32_t input = builder.addInput(2, 2, 2);
+    float t[2]{1.f, 2.f};
+    uint32_t tensorInd = builder.addWeightOrBiasFromBuffer(t, vector<uint32_t>{2});
+    uint32_t add = builder.addAddTensor(input, tensorInd);
+    builder.addIndexIntoOutput(add);*/
+    // uint32_t fc = builder.addFC(input, 10, ModelBuilder::ACTIVATION_NONE, weightInd, biasInd);
+    // uint32_t softmax1 = builder.addSoftMax(fc, 1.f);
+    // uint32_t softmax2 = builder.addSoftMax(softmax1, 1.f);
+
+    // builder.addIndexIntoOutput(fc);
+
+    // builder.readFromFile("testspeedmodel");
+    // builder.addIndexIntoOutput(builder.getBlobIndex("pool2"));
+
+    // builder.addIndexIntoOutput(builder.getBlobIndex("conv1"));
+
+    int ret;
+    if ((ret = builder.compile(ModelBuilder::PREFERENCE_SUSTAINED_SPEED)) !=
+        ANEURALNETWORKS_NO_ERROR) {
+        throwException(env, "Create model error, code: " + to_string(ret));
+    }
+}
+
+extern "C"
+JNIEXPORT void
+JNICALL
+Java_me_daquexian_nnapiexample_MainActivity_testSpeedRun(
+        JNIEnv *env, jobject /* this */ ){
+
+    Model model;
+    builder.prepareForExecution(model);
+
+    // LOGD("%d", model.execution == nullptr);
+
+    float data[224 * 224 * 3];
+    for (auto i = 0; i < 224 * 224 * 3; i++) {
+        data[i] = 0.5;
+    }
+
+    builder.setInputBuffer(model, builder.getInputIndexes()[0], data, sizeof(data));
+
+    float fc1000[1000];
+    builder.setOutputBuffer(model, builder.getOutputIndexes()[0], fc1000, sizeof(fc1000));
+    float prob[1000];
+    builder.setOutputBuffer(model, builder.getOutputIndexes()[1], prob, sizeof(prob));
+    // float out[28][28][128];
+    // builder.setOutputBuffer(model, builder.getOutputIndexes()[0], out, sizeof(out));
+    // float prob[1000];
+    // builder.setOutputBuffer(model, builder.getOutputIndexes()[0], prob, sizeof(prob));
+    // builder.setOutputBuffer(model, builder.getOutputIndexes()[0], fc, sizeof(fc));
+    // LOGD("%d", model.execution == nullptr);
+    auto begin = clock();
+    model.predict();
+    auto end = clock();
+    LOGD("time: %f", 1.f * (end - begin) / CLOCKS_PER_SEC);
+
+    LOGD("max: %d, %f", getMaxIndex(fc1000, LENGTH(fc1000)), fc1000[getMaxIndex(fc1000, LENGTH(fc1000))]);
+    LOGD("max: %d, %f", getMaxIndex(prob, LENGTH(prob)), prob[getMaxIndex(prob, LENGTH(prob))]);
+
+    for (int i = 0; i < 1000; i++) {
+        LOGD("fc1000: %f", fc1000[i]);
+    }
+
+    for (int i = 0; i < 1000; i++) {
+        LOGD("prob: %f", prob[i]);
+    }
+
+    /*
+    for (int i = 0; i < 64; i++) {
+        LOGD("conv1: %f", conv1[0][0][i]);
+    }
+    for (int i = 0; i < 64; i++) {
+        LOGD("pool1: %f", out[0][0][i]);
+    }
+     */
+}
+
+extern "C"
+JNIEXPORT void
+JNICALL
 Java_me_daquexian_nnapiexample_MainActivity_initModel(
         JNIEnv *env,
         jobject /* this */,
@@ -54,6 +169,7 @@ Java_me_daquexian_nnapiexample_MainActivity_initModel(
 
     builder.addIndexIntoOutput(builder.getBlobIndex("ip2"));
     builder.addIndexIntoOutput(builder.getBlobIndex("prob"));
+
 
     int ret;
     if ((ret = builder.compile(ModelBuilder::PREFERENCE_SUSTAINED_SPEED)) !=

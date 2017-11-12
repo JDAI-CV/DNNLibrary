@@ -63,7 +63,9 @@ public class MainActivity extends AppCompatActivity
         if (EasyPermissions.hasPermissions(this, perms)) {
             initListener();
 
-            initModel(getAssets());
+            // initModel(getAssets());
+            testSpeedInit(getAssets());
+            testSpeedRun();
         } else {
             // Do not have permissions, request them now
             EasyPermissions.requestPermissions(this, "Please grant",
@@ -168,4 +170,6 @@ public class MainActivity extends AppCompatActivity
     public native void initModel(AssetManager assetManager);
     public native int predict(float[] data);
     public native int clearModel();
+    public native void testSpeedInit(AssetManager assetManager);
+    public native void testSpeedRun();
 }
