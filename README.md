@@ -20,6 +20,12 @@ This screenshot is from `LeNet` branch, which uses camera.
 
 ## Introduction
 
+Android 8.1 introduces NNAPI. From my experient it is very efficient on my Pixel. For example, it takes [caffe-android-lib](https://github.com/sh1r0/caffe-android-lib) an average time of 43.42ms to do a convolution with 20 5\*5 filters on 224\*224 image, but it only takes 15.45ms for NNAPI -- about 1/3 of caffe-android-lib.
+
+What's more, we can believe there is optimization for [depthwise convolution](https://arxiv.org/abs/1704.04861) in NNAPI. It takes caffe-android-lib and NNAPI 82.32ms and 16.93ms respectively to do 5 * 5 depthwise conv on 224 \* 224 \* 20 input.
+
+However, NNAPI is not friendly to normal Android developers. It is not designed to be used by normal developers directly. So I wrap it into a library.
+
 With DNNLibrary it's extremely easy to deploy your caffe model on Android 8.1+ phone. Here is my code to deploy the ResNet-18 on phone:
 
 ```
@@ -32,7 +38,7 @@ float[] result = ModelWrapper.predict(inputData);
 
 Only four lines! And the model file is got from my [convert tool](https://github.com/daquexian/DNN_convert_tool) from pretrained caffemodel.
 
-If you use the "raw" NNAPI, the code will increase dramatically. Setting up a LeNet need 200+ lines. (You may want to check out the first commit of this repo)
+If you use the "raw" NNAPI, the code will increase dramatically. Setting up a LeNet needs 200+ lines. (For the 200+ lines LeNet you can check out the second commit of this repo)
 
 ## Preparation
 
