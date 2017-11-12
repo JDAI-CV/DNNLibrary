@@ -6,6 +6,7 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -19,10 +20,15 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 
 import me.daquexian.dnnlibrary.ModelWrapper;
@@ -34,7 +40,6 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("unused")
     private static final String TAG = "NNAPI Example";
     private static final int PICK_IMAGE = 123;
-    private static final int INPUT_LENGTH = 28;
 
     String[] perms = {Manifest.permission.READ_EXTERNAL_STORAGE};
 
@@ -42,6 +47,7 @@ public class MainActivity extends AppCompatActivity
     private Button button;
     private ImageView imageView;
     private Bitmap selectedImage;
+    private List<String> synsetWords = new ArrayList<>();
 
     static {
         OpenCVLoader.initDebug();
@@ -60,11 +66,24 @@ public class MainActivity extends AppCompatActivity
         button.setText(R.string.button_text);
         imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    getAssets().open("synset_words.txt")
+            ));
+            while (true) {
+                String line = reader.readLine();
+                if (line == null) break;
+                synsetWords.add(line);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         if (EasyPermissions.hasPermissions(this, perms)) {
             initListener();
 
-            // initModel(getAssets());
-            ModelWrapper.readFile(getAssets(), "nnmodel");
+            ModelWrapper.readFile(getAssets(), "resnet18");
             ModelWrapper.setOutput("prob");
             ModelWrapper.compile(ModelWrapper.PREFERENCE_FAST_SINGLE_ANSWER);
         } else {
@@ -100,17 +119,15 @@ public class MainActivity extends AppCompatActivity
 
                 imageView.setImageBitmap(selectedImage);
 
-                float[] inputData = getInputData(selectedImage);
+                float[] inputData = getInputDataImageNet(selectedImage);
 
                 float[] result = ModelWrapper.predict(inputData);
 
-                for (int i = 0; i < result.length; i++) {
-                    LogUtils.d(TAG, "onActivityResult: " + result[i]);
-                }
-
                 int predictNumber = getMaxIndex(result);
 
-                textView.setText(getResources().getString(R.string.predict_text, predictNumber));
+                textView.setText(getResources().getString(
+                        R.string.predict_text, synsetWords.get(predictNumber)
+                ));
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -119,7 +136,28 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private float[] getInputData(Bitmap bitmap) {
+    private float[] getInputDataImageNet(Bitmap bitmap) {
+        final int INPUT_LENGTH = 224;
+
+        Mat imageMat = new Mat();
+
+        Utils.bitmapToMat(bitmap, imageMat);
+
+        Imgproc.cvtColor(imageMat, imageMat, Imgproc.COLOR_RGBA2BGR);
+        imageMat = centerCropAndScale(imageMat, INPUT_LENGTH);
+        Core.subtract(imageMat, new Scalar(104, 117, 123), imageMat);
+        imageMat.convertTo(imageMat, CvType.CV_32FC3);
+
+        float[] inputData = new float[imageMat.width() * imageMat.height() * imageMat.channels()];
+
+        imageMat.get(0, 0, inputData);
+
+        return inputData;
+    }
+
+    private float[] getInputDataMNIST(Bitmap bitmap) {
+        final int INPUT_LENGTH = 28;
+
         Mat imageMat = new Mat();
         Mat inputMat = new Mat();
 
