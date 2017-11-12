@@ -867,6 +867,10 @@ vector<uint32_t> ModelBuilder::getBlobDim(std::string blobName) {
     return dimensMap[getBlobIndex(blobName)];
 }
 
+std::vector<uint32_t> ModelBuilder::getBlobDim(uint32_t index) {
+    return dimensMap[index];
+}
+
 uint32_t product(const vector<uint32_t> &v) {
     return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, multiplies<uint32_t>()));
 }
