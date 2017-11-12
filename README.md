@@ -40,6 +40,10 @@ Only four lines! And the model file is got from my [convert tool](https://github
 
 If you use the "raw" NNAPI, the code will increase dramatically. Setting up a LeNet needs 200+ lines. (For the 200+ lines LeNet you can check out the second commit of this repo)
 
+## Usage
+
+This library uses beta version of NDK which is not supported by jCenter/JitPack now, so I can't publish this library until they support NDK r16. Please download [dnnlibrary-release.aar](https://github.com/daquexian/DNNLibrary/raw/ResNet-18/dnnlibrary-release.aar) in this repo and [import it in your project](https://developer.android.com/studio/projects/android-library.html#AddDependency).
+
 ## Preparation
 
 Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. The [beta version of NDK](https://developer.android.com/ndk/downloads/index.html#beta-downloads) is necessary for NNAPI. If you want to compile the demo please use Android Studio 3.0+.
