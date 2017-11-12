@@ -1,40 +1,27 @@
-# NNAPI Example
+# DNNLibrary
 
 *Run neural network on your Android phone using the new NNAPI !*
 
 Android 8.1 introduces Neural Networks API (NNAPI). Though it is in beta, it's very exciting to run a model in the "native" way supported by Android System. :)
 
-This project is a simple demo of NNAPI. It uses extracted weights of LeNet and recongnize a handwritten number. I extracted the pretrained weights using pycaffe and then changed the data layout according to the [document](https://developer.android.com/ndk/reference/group___neural_networks.html#gab95e96267e0f955086b87a743dad44ca).
+DNNLirary is a wrapper of NNAPI. It lets you easily make the use of the new NNAPI introduced in Android 8.1. You can convert your caffemodel into `daq` format by the convert tool and run the model directly. 
 
-![Screenshot](screenshot.png)
+The demo in this repo uses extracted weights of ResNet-18 to recongnize images(ResNet-18 branch), and also uses extracted weights of LeNet and recongnize a handwritten number(LeNet branch).
+
+## Screenshot
+
+This screenshot is from `ResNet-18` branch, which lets user pick an image instead of using camera.
+
+![Screenshot1](screenshot_image_resnet.png)
+
+This screenshot is from `LeNet` branch, which uses camera.
+
+![Screenshot2](screenshot_camera_mnist.png)
+
+## Introduction
+
+
 
 ## Preparation
 
-Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator.
-
-### Workaround for UnsatisfiedLinkError
-
-You will get a `UnsatisfiedLinkError` about `ANeuralNetworksModel_identifyInputsAndOutputs` when you compile the project. It is a known bug. Please use the following workaround from [this](https://stackoverflow.com/questions/46987602/unsatisfiedlinkerror-on-aneuralnetworksmodel-identifyinputsandoutputs-in-nnapi-o):
-
-In your NDK's android/NeuralNetworks.h, replace the declaration of `ANeuralNetworksModel_identifyInputsAndOutputs` by
-
-```
-__attribute__((weak))
-extern "C" int ANeuralNetworksModel_setInputsAndOutputs(
-        ANeuralNetworksModel* model,
-        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
-        const uint32_t* outputs);
-
-extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
-        ANeuralNetworksModel* model,
-        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
-        const uint32_t* outputs) {
-
-    return ANeuralNetworksModel_setInputsAndOutputs(
-            model, inputCount, inputs, outputCount, outputs);
-}
-```
-
-Please check out the stackoverflow post above for more details.
-
-
+Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. The beta version of NDK is necessary for NNAPI. If you want to compile the demo please use Android Studio 3.0+.
