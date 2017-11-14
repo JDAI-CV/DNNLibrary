@@ -252,10 +252,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                     }
                     case MF_ARRAY_OP: {
                         uint32_t arrayLength = *intPt++;
-                        // LOGD("------------------- %d", arrayLength);
-                        for (uint32_t i = 0; i < arrayLength; i++) {
-                            // LOGD("add: %f", *reinterpret_cast<float*>(intPt + i));
-                        }
                         uint32_t input2 = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{arrayLength});
                         intPt += arrayLength;
                         index = addAddTensor(input1, input2);
@@ -282,10 +278,6 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                     }
                     case MF_ARRAY_OP: {
                         uint32_t arrayLength = *intPt++;
-                        // LOGD("------------------- %d", arrayLength);
-                        for (uint32_t i = 0; i < arrayLength; i++) {
-                            // LOGD("mul: %f", *reinterpret_cast<float*>(intPt + i));
-                        }
                         uint32_t input2 = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{arrayLength});
                         intPt += arrayLength;
                         index = addMulTensor(input1, input2);
@@ -422,33 +414,6 @@ ModelBuilder::addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONV_2D, 10, &inputOperandsArr[0], 1,
                                       &outputOperandIndex);
     return outputOperandIndex;
-}
-
-uint32_t
-ModelBuilder::addConv(std::string name, uint32_t input, uint32_t strideX, uint32_t strideY,
-                      uint32_t paddingW, uint32_t paddingH, uint32_t height, uint32_t width,
-                      uint32_t activation, uint32_t outputDepth) {
-    // NHWC
-    vector<uint32_t> inputDimen = dimensMap[input];
-
-    uint32_t weightOperandIndex = addConvWeight(name, height, width, inputDimen[3], outputDepth);
-    uint32_t biasOperandIndex = addBias(name, outputDepth);
-
-    return addConv(input, strideX, strideY, paddingW, paddingW, paddingH, paddingH, height, width,
-                   activation, outputDepth, weightOperandIndex, biasOperandIndex);
-
-}
-
-uint32_t ModelBuilder::addFC(std::string name, uint32_t input, uint32_t outputNum,
-                             uint32_t activation) {
-    // NHWC
-    vector<uint32_t> inputDimen = dimensMap[input];
-
-    uint32_t weightOperandIndex = addFcWeight(name, product(inputDimen),
-                                              outputNum);
-    uint32_t biasOperandIndex = addBias(name, outputNum);
-
-    return addFC(input, outputNum, activation, weightOperandIndex, biasOperandIndex);
 }
 
 uint32_t ModelBuilder::addCaffePool(uint32_t input, uint32_t strideX, uint32_t strideY,
@@ -831,20 +796,6 @@ ModelBuilder::addFC(uint32_t input, uint32_t outputNum, uint32_t activation, uin
 
 uint32_t ModelBuilder::getBlobIndex(std::string blobName) {
     return blobNameToIndex[blobName];
-}
-
-uint32_t ModelBuilder::addMulScalarInplace(uint32_t input, float scalar) {
-    uint32_t scalarIndex = addFloat32Operand(scalar);
-    array<uint32_t, 3> inputOperands{{input, scalarIndex, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_MUL, 3, &inputOperands[0], 1, &input);
-    return input;
-}
-
-uint32_t ModelBuilder::addAddScalarInplace(uint32_t input, float scalar) {
-    uint32_t scalarIndex = addFloat32Operand(scalar);
-    array<uint32_t, 3> inputOperands{{input, scalarIndex, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_ADD, 3, &inputOperands[0], 1, &input);
-    return input;
 }
 
 uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
