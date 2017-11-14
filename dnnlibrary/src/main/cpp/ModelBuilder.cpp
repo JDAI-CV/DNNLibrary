@@ -303,6 +303,18 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 layerToBlob.push_back(index);
                 break;
             }
+            case MF_CONCAT: {
+                uint32_t inputNum = *intPt++;
+                vector<uint32_t> inputs;
+                for (uint32_t i = 0; i < inputNum; i++) {
+                    inputs.push_back(layerToBlob[*intPt++]);
+                }
+                uint32_t axis = *intPt++;
+                index = addConcat(inputs, axis);
+                layerToBlob.push_back(index);
+                while (*intPt++ != MF_TOP_NAME) ;
+                break;
+            }
             default:
                 throw "Unsupport layer";
         }
@@ -526,6 +538,39 @@ uint32_t ModelBuilder::addReLU(uint32_t input) {
 
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_RELU,
                                       1, &input, 1, &outputOperandIndex);
+    return outputOperandIndex;
+}
+
+uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) {
+    vector<vector<uint32_t>> dimens;
+    for (const auto &input : inputs) {
+        vector<uint32_t> &dimen = dimensMap[input];
+        if (dimens.size() > 0) {
+            for (size_t i = 0; i < dimens[0].size(); i++) {
+                if (i == axis) continue;
+                if (dimen[i] != dimens[0][i]) {
+                    throw "Wrong input for concat";
+                }
+            }
+        }
+        dimens.push_back(dimensMap[input]);
+    }
+
+    vector<uint32_t> outputDimen = dimens[0];
+    for (size_t i = 1; i < dimens.size(); i++) {
+        outputDimen[axis] += dimens[i][axis];
+    }
+
+    ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
+    uint32_t outputOperandIndex = addNewOperand(&type);
+
+    dimensMap[outputOperandIndex] = outputDimen;
+
+    vector<uint32_t> operationInputs = inputs;
+    operationInputs.push_back(axis);
+
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONCATENATION,
+                                      operationInputs.size(), &operationInputs[0], 1, &outputOperandIndex);
     return outputOperandIndex;
 }
 
