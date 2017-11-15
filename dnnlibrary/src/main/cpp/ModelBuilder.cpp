@@ -336,21 +336,23 @@ uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width, uint32_t depth)
 }
 
 uint32_t
-ModelBuilder::addDepthWiseConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
-                               uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
-                               uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
-                               uint32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex) {
+ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t strideY,
+                               int32_t paddingLeft,
+                               int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
+                               int32_t height, int32_t width, int32_t activation,
+                               int32_t outputDepth,
+                               int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex) {
 
     if (input >= nextIndex) return WRONG_INPUT;
 
-    uint32_t strideXOperandIndex = addUInt32Operand(strideX);
-    uint32_t strideYOperandIndex = addUInt32Operand(strideY);
-    uint32_t paddingLeftOperandIndex = addUInt32Operand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addUInt32Operand(paddingRight);
-    uint32_t paddingTopOperandIndex = addUInt32Operand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addUInt32Operand(paddingBottom);
-    uint32_t depthMultiplierOperandIndex = addUInt32Operand(depthMultiplier);
-    uint32_t activationOperandIndex = addUInt32Operand(activation);
+    uint32_t strideXOperandIndex = addInt32Operand(strideX);
+    uint32_t strideYOperandIndex = addInt32Operand(strideY);
+    uint32_t paddingLeftOperandIndex = addInt32Operand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addInt32Operand(paddingRight);
+    uint32_t paddingTopOperandIndex = addInt32Operand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addInt32Operand(paddingBottom);
+    uint32_t depthMultiplierOperandIndex = addInt32Operand(depthMultiplier);
+    uint32_t activationOperandIndex = addInt32Operand(activation);
 
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
@@ -378,19 +380,19 @@ ModelBuilder::addDepthWiseConv(uint32_t input, uint32_t strideX, uint32_t stride
 }
 
 uint32_t
-ModelBuilder::addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
-                      uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
-                      uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
+ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+                      int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
+                      int32_t height, int32_t width, int32_t activation, int32_t outputDepth,
                       uint32_t weightIndex, uint32_t biasIndex) {
     if (input >= nextIndex) return WRONG_INPUT;
 
-    uint32_t strideXOperandIndex = addUInt32Operand(strideX);
-    uint32_t strideYOperandIndex = addUInt32Operand(strideY);
-    uint32_t paddingLeftOperandIndex = addUInt32Operand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addUInt32Operand(paddingRight);
-    uint32_t paddingTopOperandIndex = addUInt32Operand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addUInt32Operand(paddingBottom);
-    uint32_t activationOperandIndex = addUInt32Operand(activation);
+    uint32_t strideXOperandIndex = addInt32Operand(strideX);
+    uint32_t strideYOperandIndex = addInt32Operand(strideY);
+    uint32_t paddingLeftOperandIndex = addInt32Operand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addInt32Operand(paddingRight);
+    uint32_t paddingTopOperandIndex = addInt32Operand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addInt32Operand(paddingBottom);
+    uint32_t activationOperandIndex = addInt32Operand(activation);
 
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
@@ -416,11 +418,11 @@ ModelBuilder::addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32
     return outputOperandIndex;
 }
 
-uint32_t ModelBuilder::addCaffePool(uint32_t input, uint32_t strideX, uint32_t strideY,
-                                    uint32_t paddingLeft, uint32_t paddingRight,
-                                    uint32_t paddingTop, uint32_t paddingBottom,
-                                    uint32_t height, uint32_t width,
-                                    uint32_t activation, uint32_t poolingType) {
+uint32_t ModelBuilder::addCaffePool(uint32_t input, int32_t strideX, int32_t strideY,
+                                    int32_t paddingLeft, int32_t paddingRight,
+                                    int32_t paddingTop, int32_t paddingBottom,
+                                    int32_t height, int32_t width,
+                                    int32_t activation, uint32_t poolingType) {
 
     if (input >= nextIndex) return WRONG_INPUT;
 
@@ -438,15 +440,15 @@ uint32_t ModelBuilder::addCaffePool(uint32_t input, uint32_t strideX, uint32_t s
         paddingRight += strideX - extraX;
     }
 
-    uint32_t widthOperandIndex = addUInt32Operand(width);
-    uint32_t heightOperandIndex = addUInt32Operand(height);
-    uint32_t strideXOperandIndex = addUInt32Operand(strideX);
-    uint32_t strideYOperandIndex = addUInt32Operand(strideY);
-    uint32_t paddingLeftOperandIndex = addUInt32Operand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addUInt32Operand(paddingRight);
-    uint32_t paddingTopOperandIndex = addUInt32Operand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addUInt32Operand(paddingBottom);
-    uint32_t activationOperandIndex = addUInt32Operand(activation);
+    uint32_t widthOperandIndex = addInt32Operand(width);
+    uint32_t heightOperandIndex = addInt32Operand(height);
+    uint32_t strideXOperandIndex = addInt32Operand(strideX);
+    uint32_t strideYOperandIndex = addInt32Operand(strideY);
+    uint32_t paddingLeftOperandIndex = addInt32Operand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addInt32Operand(paddingRight);
+    uint32_t paddingTopOperandIndex = addInt32Operand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addInt32Operand(paddingBottom);
+    uint32_t activationOperandIndex = addInt32Operand(activation);
 
     vector<uint32_t> outputDimen{1,
                                  (inputDimen[1] - height + paddingTop + paddingBottom) / strideY + 1,
@@ -526,13 +528,15 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
         outputDimen[axis] += dimens[i][axis];
     }
 
+    uint32_t axisOperandIndex = addInt32Operand(axis);
+
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
 
     dimensMap[outputOperandIndex] = outputDimen;
 
     vector<uint32_t> operationInputs = inputs;
-    operationInputs.push_back(axis);
+    operationInputs.push_back(axisOperandIndex);
 
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONCATENATION,
                                       operationInputs.size(), &operationInputs[0], 1, &outputOperandIndex);
@@ -552,7 +556,7 @@ ANeuralNetworksOperandType ModelBuilder::getFloat32OperandTypeWithDims(std::vect
 
 ANeuralNetworksOperandType ModelBuilder::getInt32OperandType() {
     ANeuralNetworksOperandType type;
-    type.type = ANEURALNETWORKS_TENSOR_INT32;
+    type.type = ANEURALNETWORKS_INT32;
     type.scale = 0.f;
     type.zeroPoint = 0;
     type.dimensionCount = 0;
@@ -563,7 +567,7 @@ ANeuralNetworksOperandType ModelBuilder::getInt32OperandType() {
 
 ANeuralNetworksOperandType ModelBuilder::getFloat32OperandType() {
     ANeuralNetworksOperandType type;
-    type.type = ANEURALNETWORKS_TENSOR_FLOAT32;
+    type.type = ANEURALNETWORKS_FLOAT32;
     type.scale = 0.f;
     type.zeroPoint = 0;
     type.dimensionCount = 0;
@@ -592,14 +596,14 @@ char* ModelBuilder::setOperandValueFromAssets(ANeuralNetworksModel *model, AAsse
     return buffer;
 }
 
-uint32_t ModelBuilder::addUInt32Operand(uint32_t value) {
-    if (uint32OperandMap.find(value) == uint32OperandMap.end()) {
+uint32_t ModelBuilder::addInt32Operand(int32_t value) {
+    if (int32OperandMap.find(value) == int32OperandMap.end()) {
         ANeuralNetworksOperandType type = getInt32OperandType();
         uint32_t index = addNewOperand(&type);
         ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
-        uint32OperandMap[value] = index;
+        int32OperandMap[value] = index;
     }
-    return uint32OperandMap[value];
+    return int32OperandMap[value];
 }
 
 uint32_t ModelBuilder::addFloat32Operand(float value) {
@@ -773,10 +777,10 @@ vector<uint32_t> ModelBuilder::getOutputIndexes() {
 }
 
 uint32_t
-ModelBuilder::addFC(uint32_t input, uint32_t outputNum, uint32_t activation, uint32_t weightIndex,
+ModelBuilder::addFC(uint32_t input, int32_t outputNum, int32_t activation, uint32_t weightIndex,
                     uint32_t biasIndex) {
 
-    uint32_t activationOperandIndex = addUInt32Operand(activation);
+    uint32_t activationOperandIndex = addInt32Operand(activation);
 
     vector<uint32_t> outputDimen{1, outputNum};
 
@@ -800,7 +804,8 @@ uint32_t ModelBuilder::getBlobIndex(std::string blobName) {
 
 uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
     uint32_t scalarIndex = addFloat32Operand(scalar);
-    array<uint32_t, 3> inputOperands{{input, scalarIndex, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    array<uint32_t, 3> inputOperands{{input, scalarIndex, addInt32Operand(
+            ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input]);
     uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
@@ -811,7 +816,7 @@ uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
 }
 
 uint32_t ModelBuilder::addAddTensor(uint32_t input1, uint32_t input2) {
-    array<uint32_t, 3> inputOperands{{input1, input2, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    array<uint32_t, 3> inputOperands{{input1, input2, addInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input1]);
     uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
@@ -823,7 +828,8 @@ uint32_t ModelBuilder::addAddTensor(uint32_t input1, uint32_t input2) {
 
 uint32_t ModelBuilder::addMulScalar(uint32_t input, float scalar) {
     uint32_t scalarIndex = addFloat32Operand(scalar);
-    array<uint32_t, 3> inputOperands{{input, scalarIndex, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    array<uint32_t, 3> inputOperands{{input, scalarIndex, addInt32Operand(
+            ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input]);
     uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
@@ -834,7 +840,7 @@ uint32_t ModelBuilder::addMulScalar(uint32_t input, float scalar) {
 }
 
 uint32_t ModelBuilder::addMulTensor(uint32_t input1, uint32_t input2) {
-    array<uint32_t, 3> inputOperands{{input1, input2, addUInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    array<uint32_t, 3> inputOperands{{input1, input2, addInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input1]);
     uint32_t outputOperandIndex = addNewOperand(&outputBlobType);

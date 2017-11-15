@@ -29,7 +29,7 @@ private:
     std::map<uint32_t, std::vector<uint32_t>> dimensMap;
     std::vector<uint32_t> inputIndexVector;
     std::vector<uint32_t> outputIndexVector;
-    std::map<uint32_t, uint32_t> uint32OperandMap;
+    std::map<int32_t , uint32_t> int32OperandMap;
     std::map<float, uint32_t> float32OperandMap;
 
     std::map<std::string, uint32_t> blobNameToIndex;
@@ -45,7 +45,7 @@ private:
 
     uint32_t addNewOperand(ANeuralNetworksOperandType *type);
 
-    uint32_t addUInt32Operand(uint32_t value);
+    uint32_t addInt32Operand(int32_t value);
     uint32_t addFloat32Operand(float value);
     uint32_t addInt32NullOperand();
     uint32_t addFloat32NullOperand();
@@ -73,8 +73,8 @@ public:
     static const int MAX_POOL = 0;
     static const int AVE_POOL = 1;
 
-    static const uint32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
-    static const uint32_t ACTIVATION_RELU = ANEURALNETWORKS_FUSED_RELU;
+    static const int32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
+    static const int32_t ACTIVATION_RELU = ANEURALNETWORKS_FUSED_RELU;
 
     static const uint32_t PREFERENCE_FAST_SINGLE_ANSWER = ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER;
     static const uint32_t PREFERENCE_SUSTAINED_SPEED = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
@@ -125,20 +125,21 @@ public:
     std::vector<uint32_t> getBlobDim(std::string blobName);
     std::vector<uint32_t> getBlobDim(uint32_t index);
     uint32_t addInput(uint32_t height, uint32_t width, uint32_t depth);
-    uint32_t addDepthWiseConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
-                              uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
-                              uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
-                              uint32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
-    uint32_t addConv(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
-                     uint32_t paddingRight, uint32_t paddingBottom, uint32_t paddingTop,
-                     uint32_t height, uint32_t width, uint32_t activation, uint32_t outputDepth,
+    uint32_t addDepthWiseConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+                              int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
+                              int32_t height, int32_t width, int32_t activation,
+                              int32_t outputDepth,
+                              int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
+    uint32_t addConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+                     int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
+                     int32_t height, int32_t width, int32_t activation, int32_t outputDepth,
                      uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
-    uint32_t addFC(uint32_t input, uint32_t outputNum, uint32_t activation,
+    uint32_t addFC(uint32_t input, int32_t outputNum, int32_t activation,
                    uint32_t weightIndex, uint32_t biasIndex);
-    uint32_t addCaffePool(uint32_t input, uint32_t strideX, uint32_t strideY, uint32_t paddingLeft,
-                          uint32_t paddingRight, uint32_t paddingTop, uint32_t paddingBottom,
-                          uint32_t height, uint32_t width, uint32_t activation,
+    uint32_t addCaffePool(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+                          int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
+                          int32_t height, int32_t width, int32_t activation,
                           uint32_t poolingType);
     uint32_t addSoftMax(uint32_t input, float beta);
     uint32_t addAddScalar(uint32_t input, float scalar);
