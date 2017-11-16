@@ -643,36 +643,6 @@ uint32_t ModelBuilder::addNewOperand(ANeuralNetworksOperandType *type) {
     return nextIndex++;
 }
 
-uint32_t ModelBuilder::addConvWeight(std::string name, uint32_t height, uint32_t width,
-                                     uint32_t inputDepth,
-                                     uint32_t outputDepth) {
-    vector<uint32_t> weightDimen{outputDepth, height, width, inputDepth};
-    return addWeight(name, weightDimen);
-}
-
-uint32_t ModelBuilder::addFcWeight(std::string name, uint32_t inputSize, uint32_t outputNum) {
-    vector<uint32_t> weightDimen{outputNum, inputSize};
-    return addWeight(name, weightDimen);
-}
-
-uint32_t ModelBuilder::addBias(std::string name, uint32_t outputDepth) {
-    vector<uint32_t> biasDimen{outputDepth};
-    ANeuralNetworksOperandType biasType = getFloat32OperandTypeWithDims(biasDimen);
-    uint32_t biasIndex = addNewOperand(&biasType);
-    bufferPointers.push_back(setOperandValueFromAssets(
-            model, mgr, biasIndex, "weights_and_biases/" + name + "_biases"));
-    return biasIndex;
-}
-
-uint32_t ModelBuilder::addWeight(std::string name, std::vector<uint32_t> dimen) {
-    ANeuralNetworksOperandType weightType = getFloat32OperandTypeWithDims(dimen);
-    uint32_t weightIndex = addNewOperand(&weightType);
-    bufferPointers.push_back(setOperandValueFromAssets(
-            model, mgr, weightIndex, "weights_and_biases/" + name + "_weights"));
-
-    return weightIndex;
-}
-
 uint32_t ModelBuilder::addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen) {
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t index = addNewOperand(&type);

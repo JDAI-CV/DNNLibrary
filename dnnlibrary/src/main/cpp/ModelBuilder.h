@@ -52,15 +52,6 @@ private:
     uint32_t addFloat32NullOperandWithDims(std::vector<uint32_t> &dims);
     uint32_t addFloat32ZeroOperandWithDims(std::vector<uint32_t> &dims);
 
-    uint32_t addConvWeight(std::string name, uint32_t height, uint32_t width, uint32_t inputDepth,
-                           uint32_t outputDepth);
-
-    uint32_t addFcWeight(std::string name, uint32_t inputSize, uint32_t outputNum);
-
-    uint32_t addWeight(std::string name, std::vector<uint32_t> dimen);
-
-    uint32_t addBias(std::string name, uint32_t outputDepth);
-
     ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims);
 
     ANeuralNetworksOperandType getInt32OperandType();
