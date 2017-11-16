@@ -340,7 +340,7 @@ ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t strideY,
                                int32_t paddingLeft,
                                int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                                int32_t height, int32_t width, int32_t activation,
-                               int32_t outputDepth,
+                               uint32_t outputDepth,
                                int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex) {
 
     if (input >= nextIndex) return WRONG_INPUT;
@@ -382,7 +382,7 @@ ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t strideY,
 uint32_t
 ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                       int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
-                      int32_t height, int32_t width, int32_t activation, int32_t outputDepth,
+                      int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
                       uint32_t weightIndex, uint32_t biasIndex) {
     if (input >= nextIndex) return WRONG_INPUT;
 
@@ -777,7 +777,7 @@ vector<uint32_t> ModelBuilder::getOutputIndexes() {
 }
 
 uint32_t
-ModelBuilder::addFC(uint32_t input, int32_t outputNum, int32_t activation, uint32_t weightIndex,
+ModelBuilder::addFC(uint32_t input, uint32_t outputNum, int32_t activation, uint32_t weightIndex,
                     uint32_t biasIndex) {
 
     uint32_t activationOperandIndex = addInt32Operand(activation);

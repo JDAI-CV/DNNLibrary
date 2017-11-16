@@ -128,14 +128,14 @@ public:
     uint32_t addDepthWiseConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                               int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                               int32_t height, int32_t width, int32_t activation,
-                              int32_t outputDepth,
+                              uint32_t outputDepth,
                               int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                      int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
-                     int32_t height, int32_t width, int32_t activation, int32_t outputDepth,
+                     int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
                      uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
-    uint32_t addFC(uint32_t input, int32_t outputNum, int32_t activation,
+    uint32_t addFC(uint32_t input, uint32_t outputNum, int32_t activation,
                    uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addCaffePool(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                           int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
