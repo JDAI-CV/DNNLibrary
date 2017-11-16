@@ -19,6 +19,8 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
     size_t size = static_cast<size_t>(AAsset_getLength(asset));
     char* buffer = new char[size];
+    bufferPointers.push_back(static_cast<void *>(buffer));
+
     uint32_t *intPt = reinterpret_cast<uint32_t *>(buffer);
     AAsset_read(asset, buffer, static_cast<size_t>(size));
 
@@ -591,6 +593,7 @@ char* ModelBuilder::setOperandValueFromAssets(ANeuralNetworksModel *model, AAsse
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
     size_t size = static_cast<size_t>(AAsset_getLength(asset));
     char* buffer = new char[size];
+    bufferPointers.push_back(static_cast<void *>(buffer));
     AAsset_read(asset, buffer, static_cast<size_t>(size));
     ANeuralNetworksModel_setOperandValue(model, index, buffer, size);
     return buffer;
@@ -829,6 +832,7 @@ uint32_t ModelBuilder::addFloat32NullOperandWithDims(std::vector<uint32_t> &dims
 
 uint32_t ModelBuilder::addFloat32ZeroOperandWithDims(std::vector<uint32_t> &dims) {
     float *zeros = new float[product(dims)];
+    bufferPointers.push_back(static_cast<void *>(zeros));
     for (size_t i = 0; i < product(dims); i++) {
         zeros[i] = 0;
     }

@@ -24,7 +24,7 @@ class ModelBuilder {
 private:
     ANeuralNetworksModel* model = nullptr;
     AAssetManager *mgr;
-    std::vector<char*> bufferPointers;
+    std::vector<void*> bufferPointers;
     // NHWC
     std::map<uint32_t, std::vector<uint32_t>> dimensMap;
     std::vector<uint32_t> inputIndexVector;
