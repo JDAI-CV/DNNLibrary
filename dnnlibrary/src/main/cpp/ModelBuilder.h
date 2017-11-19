@@ -5,6 +5,13 @@
 #ifndef NNAPIEXAMPLE_MODELBUILDER_H
 #define NNAPIEXAMPLE_MODELBUILDER_H
 
+#define  LOG_TAG    "NNAPI Demo"
+
+#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
+#define  LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
+#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
+#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
+
 #include <android/asset_manager.h>
 #include <android/NeuralNetworks.h>
 #include <android/log.h>
@@ -138,7 +145,7 @@ public:
     uint32_t addMulScalar(uint32_t input, float scalar);
     uint32_t addMulTensor(uint32_t input1, uint32_t input2);
     uint32_t addReLU(uint32_t input);
-    uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
+    uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis, uint32_t activation);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);

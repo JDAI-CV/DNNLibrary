@@ -6,13 +6,6 @@
 
 using namespace std;
 
-#define  LOG_TAG    "NNAPI Demo"
-
-#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-#define  LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
-#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
-#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
 
 ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     vector<uint32_t> layerToBlob;
@@ -304,7 +297,8 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                     inputs.push_back(layerToBlob[*intPt++]);
                 }
                 uint32_t axis = *intPt++;
-                index = addConcat(inputs, axis);
+                uint32_t activation = *intPt++;
+                index = addConcat(inputs, axis, activation);
                 layerToBlob.push_back(index);
                 while (*intPt++ != MF_TOP_NAME) ;
                 break;
@@ -510,7 +504,8 @@ uint32_t ModelBuilder::addReLU(uint32_t input) {
     return outputOperandIndex;
 }
 
-uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) {
+uint32_t
+ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis, uint32_t activation) {
     vector<vector<uint32_t>> dimens;
     for (const auto &input : inputs) {
         vector<uint32_t> &dimen = dimensMap[input];
@@ -531,6 +526,7 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
     }
 
     uint32_t axisOperandIndex = addInt32Operand(axis);
+    uint32_t activationOperandIndex = addInt32Operand(activation);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
@@ -539,6 +535,7 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
 
     vector<uint32_t> operationInputs = inputs;
     operationInputs.push_back(axisOperandIndex);
+    operationInputs.push_back(activationOperandIndex);
 
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONCATENATION,
                                       operationInputs.size(), &operationInputs[0], 1, &outputOperandIndex);
