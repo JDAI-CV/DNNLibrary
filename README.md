@@ -8,7 +8,7 @@ DNNLirary is a wrapper of NNAPI. It lets you easily make the use of the new NNAP
 
 The demo runs `ResNet-18`, `Squeezenet` and `LeNet` in corresponding branch.
 
-For how to use this lib directly in your project, check out [Usage](#Usage)
+For how to use this lib directly in your project, check out [Usage](#usage) (it's at the bottom)
 
 ## Screenshot
 
