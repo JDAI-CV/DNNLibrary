@@ -6,7 +6,7 @@ Android 8.1 introduces Neural Networks API (NNAPI). Though it is in beta, it's v
 
 DNNLirary is a wrapper of NNAPI. It lets you easily make the use of the new NNAPI introduced in Android 8.1. You can convert your caffemodel into `daq` format by the [convert tool](https://github.com/daquexian/DNN_convert_tool) and run the model directly. 
 
-The demo runs `ResNet-18`, `Squeezenet` and `LeNet` in corresponding branch.
+The demo runs `ResNet-18`, `Squeezenet` and `LeNet` in corresponding branch(Each branch has its corresponding model file, the code of `DNNLibrary` is same in each branch).
 
 For how to use this lib directly in your project, check out [Usage](#usage) (it's at the bottom)
 
