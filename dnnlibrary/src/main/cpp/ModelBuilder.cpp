@@ -535,7 +535,8 @@ ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis, uint32_t 
 
     vector<uint32_t> operationInputs = inputs;
     operationInputs.push_back(axisOperandIndex);
-    operationInputs.push_back(activationOperandIndex);
+    // This undocumented input are is in MR1, it seems not needed anymore in MR2
+    // operationInputs.push_back(activationOperandIndex);
 
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONCATENATION,
                                       operationInputs.size(), &operationInputs[0], 1, &outputOperandIndex);
