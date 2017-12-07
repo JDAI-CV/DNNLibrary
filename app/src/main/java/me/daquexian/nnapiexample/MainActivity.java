@@ -2,11 +2,9 @@ package me.daquexian.nnapiexample;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -119,7 +117,7 @@ public class MainActivity extends AppCompatActivity
 
                 imageView.setImageBitmap(selectedImage);
 
-                float[] inputData = getInputDataImageNet(selectedImage);
+                float[] inputData = getInputDataResNet18(selectedImage);
 
                 float[] result = ModelWrapper.predict(inputData);
 
@@ -136,15 +134,15 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    private float[] getInputDataImageNet(Bitmap bitmap) {
-        final int INPUT_LENGTH = 224;
+    private float[] getInputDataResNet18(Bitmap bitmap) {
+        final int INPUT_SIDE_LENGTH = 224;
 
         Mat imageMat = new Mat();
 
         Utils.bitmapToMat(bitmap, imageMat);
 
         Imgproc.cvtColor(imageMat, imageMat, Imgproc.COLOR_RGBA2BGR);
-        imageMat = centerCropAndScale(imageMat, INPUT_LENGTH);
+        imageMat = centerCropAndScale(imageMat, INPUT_SIDE_LENGTH);
         Core.subtract(imageMat, new Scalar(104, 117, 123), imageMat);
         imageMat.convertTo(imageMat, CvType.CV_32FC3);
 
@@ -155,7 +153,7 @@ public class MainActivity extends AppCompatActivity
         return inputData;
     }
 
-    private float[] getInputDataMNIST(Bitmap bitmap) {
+    private float[] getInputDataLeNet(Bitmap bitmap) {
         final int INPUT_LENGTH = 28;
 
         Mat imageMat = new Mat();
@@ -176,14 +174,14 @@ public class MainActivity extends AppCompatActivity
         return inputData;
     }
 
-    private Mat centerCropAndScale(Mat mat, int length) {
+    private Mat centerCropAndScale(Mat mat, int sideLength) {
         Mat _mat = mat.clone();
         if (_mat.height() > _mat.width()) {
             _mat = new Mat(_mat, new Rect(0, (_mat.height() - _mat.width()) / 2, _mat.width(), _mat.width()));
-            Imgproc.resize(_mat, _mat, new Size(length, length));
+            Imgproc.resize(_mat, _mat, new Size(sideLength, sideLength));
         } else {
             _mat = new Mat(_mat, new Rect((_mat.width() - _mat.height()) / 2, 0, _mat.height(), _mat.height()));
-            Imgproc.resize(_mat, _mat, new Size(length, length));
+            Imgproc.resize(_mat, _mat, new Size(sideLength, sideLength));
         }
         return _mat;
     }
