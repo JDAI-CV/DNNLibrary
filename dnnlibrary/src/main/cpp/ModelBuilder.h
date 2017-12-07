@@ -159,19 +159,5 @@ public:
 };
 
 
-
-
-// TODO: Remove when O MR1 Beta 2 is available.
-__attribute__((weak))
-extern "C" int ANeuralNetworksModel_setInputsAndOutputs(
-        ANeuralNetworksModel* model,
-        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
-        const uint32_t* outputs);
-
-extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
-        ANeuralNetworksModel* model,
-        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
-        const uint32_t* outputs);
-
 uint32_t product(const std::vector<uint32_t> &v);
 #endif //NNAPIEXAMPLE_MODELBUILDER_H

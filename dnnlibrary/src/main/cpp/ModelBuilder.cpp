@@ -847,13 +847,3 @@ std::vector<uint32_t> ModelBuilder::getBlobDim(uint32_t index) {
 uint32_t product(const vector<uint32_t> &v) {
     return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, multiplies<uint32_t>()));
 }
-
-extern "C" int ANeuralNetworksModel_identifyInputsAndOutputs(
-        ANeuralNetworksModel* model,
-        uint32_t inputCount, const uint32_t* inputs, uint32_t outputCount,
-        const uint32_t* outputs) {
-
-    return ANeuralNetworksModel_setInputsAndOutputs(
-            model, inputCount, inputs, outputCount, outputs);
-}
-
