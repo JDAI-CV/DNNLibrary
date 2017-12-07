@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity
         if (EasyPermissions.hasPermissions(this, perms)) {
             initListener();
 
-            ModelWrapper.readFile(getAssets(), "resnet18");
+            ModelWrapper.readFile(getAssets(), "squeezenet.daq");
             ModelWrapper.setOutput("prob");
             ModelWrapper.compile(ModelWrapper.PREFERENCE_FAST_SINGLE_ANSWER);
         } else {
@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity
 
                 imageView.setImageBitmap(selectedImage);
 
-                float[] inputData = getInputDataResNet18(selectedImage);
+                float[] inputData = getInputDataSqueezeNet(selectedImage);
 
                 float[] result = ModelWrapper.predict(inputData);
 
@@ -132,6 +132,25 @@ public class MainActivity extends AppCompatActivity
                 textView.setText(e.getMessage());
             }
         }
+    }
+
+    private float[] getInputDataSqueezeNet(Bitmap bitmap) {
+        final int INPUT_SIDE_LENGTH = 227;
+
+        Mat imageMat = new Mat();
+
+        Utils.bitmapToMat(bitmap, imageMat);
+
+        Imgproc.cvtColor(imageMat, imageMat, Imgproc.COLOR_RGBA2BGR);
+        imageMat = centerCropAndScale(imageMat, INPUT_SIDE_LENGTH);
+        Core.subtract(imageMat, new Scalar(104, 117, 123), imageMat);
+        imageMat.convertTo(imageMat, CvType.CV_32FC3);
+
+        float[] inputData = new float[imageMat.width() * imageMat.height() * imageMat.channels()];
+
+        imageMat.get(0, 0, inputData);
+
+        return inputData;
     }
 
     private float[] getInputDataResNet18(Bitmap bitmap) {
