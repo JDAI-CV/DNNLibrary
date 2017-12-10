@@ -145,7 +145,7 @@ public:
     uint32_t addMulScalar(uint32_t input, float scalar);
     uint32_t addMulTensor(uint32_t input1, uint32_t input2);
     uint32_t addReLU(uint32_t input);
-    uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis, uint32_t activation);
+    uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);

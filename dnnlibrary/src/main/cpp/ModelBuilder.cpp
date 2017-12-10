@@ -303,8 +303,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                     inputs.push_back(layerToBlob[*intPt++]);
                 }
                 uint32_t axis = *intPt++;
-                uint32_t activation = *intPt++;
-                index = addConcat(inputs, axis, activation);
+                index = addConcat(inputs, axis);
                 layerToBlob.push_back(index);
                 while (*intPt++ != MF_TOP_NAME) ;
                 break;
@@ -511,7 +510,7 @@ uint32_t ModelBuilder::addReLU(uint32_t input) {
 }
 
 uint32_t
-ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis, uint32_t activation) {
+ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) {
     vector<vector<uint32_t>> dimens;
     for (const auto &input : inputs) {
         vector<uint32_t> &dimen = dimensMap[input];
@@ -532,7 +531,7 @@ ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis, uint32_t 
     }
 
     uint32_t axisOperandIndex = addInt32Operand(axis);
-    uint32_t activationOperandIndex = addInt32Operand(activation);
+    // uint32_t activationOperandIndex = addInt32Operand(activation);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
