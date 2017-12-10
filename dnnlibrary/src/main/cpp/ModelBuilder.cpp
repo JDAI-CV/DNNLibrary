@@ -581,6 +581,17 @@ ANeuralNetworksOperandType ModelBuilder::getFloat32OperandType() {
     return type;
 }
 
+ANeuralNetworksOperandType ModelBuilder::getFloat32AsTensorOperandType() {
+    ANeuralNetworksOperandType type;
+    type.type = ANEURALNETWORKS_TENSOR_FLOAT32;
+    type.scale = 0.f;
+    type.zeroPoint = 0;
+    type.dimensionCount = 0;
+    type.dimensions = nullptr;
+
+    return type;
+}
+
 /**
  * set operand value from file in assets
  * @param model
@@ -620,6 +631,17 @@ uint32_t ModelBuilder::addFloat32Operand(float value) {
         float32OperandMap[value] = index;
     }
     return float32OperandMap[value];
+
+}
+
+uint32_t ModelBuilder::addFloat32AsTensorOperand(float value) {
+    if (float32AsTensorOperandMap.find(value) == float32AsTensorOperandMap.end()) {
+        ANeuralNetworksOperandType type = getFloat32AsTensorOperandType();
+        uint32_t index = addNewOperand(&type);
+        ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
+        float32AsTensorOperandMap[value] = index;
+    }
+    return float32AsTensorOperandMap[value];
 
 }
 
@@ -779,7 +801,7 @@ uint32_t ModelBuilder::getBlobIndex(std::string blobName) {
 }
 
 uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
-    uint32_t scalarIndex = addFloat32Operand(scalar);
+    uint32_t scalarIndex = addFloat32AsTensorOperand(scalar);
     array<uint32_t, 3> inputOperands{{input, scalarIndex, addInt32Operand(
             ModelBuilder::ACTIVATION_NONE)}};
 
@@ -803,7 +825,7 @@ uint32_t ModelBuilder::addAddTensor(uint32_t input1, uint32_t input2) {
 }
 
 uint32_t ModelBuilder::addMulScalar(uint32_t input, float scalar) {
-    uint32_t scalarIndex = addFloat32Operand(scalar);
+    uint32_t scalarIndex = addFloat32AsTensorOperand(scalar);
     array<uint32_t, 3> inputOperands{{input, scalarIndex, addInt32Operand(
             ModelBuilder::ACTIVATION_NONE)}};
 
