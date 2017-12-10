@@ -38,6 +38,7 @@ private:
     std::vector<uint32_t> outputIndexVector;
     std::map<int32_t , uint32_t> int32OperandMap;
     std::map<float, uint32_t> float32OperandMap;
+    std::map<float, uint32_t> float32AsTensorOperandMap;
 
     std::map<std::string, uint32_t> blobNameToIndex;
 
@@ -54,6 +55,7 @@ private:
 
     uint32_t addInt32Operand(int32_t value);
     uint32_t addFloat32Operand(float value);
+    uint32_t addFloat32AsTensorOperand(float value);
     uint32_t addInt32NullOperand();
     uint32_t addFloat32NullOperand();
     uint32_t addFloat32NullOperandWithDims(std::vector<uint32_t> &dims);
@@ -63,6 +65,7 @@ private:
 
     ANeuralNetworksOperandType getInt32OperandType();
     ANeuralNetworksOperandType getFloat32OperandType();
+    ANeuralNetworksOperandType getFloat32AsTensorOperandType(); // Tensor containing only one element, for broadcasting in add and mul
 
     char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
                                     std::string filename);
