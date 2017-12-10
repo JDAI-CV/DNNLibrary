@@ -142,9 +142,15 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                             break;
                         case MF_FILTER_HEIGHT:
                             filterHeight = *intPt++;
+                            if (filterHeight == -1) {
+                                filterHeight = inputDim[1];
+                            }
                             break;
                         case MF_FILTER_WIDTH:
                             filterWidth = *intPt++;
+                            if (filterWidth == -1) {
+                                filterWidth = inputDim[2];
+                            }
                             break;
                         case MF_ACTIVATION:
                             uint32_t mfActType = *intPt++;
