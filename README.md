@@ -44,7 +44,7 @@ If you use the "raw" NNAPI, the code will increase dramatically. Setting up a Le
 
 ## Usage
 
-This library uses beta version of NDK which is not supported by jCenter/JitPack now, so I can't publish this library until they support NDK r16. Please download dnnlibrary-release.aar in lastest [Release](https://github.com/daquexian/DNNLibrary/releases) in this repo and [import it in your project](https://developer.android.com/studio/projects/android-library.html#AddDependency).
+Please download dnnlibrary-release.aar in lastest [Release](https://github.com/daquexian/DNNLibrary/releases) in this repo and [import it in your project](https://developer.android.com/studio/projects/android-library.html#AddDependency). This library will also be published on jcenter soon. :)
 
 ## Preparation
 
