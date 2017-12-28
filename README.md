@@ -12,11 +12,11 @@ For how to use this lib directly in your project, check out [Usage](#usage) (it'
 
 ## Screenshot
 
-This screenshot is from `ResNet-18` branch, which lets user pick an image instead of using camera.
+This screenshot is ResNet-18
 
 ![Screenshot image resnet](screenshot_image_resnet.png)
 
-This screenshot is from `LeNet` branch, which uses camera.
+This screenshot is LeNet
 
 ![Screenshot camera mnist](screenshot_camera_mnist.png)
 
