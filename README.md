@@ -44,8 +44,26 @@ If you use the "raw" NNAPI, the code will increase dramatically. Setting up a Le
 
 ## Usage
 
-Please download dnnlibrary-release.aar in lastest [Release](https://github.com/daquexian/DNNLibrary/releases) in this repo and [import it in your project](https://developer.android.com/studio/projects/android-library.html#AddDependency). This library will also be published on jcenter soon. :)
+The DNNLibrary has been published on jcenter.
+
+Add
+
+```
+implementation 'me.daquexian:dnnlibrary:0.1.7'
+```
+
+(for Gradle 3.0+),
+
+or
+
+```
+compile 'me.daquexian:dnnlibrary:0.1.7'
+```
+
+(for Gradle lower than 3.0)
+
+in your app's `build.gradle`'s `dependencies` section.
 
 ## Preparation
 
-Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. The [latest version of NDK](https://developer.android.com/ndk/downloads/index.html) is necessary for NNAPI. If you want to compile the demo please use Android Studio 3.0+.
+Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. If you want to compile the demo please use Android Studio 3.0+, the latest version of NDK is necessary. 
