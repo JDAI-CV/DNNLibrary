@@ -26,6 +26,8 @@ dependencies {
     implementation 'pub.devrel:easypermissions:1.0.1'
     implementation project(':openCVLibrary340')
     implementation project(':dnnlibrary')
+    // You can also download dnnlibrary from jCenter as following:
+    // implementation 'me.daquexian:dnnlibrary:0.1.7'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
