@@ -92,6 +92,8 @@ public:
     static const uint32_t MF_ADD = 8;
     static const uint32_t MF_RELU = 9;
     static const uint32_t MF_CONCAT = 10;
+    static const uint32_t MF_LRN = 11;
+    static const uint32_t MF_DEPTH_CONV = 12;
 
     static const uint32_t MF_ACTIVATION_NONE = 0;
     static const uint32_t MF_ACTIVATION_RELU = 1;
@@ -117,6 +119,10 @@ public:
     static const uint32_t MF_ACTIVATION = 12;
     static const uint32_t MF_TOP_NAME = 13;
     static const uint32_t MF_BETA = 14;
+    static const uint32_t MF_LRN_ALPHA = 15;
+    static const uint32_t MF_LRN_BETA = 16;
+    static const uint32_t MF_LOCAL_SIZE = 17;
+    static const uint32_t MF_GROUP = 18;
 
     ANeuralNetworksCompilation* compilation = nullptr;
 
@@ -130,7 +136,7 @@ public:
                               int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                               int32_t height, int32_t width, int32_t activation,
                               uint32_t outputDepth,
-                              int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
+                              uint32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                      int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                      int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
@@ -149,6 +155,7 @@ public:
     uint32_t addMulTensor(uint32_t input1, uint32_t input2);
     uint32_t addReLU(uint32_t input);
     uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
+    uint32_t addLRN(uint32_t input, uint32_t local_size, uint32_t bias, float alpha, float beta);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);
