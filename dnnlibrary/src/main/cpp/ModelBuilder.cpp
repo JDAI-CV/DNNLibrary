@@ -1,7 +1,7 @@
 //
 // Created by daquexian on 2017/11/8.
 //
-
+#include "iostream"
 #include "ModelBuilder.h"
 
 using namespace std;
@@ -21,6 +21,9 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     while ((layerType = *intPt++) != MF_LAYER_END) {
         uint32_t index;
         string topName;
+        if(nextIndex == 22){
+            std::cout<<22;
+        }
         switch (layerType) {
             case MF_INPUT: {
                 intPt++;    // skip N
@@ -153,7 +156,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                             break;
                         case MF_WEIGHT: {
                             vector<uint32_t> weightDim{numOutput, filterHeight, filterWidth,
-                                                       inputDim[3]};
+                                                       inputDim[3] / depthMultiplier};
                             weightIndex = addWeightOrBiasFromBuffer(intPt, weightDim);
                             intPt += product(weightDim);
 
@@ -425,7 +428,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     return *this;
 }
 
-//--------------------------------------------------------------------------------------------------//
+//----------------------perandI----------------------------------------------------------------------------//
 uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width, uint32_t depth) {
     vector<uint32_t> dimen{1, width, height, depth};
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
