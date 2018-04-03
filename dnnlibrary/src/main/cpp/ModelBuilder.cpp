@@ -152,19 +152,16 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                             numOutput = *intPt++;
                             break;
                         case MF_GROUP:
-                            depthMultiplier = *intPt++;
+                            depthMultiplier = numOutput / (*intPt++);
                             break;
                         case MF_WEIGHT: {
-                            vector<uint32_t> weightDim{numOutput, filterHeight, filterWidth,
-                                                       inputDim[3] / depthMultiplier};
+                            vector<uint32_t> weightDim{1, filterHeight, filterWidth, numOutput};
                             weightIndex = addWeightOrBiasFromBuffer(intPt, weightDim);
                             intPt += product(weightDim);
-
                             break;
                         }
                         case MF_BIAS: {
-                            biasIndex = addWeightOrBiasFromBuffer(intPt,
-                                                                  vector<uint32_t>{numOutput});
+                            biasIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{numOutput});
                             intPt += numOutput;
                             break;
                         }
@@ -391,8 +388,8 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
             }
             case MF_LRN: {
                 uint32_t input = layerToBlob[*intPt++];
-                uint32_t local_size = 5, bias = 1;
-                float alpha = 0.0001, beta = 0.75;
+                uint32_t local_size = 5;
+                float alpha = 0.0001, beta = 0.75, bias = 1.0;
                 uint32_t paramType;
                 while ((paramType = *intPt++) != MF_TOP_NAME) {
                     switch (paramType) {
@@ -428,7 +425,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     return *this;
 }
 
-//----------------------perandI----------------------------------------------------------------------------//
+//--------------------------------------------------------------------------------------------------//
 uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width, uint32_t depth) {
     vector<uint32_t> dimen{1, width, height, depth};
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
@@ -444,7 +441,7 @@ uint32_t ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t
                                         int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                                         int32_t height, int32_t width, int32_t activation,
                                         uint32_t outputDepth,
-                                        uint32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex) {
+                                        int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex) {
 
     if (input >= nextIndex) return WRONG_INPUT;
 
@@ -648,11 +645,11 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
     return outputOperandIndex;
 }
 
-uint32_t ModelBuilder::addLRN(uint32_t input, uint32_t local_size, uint32_t bias, float alpha, float beta) {
+uint32_t ModelBuilder::addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta) {
     vector<uint32_t> dimen = dimensMap[input];
 
     uint32_t local_sizeIndex = addInt32Operand(local_size);
-    uint32_t biasIndex = addInt32Operand(bias);
+    uint32_t biasIndex = addFloat32Operand(bias);
     uint32_t alphaIndex = addFloat32Operand(alpha);
     uint32_t betaIndex = addFloat32Operand(beta);
 

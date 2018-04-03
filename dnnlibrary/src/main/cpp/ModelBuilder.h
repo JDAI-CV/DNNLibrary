@@ -136,7 +136,7 @@ public:
                               int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                               int32_t height, int32_t width, int32_t activation,
                               uint32_t outputDepth,
-                              uint32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
+                              int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                      int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                      int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
@@ -155,7 +155,7 @@ public:
     uint32_t addMulTensor(uint32_t input1, uint32_t input2);
     uint32_t addReLU(uint32_t input);
     uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
-    uint32_t addLRN(uint32_t input, uint32_t local_size, uint32_t bias, float alpha, float beta);
+    uint32_t addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);
