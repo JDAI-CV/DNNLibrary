@@ -4,7 +4,7 @@
 
 Android 8.1 introduces Neural Networks API (NNAPI). It's very exciting to run a model in the "native" way supported by Android System. :)
 
-DNNLirary is a wrapper of NNAPI. It lets you easily make the use of the new NNAPI introduced in Android 8.1. You can convert your caffemodel into `daq` format by the [convert tool](https://github.com/daquexian/DNN_convert_tool) and run the model directly. 
+DNNLirary is a wrapper of NNAPI ("DNNLibrary" is for "**d**aquexian's **NN**API library). It lets you easily make the use of the new NNAPI introduced in Android 8.1. You can convert your caffemodel into `daq` format by the [dnntools](https://github.com/daquexian/dnntools) and run the model directly. 
 
 The demo consists `daq` model files for LeNet, ResNet-18 and SqueezeNet, and you can get your own model conveniently from pretrained caffemodel.
 
@@ -38,7 +38,7 @@ ModelWrapper.compile(ModelWrapper.PREFERENCE_FAST_SINGLE_ANSWER);
 float[] result = ModelWrapper.predict(inputData);
 ```
 
-Only four lines! And the model file is got from my [convert tool](https://github.com/daquexian/DNN_convert_tool) from pretrained caffemodel.
+Only four lines! And the model file is got from the [dnntools](https://github.com/daquexian/dnntools) from pretrained caffemodel.
 
 If you use the "raw" NNAPI, the code will increase dramatically. Setting up a LeNet needs 200+ lines. (For the 200+ lines LeNet you can check out the second commit of this repo)
 
