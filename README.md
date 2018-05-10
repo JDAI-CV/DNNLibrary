@@ -38,7 +38,7 @@ ModelWrapper.compile(ModelWrapper.PREFERENCE_FAST_SINGLE_ANSWER);
 float[] result = ModelWrapper.predict(inputData);
 ```
 
-Only four lines! And the model file is got from the [dnntools](https://github.com/daquexian/dnntools) from pretrained caffemodel.
+Only four lines! And the model file is got from pretrained caffemodel by the [dnntools](https://github.com/daquexian/dnntools).
 
 If you use the "raw" NNAPI, the code will increase dramatically. Setting up a LeNet needs 200+ lines. (For the 200+ lines LeNet you can check out the second commit of this repo)
 
