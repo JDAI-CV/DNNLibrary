@@ -14,3 +14,5 @@ openCVLibrary320/build/
 
 *.swp
 *.swo
+
+dnn_library_c/cmake-build-*
