@@ -5,32 +5,15 @@
 #ifndef NNAPIEXAMPLE_MODELBUILDER_H
 #define NNAPIEXAMPLE_MODELBUILDER_H
 
-#define  LOG_TAG    "NNAPI Demo"
-
-#define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-#define  LOGW(...)  __android_log_print(ANDROID_LOG_WARN,LOG_TAG,__VA_ARGS__)
-#define  LOGD(...)  __android_log_print(ANDROID_LOG_DEBUG,LOG_TAG,__VA_ARGS__)
-#define  LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
-#include <android/asset_manager.h>
-#include <android/NeuralNetworks.h>
-#include <android/log.h>
+#include <NeuralNetworks.h>
 #include <string>
 #include <vector>
-#include <array>
 #include <map>
-#include <linux/stat.h>
-#include <numeric>
-#include <cassert>
-#include <sstream>
-#include <cmath>
-#include <jni.h>
 #include "Model.h"
 
 class ModelBuilder {
 private:
     ANeuralNetworksModel* model = nullptr;
-    AAssetManager *mgr;
     std::vector<void*> bufferPointers;
     // NHWC
     std::map<uint32_t, std::vector<uint32_t>> dimensMap;
@@ -67,8 +50,8 @@ private:
     ANeuralNetworksOperandType getFloat32OperandType();
     ANeuralNetworksOperandType getFloat32AsTensorOperandType(); // Tensor containing only one element, for broadcasting in add and mul
 
-    char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
-                                    std::string filename);
+    // char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
+                                    // std::string filename);
 
 public:
     static const int MAX_POOL = 0;
@@ -118,11 +101,20 @@ public:
     static const uint32_t MF_TOP_NAME = 13;
     static const uint32_t MF_BETA = 14;
 
+    static const int NN_PROCEDURE_MASK = ((1U << 16U) - 1) << 16U;
+    static const int NN_CAUSE_MASK = ((1U << 16U) - 1);
+    static const int NN_IDENTIFY_IO = 1U << 16U;
+    static const int NN_MODEL_FINISH = 1U << 17U;
+    static const int NN_CREATE = 1U << 18U;
+    static const int NN_PREFERENCE = 1U << 19U;
+    static const int NN_COMP_FINISH = 1U << 20U;
+
+    static std::string getErrorProcedure(int errorCode);
+    static std::string getErrorCause(int errorCode);
+
     ANeuralNetworksCompilation* compilation = nullptr;
 
-    int init(AAssetManager *mgr);
-    ModelBuilder& simplestModel();
-    ModelBuilder& readFromFile(std::string filename);
+    int init();
     uint32_t getBlobIndex(std::string blobName);
     std::vector<uint32_t> getBlobDim(std::string blobName);
     std::vector<uint32_t> getBlobDim(uint32_t index);
@@ -157,9 +149,14 @@ public:
     std::vector<uint32_t> getOutputIndexes();
     int setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
     int setOutputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
+    void registerBufferPointer(void *pointer);
     void clear();
 
     ModelBuilder();
+
+    ModelBuilder &readFromBuffer(const char *buffer);
+    ModelBuilder& readFromFile(std::string filename);
+    ModelBuilder& simplestModel();
 };
 
 

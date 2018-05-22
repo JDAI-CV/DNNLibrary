@@ -27,16 +27,20 @@ Java_me_daquexian_dnnlibrary_ModelWrapper_readFile(
         throwException(env, "Please compile current model before generate a new model");
     }
 
+    builder.init();
+
     isUsing = true;
 
     string filename = string(env->GetStringUTFChars(javaFilename, nullptr));
     AAssetManager *mgrr = AAssetManager_fromJava(env, javaAssetManager);
 
-    builder.init(mgrr);
+    AAsset* asset = AAssetManager_open(mgrr, filename.c_str(), AASSET_MODE_UNKNOWN);
+    size_t size = static_cast<size_t>(AAsset_getLength(asset));
+    char* buffer = new char[size];
+    builder.registerBufferPointer(buffer);
+    AAsset_read(asset, buffer, static_cast<size_t>(size));
 
-    builder.readFromFile(filename);
-    // builder.simplestModel();
-
+    builder.readFromBuffer(buffer);
 }
 
 extern "C"

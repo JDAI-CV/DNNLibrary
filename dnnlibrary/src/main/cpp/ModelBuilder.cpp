@@ -4,27 +4,53 @@
 
 #include "ModelBuilder.h"
 
+#include <array>
+#include <cmath>
+#include <ctime>
+#include <numeric>
+#include <sstream>
+#include <fstream>
+#include <iostream>
+
+#include "android_log_helper.h"
+
 using namespace std;
 
 
+// Simplest model for test
 ModelBuilder &ModelBuilder::simplestModel() {
-    uint32_t input = addInput(227, 227, 3);
-    uint32_t add = addAddScalar(input, 1.5);
-    blobNameToIndex["prob"] = add;
+    auto input = addInput(4, 3, 2);
+    auto add = addAddScalar(input, 1.5f);
+    addIndexIntoOutput(add);
     return *this;
 }
 
+
+/**
+ * It is designed to read a regular file. For reading file in assets folder of Android app,
+ * read the content into a char array and call readFromBuffer
+ *
+ * @param filename , like "/data/local/tmp/squeezenet.daq"
+ * @return ModelBuilder itself
+ */
 ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
+    std::ifstream ifs(filename, ios::binary | ios::ate);
+    streamsize len = ifs.tellg();
+    ifs.seekg(0, ios::beg);
+    char *buffer = new char[len];
+    // read whole content of a file into buffer
+    if (ifs.read(buffer, len)) {
+        bufferPointers.push_back(buffer);
+        return readFromBuffer(buffer);
+    } else {
+        throw string("Read file error");
+    }
+}
+
+
+ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
     vector<uint32_t> layerToBlob;
-    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
-    size_t size = static_cast<size_t>(AAsset_getLength(asset));
-    char* buffer = new char[size];
-    bufferPointers.push_back(static_cast<void *>(buffer));
-
-    uint32_t *intPt = reinterpret_cast<uint32_t *>(buffer);
-    AAsset_read(asset, buffer, static_cast<size_t>(size));
-
-
+    const uint32_t *intPt = reinterpret_cast<const uint32_t *>(buffer);
     uint32_t layerType;
     while ((layerType = *intPt++) != MF_LAYER_END) {
         uint32_t index;
@@ -35,15 +61,11 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 uint32_t depth = *intPt++;
                 uint32_t height = *intPt++;
                 uint32_t width = *intPt++;
-                uint32_t input = addInput(height, width, depth);
-                layerToBlob.push_back(input);
+
+                layerToBlob.push_back(addInput(height, width, depth));
 
                 while (*intPt++ != MF_TOP_NAME) ;
-                uint32_t relu = addReLU(input);
-                uint32_t add = addAddScalar(input, input);
-                // blobNameToIndex["data"] = input;
-                // blobNameToIndex["prob"] = relu;
-                return *this;
+
                 break;
             }
             case MF_CONV: {
@@ -239,7 +261,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 while ((paramType = *intPt++) != MF_TOP_NAME) {
                     switch (paramType) {
                         case MF_BETA: {
-                            beta = *reinterpret_cast<float *>(intPt++);
+                            beta = *reinterpret_cast<const float *>(intPt++);
                             break;
                         }
                     }
@@ -258,7 +280,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                         break;
                     }
                     case MF_SCALAR_OP: {
-                        float scalar = *reinterpret_cast<float *>(intPt++);
+                        float scalar = *reinterpret_cast<const float *>(intPt++);
                         index = addAddScalar(input1, scalar);
                         break;
                     }
@@ -284,7 +306,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                         break;
                     }
                     case MF_SCALAR_OP: {
-                        float scalar = *reinterpret_cast<float *>(intPt++);
+                        float scalar = *reinterpret_cast<const float *>(intPt++);
                         index = addMulScalar(input1, scalar);
                         break;
                     }
@@ -320,7 +342,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 break;
             }
             default:
-                throw "Unsupport layer";
+                throw string("Unsupport layer");
         }
         stringstream ss;
         char c;
@@ -333,9 +355,19 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
         while (*intPt++ != MF_PARAM_END) ;
     }
 
-
     return *this;
 }
+
+/*ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
+    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
+    size_t size = static_cast<size_t>(AAsset_getLength(asset));
+    char* buffer = new char[size];
+    bufferPointers.push_back(static_cast<void *>(buffer));
+
+    AAsset_read(asset, buffer, static_cast<size_t>(size));
+
+    return this->readFromBuffer(buffer);
+}*/
 
 uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width, uint32_t depth) {
     vector<uint32_t> dimen{1, width, height, depth};
@@ -529,7 +561,7 @@ ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) {
             for (size_t i = 0; i < dimens[0].size(); i++) {
                 if (i == axis) continue;
                 if (dimen[i] != dimens[0][i]) {
-                    throw "Wrong input for concat";
+                    throw string("Wrong input for concat");
                 }
             }
         }
@@ -592,17 +624,6 @@ ANeuralNetworksOperandType ModelBuilder::getFloat32OperandType() {
     return type;
 }
 
-ANeuralNetworksOperandType ModelBuilder::getFloat32AsTensorOperandType() {
-    ANeuralNetworksOperandType type;
-    type.type = ANEURALNETWORKS_TENSOR_FLOAT32;
-    type.scale = 0.f;
-    type.zeroPoint = 0;
-    type.dimensionCount = 0;
-    type.dimensions = nullptr;
-
-    return type;
-}
-
 /**
  * set operand value from file in assets
  * @param model
@@ -613,6 +634,7 @@ ANeuralNetworksOperandType ModelBuilder::getFloat32AsTensorOperandType() {
  * be modified until all executions complete, so please delete the buffer after the executions
  * complete.
  */
+ /*
 char* ModelBuilder::setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr,
                                               int32_t index, string filename) {
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
@@ -622,7 +644,7 @@ char* ModelBuilder::setOperandValueFromAssets(ANeuralNetworksModel *model, AAsse
     AAsset_read(asset, buffer, static_cast<size_t>(size));
     ANeuralNetworksModel_setOperandValue(model, index, buffer, size);
     return buffer;
-}
+}*/
 
 uint32_t ModelBuilder::addInt32Operand(int32_t value) {
     if (int32OperandMap.find(value) == int32OperandMap.end()) {
@@ -647,7 +669,12 @@ uint32_t ModelBuilder::addFloat32Operand(float value) {
 
 uint32_t ModelBuilder::addFloat32AsTensorOperand(float value) {
     if (float32AsTensorOperandMap.find(value) == float32AsTensorOperandMap.end()) {
-        ANeuralNetworksOperandType type = getFloat32AsTensorOperandType();
+        /**
+         * The `dims` variable mustn't be destoried before `addNewOperand`,
+         * because ANeuralNetworksOperandType is only a struct storing a pointer to dims[0]
+         */
+        auto dims = std::vector<uint32_t>{1};
+        auto type = getFloat32OperandTypeWithDims(dims);
         uint32_t index = addNewOperand(&type);
         ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
         float32AsTensorOperandMap[value] = index;
@@ -677,6 +704,7 @@ uint32_t ModelBuilder::addFloat32NullOperand(){
 uint32_t ModelBuilder::addNewOperand(ANeuralNetworksOperandType *type) {
     int ret;
     if ((ret = ANeuralNetworksModel_addOperand(model, type)) != ANEURALNETWORKS_NO_ERROR) {
+        LOGE("Add new operand %d error", nextIndex);
         return UINT32_MAX - ret;
     }
     return nextIndex++;
@@ -689,10 +717,11 @@ uint32_t ModelBuilder::addWeightOrBiasFromBuffer(const void *buffer, std::vector
     return index;
 }
 
+/*
 int ModelBuilder::init(AAssetManager *mgr) {
     this->mgr = mgr;
     return ANeuralNetworksModel_create(&model);
-}
+}*/
 
 void ModelBuilder::addIndexIntoOutput(uint32_t index) {
     outputIndexVector.push_back(index);
@@ -705,34 +734,35 @@ int ModelBuilder::compile(uint32_t preference) {
             static_cast<uint32_t>(inputIndexVector.size()), &inputIndexVector[0],
             static_cast<uint32_t>(outputIndexVector.size()), &outputIndexVector[0] )) != ANEURALNETWORKS_NO_ERROR) {
 
-        return ret;
+        return NN_IDENTIFY_IO | ret;
     }
 
     ret = ANeuralNetworksModel_finish(model);
-    LOGD("finish %d", ret);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return ret;
+        return NN_MODEL_FINISH | ret;
     }
 
     ret = ANeuralNetworksCompilation_create(model, &compilation);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return ret;
+        return NN_CREATE | ret;
     }
 
     ret = ANeuralNetworksCompilation_setPreference(compilation, preference);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return ret;
+        return NN_PREFERENCE | ret;
     }
 
     ret = ANeuralNetworksCompilation_finish(compilation);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return ret;
+        return NN_COMP_FINISH | ret;
     }
 
     return 0;
 }
 
-
+void ModelBuilder::registerBufferPointer(void *pointer) {
+    bufferPointers.push_back(pointer);
+}
 
 void ModelBuilder::clear() {
     ANeuralNetworksCompilation_free(compilation);
@@ -883,6 +913,56 @@ vector<uint32_t> ModelBuilder::getBlobDim(std::string blobName) {
 std::vector<uint32_t> ModelBuilder::getBlobDim(uint32_t index) {
     return dimensMap[index];
 }
+
+int ModelBuilder::init() {
+    return ANeuralNetworksModel_create(&model);
+}
+
+string ModelBuilder::getErrorProcedure(int errorCode) {
+    errorCode &= NN_PROCEDURE_MASK;
+    switch (errorCode) {
+        case NN_COMP_FINISH:
+            return "compilation finish";
+        case NN_PREFERENCE:
+            return "set preference";
+        case NN_CREATE:
+            return "compilation create";
+        case NN_MODEL_FINISH:
+            return "model finish";
+        case NN_IDENTIFY_IO:
+            return "identify input and output";
+        case 0:
+            return "No error";
+        default:
+            return "Unknown error code";
+    }
+}
+
+string ModelBuilder::getErrorCause(int errorCode) {
+    errorCode &= NN_CAUSE_MASK;
+
+    switch (errorCode) {
+        case ANEURALNETWORKS_OUT_OF_MEMORY:
+            return "Out of memory";
+        case ANEURALNETWORKS_BAD_DATA:
+            return "Bad data";
+        case ANEURALNETWORKS_BAD_STATE:
+            return "Bad state";
+        case ANEURALNETWORKS_INCOMPLETE:
+            return "Incomplete";
+        case ANEURALNETWORKS_UNEXPECTED_NULL:
+            return "Unexpected null";
+        case ANEURALNETWORKS_OP_FAILED:
+            return "Op failed";
+        case ANEURALNETWORKS_UNMAPPABLE:
+            return "Unmappable";
+        case ANEURALNETWORKS_NO_ERROR:
+            return "No error";
+        default:
+            return "Unknown error code";
+    }
+}
+
 
 uint32_t product(const vector<uint32_t> &v) {
     return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, multiplies<uint32_t>()));
