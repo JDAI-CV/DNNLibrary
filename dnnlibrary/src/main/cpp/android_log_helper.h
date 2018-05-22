@@ -5,7 +5,7 @@
 #ifndef PROJECT_ANDROID_LOG_HELPER_H
 #define PROJECT_ANDROID_LOG_HELPER_H
 
-#include <log.h>
+#include <android/log.h>
 
 #define  LOG_TAG    "DNN Library"
 

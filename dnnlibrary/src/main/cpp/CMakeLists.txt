@@ -7,8 +7,6 @@ cmake_minimum_required(VERSION 3.4.1)
 
 set (CMAKE_CXX_STANDARD 11)
 
-include_directories(${CMAKE_SYSROOT}/usr/include/android)
-
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.

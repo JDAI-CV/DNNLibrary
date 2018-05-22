@@ -5,7 +5,7 @@
 #ifndef NNAPIEXAMPLE_MODELBUILDER_H
 #define NNAPIEXAMPLE_MODELBUILDER_H
 
-#include <NeuralNetworks.h>
+#include <android/NeuralNetworks.h>
 #include <string>
 #include <vector>
 #include <map>
