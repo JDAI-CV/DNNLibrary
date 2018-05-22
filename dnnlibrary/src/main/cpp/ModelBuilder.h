@@ -121,6 +121,7 @@ public:
     ANeuralNetworksCompilation* compilation = nullptr;
 
     int init(AAssetManager *mgr);
+    ModelBuilder& simplestModel();
     ModelBuilder& readFromFile(std::string filename);
     uint32_t getBlobIndex(std::string blobName);
     std::vector<uint32_t> getBlobDim(std::string blobName);

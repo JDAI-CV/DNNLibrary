@@ -35,6 +35,7 @@ Java_me_daquexian_dnnlibrary_ModelWrapper_readFile(
     builder.init(mgrr);
 
     builder.readFromFile(filename);
+    // builder.simplestModel();
 
 }
 
@@ -79,7 +80,7 @@ Java_me_daquexian_dnnlibrary_ModelWrapper_predict(
     builder.prepareForExecution(model);
 
     jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
-    jsize dataLen = env->GetArrayLength(dataArrayObject);
+    jsize dataLen = env->GetArrayLength(dataArrayObject) * sizeof(jfloat);
 
     builder.setInputBuffer(model, builder.getInputIndexes()[0], data, static_cast<size_t>(dataLen));
 

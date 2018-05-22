@@ -7,6 +7,13 @@
 using namespace std;
 
 
+ModelBuilder &ModelBuilder::simplestModel() {
+    uint32_t input = addInput(227, 227, 3);
+    uint32_t add = addAddScalar(input, 1.5);
+    blobNameToIndex["prob"] = add;
+    return *this;
+}
+
 ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     vector<uint32_t> layerToBlob;
     AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
@@ -28,11 +35,15 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
                 uint32_t depth = *intPt++;
                 uint32_t height = *intPt++;
                 uint32_t width = *intPt++;
-
-                layerToBlob.push_back(addInput(height, width, depth));
+                uint32_t input = addInput(height, width, depth);
+                layerToBlob.push_back(input);
 
                 while (*intPt++ != MF_TOP_NAME) ;
-
+                uint32_t relu = addReLU(input);
+                uint32_t add = addAddScalar(input, input);
+                // blobNameToIndex["data"] = input;
+                // blobNameToIndex["prob"] = relu;
+                return *this;
                 break;
             }
             case MF_CONV: {
@@ -698,6 +709,7 @@ int ModelBuilder::compile(uint32_t preference) {
     }
 
     ret = ANeuralNetworksModel_finish(model);
+    LOGD("finish %d", ret);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
         return ret;
     }
