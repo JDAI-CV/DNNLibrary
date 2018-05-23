@@ -1,5 +1,7 @@
 # DNNLibrary
 
+![bintray](https://img.shields.io/bintray/v/daquexian566/maven/dnnlibrary.svg)
+
 *Run neural network on your Android phone using the new NNAPI !*
 
 Android 8.1 introduces Neural Networks API (NNAPI). It's very exciting to run a model in the "native" way supported by Android System. :)
