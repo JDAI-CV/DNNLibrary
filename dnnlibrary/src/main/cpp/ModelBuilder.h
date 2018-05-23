@@ -14,7 +14,8 @@
 class ModelBuilder {
 private:
     ANeuralNetworksModel* model = nullptr;
-    std::vector<void*> bufferPointers;
+    std::vector<char *> charBufPointers;
+    std::vector<float *> floatBufPointers;
     // NHWC
     std::map<uint32_t, std::vector<uint32_t>> dimensMap;
     std::vector<uint32_t> inputIndexVector;
@@ -149,7 +150,8 @@ public:
     std::vector<uint32_t> getOutputIndexes();
     int setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
     int setOutputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
-    void registerBufferPointer(void *pointer);
+    void registerBufferPointer(char *pointer);
+    void registerBufferPointer(float *pointer);
     void clear();
 
     ModelBuilder();

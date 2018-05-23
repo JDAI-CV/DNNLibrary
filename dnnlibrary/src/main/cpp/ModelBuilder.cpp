@@ -40,7 +40,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     char *buffer = new char[len];
     // read whole content of a file into buffer
     if (ifs.read(buffer, len)) {
-        bufferPointers.push_back(buffer);
+        registerBufferPointer(buffer);
         return readFromBuffer(buffer);
     } else {
         throw string("Read file error");
@@ -760,17 +760,24 @@ int ModelBuilder::compile(uint32_t preference) {
     return 0;
 }
 
-void ModelBuilder::registerBufferPointer(void *pointer) {
-    bufferPointers.push_back(pointer);
+void ModelBuilder::registerBufferPointer(float *pointer) {
+    floatBufPointers.push_back(pointer);
+}
+
+void ModelBuilder::registerBufferPointer(char *pointer) {
+    charBufPointers.push_back(pointer);
 }
 
 void ModelBuilder::clear() {
     ANeuralNetworksCompilation_free(compilation);
     ANeuralNetworksModel_free(model);
-    for (auto pointer : bufferPointers) {
+    for (auto pointer : charBufPointers) {
         delete[] pointer;
     }
-    bufferPointers.clear();
+    for (auto pointer : floatBufPointers) {
+        delete[] pointer;
+    }
+    floatBufPointers.clear();
 }
 
 ModelBuilder::ModelBuilder() {
@@ -899,7 +906,7 @@ uint32_t ModelBuilder::addFloat32NullOperandWithDims(std::vector<uint32_t> &dims
 
 uint32_t ModelBuilder::addFloat32ZeroOperandWithDims(std::vector<uint32_t> &dims) {
     float *zeros = new float[product(dims)];
-    bufferPointers.push_back(static_cast<void *>(zeros));
+    registerBufferPointer(zeros);
     for (size_t i = 0; i < product(dims); i++) {
         zeros[i] = 0;
     }
