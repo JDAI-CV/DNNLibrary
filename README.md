@@ -51,7 +51,7 @@ The DNNLibrary has been published on jcenter.
 Add
 
 ```
-implementation 'me.daquexian:dnnlibrary:0.1.7'
+implementation 'me.daquexian:dnnlibrary:0.2.1'
 ```
 
 (for Gradle 3.0+),
@@ -59,7 +59,7 @@ implementation 'me.daquexian:dnnlibrary:0.1.7'
 or
 
 ```
-compile 'me.daquexian:dnnlibrary:0.1.7'
+compile 'me.daquexian:dnnlibrary:0.2.1'
 ```
 
 (for Gradle lower than 3.0)
