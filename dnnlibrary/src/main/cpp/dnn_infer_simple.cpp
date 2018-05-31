@@ -32,7 +32,7 @@ int main(int argc, char **argv) {
     } catch (string& str) {
         LOGE("Exception: %s", str.c_str());
     }
-    builder.addIndexIntoOutput(builder.getBlobIndex("prob"));
+    builder.addIndexIntoOutput(builder.getBlobIndex(outputBlob));
     int ret = builder.compile(ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
     cout << ModelBuilder::getErrorProcedure(ret) << endl;
 
@@ -58,18 +58,13 @@ int main(int argc, char **argv) {
     float output[outputLen];
 
     builder.prepareForExecution(model);
-    cout << builder.getInputIndexes()[0] << endl;
-    cout << builder.setInputBuffer(model, builder.getInputIndexes()[0], data, sizeof(data)) << endl;
-    cout << builder.setOutputBuffer(model, builder.getOutputIndexes()[0], output, sizeof(output)) << endl;
-    cout << model.predict() << endl;
-    cout << "----" << endl;
-    float max = output[0];
+    builder.getInputIndexes()[0];
+    builder.setInputBuffer(model, builder.getInputIndexes()[0], data, sizeof(data));
+    builder.setOutputBuffer(model, builder.getOutputIndexes()[0], output, sizeof(output));
+    model.predict();
     for (int i = 0; i < outputLen; i++) {
-        if (output[i] > max) {
-            max = output[i];
-        }
+        cout << output[i] << endl;
     }
-    cout << max << endl;
 
     builder.clear();
 }

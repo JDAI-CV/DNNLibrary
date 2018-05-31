@@ -7,6 +7,8 @@ cmake_minimum_required(VERSION 3.4.1)
 
 set (CMAKE_CXX_STANDARD 11)
 
+include_directories(${CMAKE_SYSROOT}/usr/include)
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -67,11 +69,11 @@ add_executable(nnapi_benchmark
 target_link_libraries(nnapi_benchmark
         dnnlibrary)
 
-add_executable(dnn_save_result
+add_executable(dnn_infer_simple
         stb_image.h
-        dnn_save_result.cpp)
+        dnn_infer_simple.cpp)
 
-target_link_libraries(dnn_save_result
+target_link_libraries(dnn_infer_simple
         dnnlibrary)
 
 add_executable(dnn_simplest
