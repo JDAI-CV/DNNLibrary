@@ -424,10 +424,10 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                 while ((paramType = *intPt++) != MF_TOP_NAME) {
                     switch (paramType) {
                         case MF_LRN_ALPHA :
-                            alpha = *reinterpret_cast<float *>(intPt++);
+                            alpha = *reinterpret_cast<const float *>(intPt++);
                             break;
                         case MF_LRN_BETA :
-                            beta = *reinterpret_cast<float *>(intPt++);
+                            beta = *reinterpret_cast<const float *>(intPt++);
                             break;
                         case MF_LOCAL_SIZE :
                             local_size = *intPt++;
