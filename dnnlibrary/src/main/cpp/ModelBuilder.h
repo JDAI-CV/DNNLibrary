@@ -76,6 +76,8 @@ public:
     static const uint32_t MF_ADD = 8;
     static const uint32_t MF_RELU = 9;
     static const uint32_t MF_CONCAT = 10;
+    static const uint32_t MF_LRN = 11;
+    static const uint32_t MF_DEPTH_CONV = 12;
 
     static const uint32_t MF_ACTIVATION_NONE = 0;
     static const uint32_t MF_ACTIVATION_RELU = 1;
@@ -101,6 +103,10 @@ public:
     static const uint32_t MF_ACTIVATION = 12;
     static const uint32_t MF_TOP_NAME = 13;
     static const uint32_t MF_BETA = 14;
+    static const uint32_t MF_LRN_ALPHA = 15;
+    static const uint32_t MF_LRN_BETA = 16;
+    static const uint32_t MF_LOCAL_SIZE = 17;
+    static const uint32_t MF_GROUP = 18;
 
     static const int NN_PROCEDURE_MASK = ((1U << 16U) - 1) << 16U;
     static const int NN_CAUSE_MASK = ((1U << 16U) - 1);
@@ -143,6 +149,7 @@ public:
     uint32_t addMulTensor(uint32_t input1, uint32_t input2);
     uint32_t addReLU(uint32_t input);
     uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
+    uint32_t addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);
