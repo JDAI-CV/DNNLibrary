@@ -1,7 +1,6 @@
 //
 // Created by daquexian on 2017/11/8.
 //
-#include "iostream"
 #include "ModelBuilder.h"
 
 #include <array>
@@ -55,9 +54,6 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
     while ((layerType = *intPt++) != MF_LAYER_END) {
         uint32_t index;
         string topName;
-        if(nextIndex == 22){
-            std::cout<<22;
-        }
         switch (layerType) {
             case MF_INPUT: {
                 intPt++;    // skip N
