@@ -46,6 +46,7 @@ private:
     uint32_t addFloat32ZeroOperandWithDims(std::vector<uint32_t> &dims);
 
     ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims);
+    ANeuralNetworksOperandType getInt32OperandTypeWithDims(std::vector<uint32_t> &dims);
 
     ANeuralNetworksOperandType getInt32OperandType();
     ANeuralNetworksOperandType getFloat32OperandType();
@@ -137,6 +138,7 @@ public:
                      int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
                      uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
+    uint32_t addIntTensorFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
     uint32_t addFC(uint32_t input, uint32_t outputNum, int32_t activation,
                    uint32_t weightIndex, uint32_t biasIndex);
     uint32_t addCaffePool(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
@@ -151,8 +153,9 @@ public:
     uint32_t addReLU(uint32_t input);
     uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
     uint32_t addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta);
-    uint32_t addStridedSlice(uint32_t input, uint32_t starts, uint32_t ends, uint32_t strides,
-                             uint32_t beginMask, uint32_t endMask, uint32_t shrinkAxismask);
+    uint32_t addStridedSlice(uint32_t input, const std::vector<uint32_t> &starts, const std::vector<uint32_t> &ends,
+                             const std::vector<uint32_t> &strides, uint32_t beginMask, uint32_t endMask,
+                             uint32_t shrinkAxismask);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);

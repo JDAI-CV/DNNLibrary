@@ -419,13 +419,20 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
             case MF_STRIDED_SLICE: {
                 uint32_t input = layerToBlob[*intPt++];
                 vector<uint32_t> inputDim = dimensMap[input];
-                uint32_t startIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{inputDim[0]});
-                uint32_t endIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{inputDim[0]});
-                uint32_t strideIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{inputDim[0]});
+                vector<uint32_t> starts, ends, strides;
+                for (int i = 0 ; i < inputDim.size(); i++) {
+                    starts.emplace_back(*intPt++);
+                }
+                for (int i = 0 ; i < inputDim.size(); i++) {
+                    ends.emplace_back(*intPt++);
+                }
+                for (int i = 0 ; i < inputDim.size(); i++) {
+                    strides.emplace_back(*intPt++);
+                }
                 uint32_t beginMask = *intPt++;
                 uint32_t endMask = *intPt++;
                 uint32_t shrinkMask = *intPt++;
-                index = addStridedSlice(input, startIndex, endIndex, strideIndex, beginMask, endMask, shrinkMask);
+                index = addStridedSlice(input, starts, ends, strides, beginMask, endMask, shrinkMask);
 
                 while (*intPt++ != MF_TOP_NAME);
                 layerToBlob.push_back(index);
@@ -573,11 +580,15 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
 }
 
 uint32_t
-ModelBuilder::addStridedSlice(uint32_t input, uint32_t startsIndex, uint32_t endsIndex, uint32_t stridesIndex,
-                              uint32_t beginMask, uint32_t endMask, uint32_t shrinkAxismask) {
+ModelBuilder::addStridedSlice(uint32_t input, const vector<uint32_t> &starts, const vector<uint32_t> &ends,
+                              const vector<uint32_t> &strides, uint32_t beginMask, uint32_t endMask,
+                              uint32_t shrinkAxismask) {
 
     if (input >= nextIndex) return WRONG_INPUT;
 
+    uint32_t startsIndex = addIntTensorFromBuffer(&starts[0], vector<uint32_t>{starts.size()});
+    uint32_t endsIndex = addIntTensorFromBuffer(&ends[0], vector<uint32_t>{ends.size()});
+    uint32_t stridesIndex = addIntTensorFromBuffer(&strides[0], vector<uint32_t>{strides.size()});
     uint32_t beginMaskOperandIndex = addInt32Operand(beginMask);
     uint32_t endMaskOperandIndex = addInt32Operand(endMask);
     uint32_t shrinkAxisMaskOperandIndex = addInt32Operand(shrinkAxismask);
@@ -586,7 +597,7 @@ ModelBuilder::addStridedSlice(uint32_t input, uint32_t startsIndex, uint32_t end
     vector<uint32_t> inputDimen = dimensMap[input];
     vector<uint32_t> outputDimen(inputDimen.size());
     for (size_t i = 0; i < outputDimen.size(); i++) {
-        uint32_t start, end;
+        uint32_t start = starts[i], end = ends[i];
         if (beginMask & (1 << i)) {
             start = 0;
         }
@@ -758,6 +769,17 @@ uint32_t ModelBuilder::addLRN(uint32_t input, uint32_t local_size, float bias, f
 }
 //--------------------------------------------------------------------------------------------------//
 
+ANeuralNetworksOperandType ModelBuilder::getInt32OperandTypeWithDims(std::vector<uint32_t> &dims) {
+    ANeuralNetworksOperandType type;
+    type.type = ANEURALNETWORKS_TENSOR_INT32;
+    type.scale = 0.f;
+    type.zeroPoint = 0;
+    type.dimensionCount = static_cast<uint32_t>(dims.size());
+    type.dimensions = &dims[0];
+
+    return type;
+}
+
 ANeuralNetworksOperandType ModelBuilder::getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims) {
     ANeuralNetworksOperandType type;
     type.type = ANEURALNETWORKS_TENSOR_FLOAT32;
@@ -884,11 +906,13 @@ uint32_t ModelBuilder::addWeightOrBiasFromBuffer(const void *buffer, std::vector
     return index;
 }
 
-/*
-int ModelBuilder::init(AAssetManager *mgr) {
-    this->mgr = mgr;
-    return ANeuralNetworksModel_create(&model);
-}*/
+uint32_t ModelBuilder::addIntTensorFromBuffer(const void *buffer, std::vector<uint32_t> dimen) {
+    ANeuralNetworksOperandType type = getInt32OperandTypeWithDims(dimen);
+    uint32_t index = addNewOperand(&type);
+    ANeuralNetworksModel_setOperandValue(model, index, buffer, product(dimen) * sizeof(uint32_t));
+    return index;
+}
+
 
 void ModelBuilder::addIndexIntoOutput(uint32_t index) {
     outputIndexVector.push_back(index);
