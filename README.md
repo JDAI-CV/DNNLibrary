@@ -13,6 +13,10 @@ The demo consists `daq` model files for LeNet, ResNet-18 and SqueezeNet, and you
 
 For how to use this lib directly in your project, check out [Usage](#usage) (it's at the bottom)
 
+## Preparation
+
+Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. If you want to compile the demo please use Android Studio 3.0+, **the latest version(r17) of NDK is necessary**. 
+
 ## Screenshot
 
 This screenshot is ResNet-18
@@ -52,7 +56,7 @@ The DNNLibrary has been published on jcenter.
 Add
 
 ```
-implementation 'me.daquexian:dnnlibrary:0.2.2'
+implementation 'me.daquexian:dnnlibrary:0.2.3'
 ```
 
 (for Gradle 3.0+),
@@ -60,13 +64,9 @@ implementation 'me.daquexian:dnnlibrary:0.2.2'
 or
 
 ```
-compile 'me.daquexian:dnnlibrary:0.2.2'
+compile 'me.daquexian:dnnlibrary:0.2.3'
 ```
 
 (for Gradle lower than 3.0)
 
 in your app's `build.gradle`'s `dependencies` section.
-
-## Preparation
-
-Please make sure the Android System on your phone is 8.1+, or you may want to use API 27 emulator. If you want to compile the demo please use Android Studio 3.0+, the latest version of NDK is necessary. 
