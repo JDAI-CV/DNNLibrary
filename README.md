@@ -51,7 +51,7 @@ If you use the "raw" NNAPI, the code will increase dramatically. Setting up a Le
 
 ## Usage
 
-The DNNLibrary has been published on jcenter.
+If you are an Android app developer and want it to work out of the box, it has been published on jcenter.
 
 Add
 
@@ -70,3 +70,8 @@ compile 'me.daquexian:dnnlibrary:0.2.3'
 (for Gradle lower than 3.0)
 
 in your app's `build.gradle`'s `dependencies` section.
+
+If you don't care about Android app and just want to do something in pure C++, for example, 
+benchmark the speed of NNAPI, or just run a minimal binary on phone, the C++ project is under 
+directory `dnnlibrary/cpp`, enter `dnnlibrary/cpp` and run cmake with `BUILD_BIN=ON` and 
+`BUILD_JNI=OFF`, then build it, you will get binary files.
