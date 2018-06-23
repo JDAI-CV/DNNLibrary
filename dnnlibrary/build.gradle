@@ -17,15 +17,15 @@ android {
     defaultConfig {
         minSdkVersion 27
         targetSdkVersion 27
-        versionCode 3
-        versionName "v0.2.2"
+        versionCode 4
+        versionName "v0.2.3"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         externalNativeBuild {
             cmake {
-                cppFlags "-frtti -fexceptions -std=c++11"
-                arguments "-DANDROID_PLATFORM=android-27"
+                arguments "-DANDROID_PLATFORM=android-27", "-DBUILD_SHARED_LIBS=ON",
+                        "-DBUILD_JNI=ON", "-DBUILD_BIN=OFF"
             }
         }
     }
@@ -39,7 +39,7 @@ android {
 
     externalNativeBuild {
         cmake {
-            path "CMakeLists.txt"
+            path "cpp/CMakeLists.txt"
         }
     }
 }
@@ -56,7 +56,7 @@ publish {
     userOrg = 'daquexian566'
     groupId = 'me.daquexian'
     artifactId = 'dnnlibrary'
-    publishVersion = '0.2.2'
+    publishVersion = '0.2.3'
     desc = 'Daquexian\'s NNAPI Library. Run neural network using the new NNAPI on Android !'
     website = 'https://github.com/daquexian/DNNLibrary'
 }
