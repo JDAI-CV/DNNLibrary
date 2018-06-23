@@ -78,6 +78,7 @@ public:
     static const uint32_t MF_CONCAT = 10;
     static const uint32_t MF_LRN = 11;
     static const uint32_t MF_DEPTH_CONV = 12;
+    static const uint32_t MF_STRIDED_SLICE = 13;
 
     static const uint32_t MF_ACTIVATION_NONE = 0;
     static const uint32_t MF_ACTIVATION_RELU = 1;
@@ -150,6 +151,8 @@ public:
     uint32_t addReLU(uint32_t input);
     uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
     uint32_t addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta);
+    uint32_t addStridedSlice(uint32_t input, uint32_t starts, uint32_t ends, uint32_t strides,
+                             uint32_t beginMask, uint32_t endMask, uint32_t shrinkAxismask);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);

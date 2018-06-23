@@ -416,6 +416,21 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                 while (*intPt++ != MF_TOP_NAME) ;
                 break;
             }
+            case MF_STRIDED_SLICE: {
+                uint32_t input = layerToBlob[*intPt++];
+                vector<uint32_t> inputDim = dimensMap[input];
+                uint32_t startIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{inputDim[0]});
+                uint32_t endIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{inputDim[0]});
+                uint32_t strideIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{inputDim[0]});
+                uint32_t beginMask = *intPt++;
+                uint32_t endMask = *intPt++;
+                uint32_t shrinkMask = *intPt++;
+                index = addStridedSlice(input, startIndex, endIndex, strideIndex, beginMask, endMask, shrinkMask);
+
+                while (*intPt++ != MF_TOP_NAME);
+                layerToBlob.push_back(index);
+                break;
+            }
             case MF_LRN: {
                 uint32_t input = layerToBlob[*intPt++];
                 uint32_t local_size = 5;
@@ -553,6 +568,43 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
                                                  activationOperandIndex}};
 
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONV_2D, 10, &inputOperandsArr[0], 1,
+                                      &outputOperandIndex);
+    return outputOperandIndex;
+}
+
+uint32_t
+ModelBuilder::addStridedSlice(uint32_t input, uint32_t startsIndex, uint32_t endsIndex, uint32_t stridesIndex,
+                              uint32_t beginMask, uint32_t endMask, uint32_t shrinkAxismask) {
+
+    if (input >= nextIndex) return WRONG_INPUT;
+
+    uint32_t beginMaskOperandIndex = addInt32Operand(beginMask);
+    uint32_t endMaskOperandIndex = addInt32Operand(endMask);
+    uint32_t shrinkAxisMaskOperandIndex = addInt32Operand(shrinkAxismask);
+
+    // NHWC
+    vector<uint32_t> inputDimen = dimensMap[input];
+    vector<uint32_t> outputDimen(inputDimen.size());
+    for (size_t i = 0; i < outputDimen.size(); i++) {
+        uint32_t start, end;
+        if (beginMask & (1 << i)) {
+            start = 0;
+        }
+        if (endMask & (1 << i)) {
+            end = inputDimen[i];
+        }
+        outputDimen[i] = end - start;
+    }
+
+    ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
+    uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
+
+    dimensMap[outputOperandIndex] = outputDimen;
+
+    array<uint32_t, 7> inputOperandsArr{{input, startsIndex, endsIndex, stridesIndex,
+                                        beginMaskOperandIndex, endMaskOperandIndex, shrinkAxisMaskOperandIndex}};
+
+    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_STRIDED_SLICE, 7, &inputOperandsArr[0], 1,
                                       &outputOperandIndex);
     return outputOperandIndex;
 }
