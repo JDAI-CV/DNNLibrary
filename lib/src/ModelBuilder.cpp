@@ -582,7 +582,7 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
 uint32_t
 ModelBuilder::addStridedSlice(uint32_t input, const vector<uint32_t> &starts, const vector<uint32_t> &ends,
                               const vector<uint32_t> &strides, uint32_t beginMask, uint32_t endMask,
-                              uint32_t shrinkAxismask) {
+                              uint32_t shrinkAxisMask) {
 
     if (input >= nextIndex) return WRONG_INPUT;
 
@@ -591,12 +591,15 @@ ModelBuilder::addStridedSlice(uint32_t input, const vector<uint32_t> &starts, co
     uint32_t stridesIndex = addIntTensorFromBuffer(&strides[0], vector<uint32_t>{strides.size()});
     uint32_t beginMaskOperandIndex = addInt32Operand(beginMask);
     uint32_t endMaskOperandIndex = addInt32Operand(endMask);
-    uint32_t shrinkAxisMaskOperandIndex = addInt32Operand(shrinkAxismask);
+    uint32_t shrinkAxisMaskOperandIndex = addInt32Operand(shrinkAxisMask);
 
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
-    vector<uint32_t> outputDimen(inputDimen.size());
-    for (size_t i = 0; i < outputDimen.size(); i++) {
+    vector<uint32_t> outputDimen;
+    for (size_t i = 0; i < inputDimen.size(); i++) {
+        if (shrinkAxisMask & (1 << i)) {
+            continue;
+        }
         uint32_t start = starts[i], end = ends[i];
         if (beginMask & (1 << i)) {
             start = 0;
@@ -604,7 +607,7 @@ ModelBuilder::addStridedSlice(uint32_t input, const vector<uint32_t> &starts, co
         if (endMask & (1 << i)) {
             end = inputDimen[i];
         }
-        outputDimen[i] = end - start;
+        outputDimen.emplace_back(end - start);
     }
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(outputDimen);
