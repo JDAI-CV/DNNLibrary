@@ -1,4 +1,7 @@
 set(LIB_SRC
+    include/ModelBuilder.h
+    include/Model.h
+    include/android_log_helper.h
     src/ModelBuilder.cpp
     src/Model.cpp)
 
