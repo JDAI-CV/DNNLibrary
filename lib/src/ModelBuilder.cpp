@@ -1038,7 +1038,7 @@ uint32_t ModelBuilder::addFC(uint32_t input, uint32_t outputNum, int32_t activat
 }
 
 uint32_t ModelBuilder::getBlobIndex(std::string blobName) {
-    return blobNameToIndex[blobName];
+    return blobNameToIndex.at(blobName);
 }
 
 uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
