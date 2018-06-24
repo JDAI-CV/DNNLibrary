@@ -419,7 +419,7 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
             case MF_STRIDED_SLICE: {
                 uint32_t input = layerToBlob[*intPt++];
                 vector<uint32_t> inputDim = dimensMap[input];
-                vector<uint32_t> starts, ends, strides;
+                vector<int32_t> starts, ends, strides;
                 for (int i = 0 ; i < inputDim.size(); i++) {
                     starts.emplace_back(*intPt++);
                 }
@@ -580,9 +580,9 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
 }
 
 uint32_t
-ModelBuilder::addStridedSlice(uint32_t input, const vector<uint32_t> &starts, const vector<uint32_t> &ends,
-                              const vector<uint32_t> &strides, uint32_t beginMask, uint32_t endMask,
-                              uint32_t shrinkAxisMask) {
+ModelBuilder::addStridedSlice(uint32_t input, const vector<int32_t> &starts, const vector<int32_t> &ends,
+                              const vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
+                              int32_t shrinkAxisMask) {
 
     if (input >= nextIndex) return WRONG_INPUT;
 
@@ -600,7 +600,7 @@ ModelBuilder::addStridedSlice(uint32_t input, const vector<uint32_t> &starts, co
         if (shrinkAxisMask & (1 << i)) {
             continue;
         }
-        uint32_t start = starts[i], end = ends[i];
+        int32_t start = starts[i], end = ends[i];
         if (beginMask & (1 << i)) {
             start = 0;
         }
