@@ -586,9 +586,9 @@ ModelBuilder::addStridedSlice(uint32_t input, const vector<uint32_t> &starts, co
 
     if (input >= nextIndex) return WRONG_INPUT;
 
-    uint32_t startsIndex = addIntTensorFromBuffer(&starts[0], vector<uint32_t>{starts.size()});
-    uint32_t endsIndex = addIntTensorFromBuffer(&ends[0], vector<uint32_t>{ends.size()});
-    uint32_t stridesIndex = addIntTensorFromBuffer(&strides[0], vector<uint32_t>{strides.size()});
+    uint32_t startsIndex = addIntTensorFromBuffer(&starts[0], vector<uint32_t>{static_cast<uint32_t>(starts.size())});
+    uint32_t endsIndex = addIntTensorFromBuffer(&ends[0], vector<uint32_t>{static_cast<uint32_t>(ends.size())});
+    uint32_t stridesIndex = addIntTensorFromBuffer(&strides[0], vector<uint32_t>{static_cast<uint32_t>(strides.size())});
     uint32_t beginMaskOperandIndex = addInt32Operand(beginMask);
     uint32_t endMaskOperandIndex = addInt32Operand(endMask);
     uint32_t shrinkAxisMaskOperandIndex = addInt32Operand(shrinkAxisMask);
