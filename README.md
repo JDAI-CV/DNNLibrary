@@ -1,6 +1,6 @@
 # DNNLibrary
 
-![bintray](https://img.shields.io/bintray/v/daquexian566/maven/dnnlibrary.svg)
+[![Download](https://api.bintray.com/packages/daquexian566/maven/dnnlibrary/images/download.svg) ](https://bintray.com/daquexian566/maven/dnnlibrary/_latestVersion)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
 
 *Run neural network on your Android phone using the new NNAPI !*
