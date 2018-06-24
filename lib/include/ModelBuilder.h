@@ -153,9 +153,9 @@ public:
     uint32_t addReLU(uint32_t input);
     uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
     uint32_t addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta);
-    uint32_t addStridedSlice(uint32_t input, const std::vector<uint32_t> &starts, const std::vector<uint32_t> &ends,
-                             const std::vector<uint32_t> &strides, uint32_t beginMask, uint32_t endMask,
-                             uint32_t shrinkAxismask);
+    uint32_t addStridedSlice(uint32_t input, const std::vector<int32_t> &starts, const std::vector<int32_t> &ends,
+                             const std::vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
+                             int32_t shrinkAxismask);
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);
