@@ -56,7 +56,7 @@ If you are an Android app developer and want it to work out of the box, it has b
 Add
 
 ```
-implementation 'me.daquexian:dnnlibrary:0.2.3'
+implementation 'me.daquexian:dnnlibrary:0.2.5'
 ```
 
 (for Gradle 3.0+),
@@ -64,7 +64,7 @@ implementation 'me.daquexian:dnnlibrary:0.2.3'
 or
 
 ```
-compile 'me.daquexian:dnnlibrary:0.2.3'
+compile 'me.daquexian:dnnlibrary:0.2.5'
 ```
 
 (for Gradle lower than 3.0)

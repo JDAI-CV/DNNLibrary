@@ -56,7 +56,7 @@ publish {
     userOrg = 'daquexian566'
     groupId = 'me.daquexian'
     artifactId = 'dnnlibrary'
-    publishVersion = '0.2.3'
+    publishVersion = '0.2.5'
     desc = 'Daquexian\'s NNAPI Library. Run neural network using the new NNAPI on Android !'
     website = 'https://github.com/daquexian/DNNLibrary'
 }
