@@ -24,7 +24,7 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_PLATFORM=android-27", "-DBUILD_SHARED_LIBS=ON",
+                arguments "-DANDROID_PLATFORM=android-28", "-DBUILD_SHARED_LIBS=ON",
                         "-DBUILD_JNI=ON", "-DBUILD_BIN=OFF"
             }
         }
