@@ -50,10 +50,6 @@ private:
 
     ANeuralNetworksOperandType getInt32OperandType();
     ANeuralNetworksOperandType getFloat32OperandType();
-    ANeuralNetworksOperandType getFloat32AsTensorOperandType(); // Tensor containing only one element, for broadcasting in add and mul
-
-    // char* setOperandValueFromAssets(ANeuralNetworksModel *model, AAssetManager *mgr, int32_t index,
-                                    // std::string filename);
 
 public:
     static const int MAX_POOL = 0;
