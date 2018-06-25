@@ -416,6 +416,7 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                 while (*intPt++ != MF_TOP_NAME) ;
                 break;
             }
+#if __ANDROID_API__ >= __ANDROID_API_P__
             case MF_STRIDED_SLICE: {
                 uint32_t input = layerToBlob[*intPt++];
                 vector<uint32_t> inputDim = dimensMap[input];
@@ -438,6 +439,7 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                 layerToBlob.push_back(index);
                 break;
             }
+#endif
             case MF_LRN: {
                 uint32_t input = layerToBlob[*intPt++];
                 uint32_t local_size = 5;
@@ -579,6 +581,7 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
     return outputOperandIndex;
 }
 
+#if __ANDROID_API__ >= __ANDROID_API_P__
 uint32_t
 ModelBuilder::addStridedSlice(uint32_t input, const vector<int32_t> &starts, const vector<int32_t> &ends,
                               const vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
@@ -622,6 +625,7 @@ ModelBuilder::addStridedSlice(uint32_t input, const vector<int32_t> &starts, con
                                       &outputOperandIndex);
     return outputOperandIndex;
 }
+#endif
 
 uint32_t ModelBuilder::addCaffePool(uint32_t input, int32_t strideX, int32_t strideY,
                                     int32_t paddingLeft, int32_t paddingRight,
