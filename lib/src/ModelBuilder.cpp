@@ -35,7 +35,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     std::ifstream ifs(filename, ios::binary | ios::ate);
     streamsize len = ifs.tellg();
     ifs.seekg(0, ios::beg);
-    char *buffer = new char[len];
+    auto *buffer = new char[len];
     // read whole content of a file into buffer
     if (ifs.read(buffer, len)) {
         registerBufferPointer(buffer);
@@ -48,7 +48,7 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
 
 ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
     vector<uint32_t> layerToBlob;
-    const uint32_t *intPt = reinterpret_cast<const uint32_t *>(buffer);
+    const auto *intPt = reinterpret_cast<const uint32_t *>(buffer);
     uint32_t layerType;
 
     while ((layerType = *intPt++) != MF_LAYER_END) {
@@ -479,17 +479,6 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
     return *this;
 }
 
-/*ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
-    AAsset* asset = AAssetManager_open(mgr, filename.c_str(), AASSET_MODE_UNKNOWN);
-    size_t size = static_cast<size_t>(AAsset_getLength(asset));
-    char* buffer = new char[size];
-    bufferPointers.push_back(static_cast<void *>(buffer));
-
-    AAsset_read(asset, buffer, static_cast<size_t>(size));
-
-    return this->readFromBuffer(buffer);
-}*/
-
 uint32_t ModelBuilder::addInput(uint32_t height, uint32_t width, uint32_t depth) {
     vector<uint32_t> dimen{1, width, height, depth};
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
@@ -738,7 +727,6 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
     }
 
     uint32_t axisOperandIndex = addInt32Operand(axis);
-    // uint32_t activationOperandIndex = addInt32Operand(activation);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
@@ -747,11 +735,10 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
 
     vector<uint32_t> operationInputs = inputs;
     operationInputs.push_back(axisOperandIndex);
-    // This undocumented input are is in MR1, it seems not needed anymore in MR2
-    // operationInputs.push_back(activationOperandIndex);
 
     ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONCATENATION,
-                                      operationInputs.size(), &operationInputs[0], 1, &outputOperandIndex);
+                                      static_cast<uint32_t>(operationInputs.size()), &operationInputs[0],
+                                      1, &outputOperandIndex);
     return outputOperandIndex;
 }
 
@@ -978,9 +965,6 @@ void ModelBuilder::clear() {
     floatBufPointers.clear();
 }
 
-ModelBuilder::ModelBuilder() {
-}
-
 int ModelBuilder::setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length) {
     for (auto i = 0; i < inputIndexVector.size(); i++) {
         int32_t opIndex = inputIndexVector[i];
@@ -1101,7 +1085,7 @@ uint32_t ModelBuilder::addFloat32NullOperandWithDims(std::vector<uint32_t> &dims
 }
 
 uint32_t ModelBuilder::addFloat32ZeroOperandWithDims(std::vector<uint32_t> &dims) {
-    float *zeros = new float[product(dims)];
+    auto *zeros = new float[product(dims)];
     registerBufferPointer(zeros);
     for (size_t i = 0; i < product(dims); i++) {
         zeros[i] = 0;

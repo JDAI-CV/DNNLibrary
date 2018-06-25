@@ -167,8 +167,6 @@ public:
     void registerBufferPointer(float *pointer);
     void clear();
 
-    ModelBuilder();
-
     ModelBuilder &readFromBuffer(const char *buffer);
     ModelBuilder& readFromFile(std::string filename);
     ModelBuilder& simplestModel();
