@@ -11,5 +11,4 @@ option(BUILD_SHARED_LIBS "Build shared dnnlibrary" OFF)
 option(BUILD_JNI "Build JavaWrapper" OFF)
 option(BUILD_BIN "Build binaries" ON)
 
-add_subdirectory(lib)
-add_subdirectory(app)
+add_subdirectory(src)
