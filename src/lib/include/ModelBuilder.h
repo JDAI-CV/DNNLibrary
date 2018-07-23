@@ -20,6 +20,7 @@ private:
     std::map<uint32_t, std::vector<uint32_t>> dimensMap;
     std::vector<uint32_t> inputIndexVector;
     std::vector<uint32_t> outputIndexVector;
+    std::map<uint32_t , uint32_t> uint32OperandMap;
     std::map<int32_t , uint32_t> int32OperandMap;
     std::map<float, uint32_t> float32OperandMap;
     std::map<float, uint32_t> float32AsTensorOperandMap;
@@ -37,8 +38,8 @@ private:
 
     uint32_t addNewOperand(ANeuralNetworksOperandType *type);
 
-    uint32_t addInt32Operand(int32_t value);
-    uint32_t addFloat32Operand(float value);
+    uint32_t addOperand(int32_t value);
+    uint32_t addOperand(float value);
     uint32_t addFloat32AsTensorOperand(float value);
     uint32_t addInt32NullOperand();
     uint32_t addFloat32NullOperand();
@@ -170,6 +171,8 @@ public:
     ModelBuilder &readFromBuffer(const char *buffer);
     ModelBuilder& readFromFile(std::string filename);
     ModelBuilder& simplestModel();
+
+    uint32_t addOperand(uint32_t value);
 };
 
 

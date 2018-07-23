@@ -498,14 +498,14 @@ uint32_t ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t
 
     if (input >= nextIndex) return WRONG_INPUT;
 
-    uint32_t strideXOperandIndex = addInt32Operand(strideX);
-    uint32_t strideYOperandIndex = addInt32Operand(strideY);
-    uint32_t paddingLeftOperandIndex = addInt32Operand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addInt32Operand(paddingRight);
-    uint32_t paddingTopOperandIndex = addInt32Operand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addInt32Operand(paddingBottom);
-    uint32_t depthMultiplierOperandIndex = addInt32Operand(depthMultiplier);
-    uint32_t activationOperandIndex = addInt32Operand(activation);
+    uint32_t strideXOperandIndex = addOperand(strideX);
+    uint32_t strideYOperandIndex = addOperand(strideY);
+    uint32_t paddingLeftOperandIndex = addOperand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addOperand(paddingRight);
+    uint32_t paddingTopOperandIndex = addOperand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addOperand(paddingBottom);
+    uint32_t depthMultiplierOperandIndex = addOperand(depthMultiplier);
+    uint32_t activationOperandIndex = addOperand(activation);
 
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
@@ -538,13 +538,13 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
                                uint32_t weightIndex, uint32_t biasIndex) {
     if (input >= nextIndex) return WRONG_INPUT;
 
-    uint32_t strideXOperandIndex = addInt32Operand(strideX);
-    uint32_t strideYOperandIndex = addInt32Operand(strideY);
-    uint32_t paddingLeftOperandIndex = addInt32Operand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addInt32Operand(paddingRight);
-    uint32_t paddingTopOperandIndex = addInt32Operand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addInt32Operand(paddingBottom);
-    uint32_t activationOperandIndex = addInt32Operand(activation);
+    uint32_t strideXOperandIndex = addOperand(strideX);
+    uint32_t strideYOperandIndex = addOperand(strideY);
+    uint32_t paddingLeftOperandIndex = addOperand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addOperand(paddingRight);
+    uint32_t paddingTopOperandIndex = addOperand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addOperand(paddingBottom);
+    uint32_t activationOperandIndex = addOperand(activation);
 
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
@@ -638,15 +638,15 @@ uint32_t ModelBuilder::addCaffePool(uint32_t input, int32_t strideX, int32_t str
         paddingRight += strideX - extraX;
     }
 
-    uint32_t widthOperandIndex = addInt32Operand(width);
-    uint32_t heightOperandIndex = addInt32Operand(height);
-    uint32_t strideXOperandIndex = addInt32Operand(strideX);
-    uint32_t strideYOperandIndex = addInt32Operand(strideY);
-    uint32_t paddingLeftOperandIndex = addInt32Operand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addInt32Operand(paddingRight);
-    uint32_t paddingTopOperandIndex = addInt32Operand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addInt32Operand(paddingBottom);
-    uint32_t activationOperandIndex = addInt32Operand(activation);
+    uint32_t widthOperandIndex = addOperand(width);
+    uint32_t heightOperandIndex = addOperand(height);
+    uint32_t strideXOperandIndex = addOperand(strideX);
+    uint32_t strideYOperandIndex = addOperand(strideY);
+    uint32_t paddingLeftOperandIndex = addOperand(paddingLeft);
+    uint32_t paddingRightOperandIndex = addOperand(paddingRight);
+    uint32_t paddingTopOperandIndex = addOperand(paddingTop);
+    uint32_t paddingBottomOperandIndex = addOperand(paddingBottom);
+    uint32_t activationOperandIndex = addOperand(activation);
 
     vector<uint32_t> outputDimen{1,
                                  (inputDimen[1] - height + paddingTop + paddingBottom) / strideY + 1,
@@ -678,7 +678,7 @@ uint32_t ModelBuilder::addCaffePool(uint32_t input, int32_t strideX, int32_t str
 uint32_t ModelBuilder::addSoftMax(uint32_t input, float beta) {
     vector<uint32_t> dimen = dimensMap[input];
 
-    uint32_t betaIndex = addFloat32Operand(beta);
+    uint32_t betaIndex = addOperand(beta);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
@@ -726,7 +726,7 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
         outputDimen[axis] += dimens[i][axis];
     }
 
-    uint32_t axisOperandIndex = addInt32Operand(axis);
+    uint32_t axisOperandIndex = addOperand(axis);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(outputDimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
@@ -745,10 +745,10 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
 uint32_t ModelBuilder::addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta) {
     vector<uint32_t> dimen = dimensMap[input];
 
-    uint32_t local_sizeIndex = addInt32Operand(local_size);
-    uint32_t biasIndex = addFloat32Operand(bias);
-    uint32_t alphaIndex = addFloat32Operand(alpha);
-    uint32_t betaIndex = addFloat32Operand(beta);
+    uint32_t local_sizeIndex = addOperand(local_size);
+    uint32_t biasIndex = addOperand(bias);
+    uint32_t alphaIndex = addOperand(alpha);
+    uint32_t betaIndex = addOperand(beta);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
@@ -829,7 +829,17 @@ char* ModelBuilder::setOperandValueFromAssets(ANeuralNetworksModel *model, AAsse
     return buffer;
 }*/
 
-uint32_t ModelBuilder::addInt32Operand(int32_t value) {
+ uint32_t ModelBuilder::addOperand(uint32_t value) {
+     if (uint32OperandMap.find(value) == uint32OperandMap.end()) {
+         ANeuralNetworksOperandType type = getInt32OperandType();
+         uint32_t index = addNewOperand(&type);
+         ANeuralNetworksModel_setOperandValue(model, index, &value, sizeof(value));
+         uint32OperandMap[value] = index;
+     }
+     return uint32OperandMap[value];
+}
+
+uint32_t ModelBuilder::addOperand(int32_t value) {
     if (int32OperandMap.find(value) == int32OperandMap.end()) {
         ANeuralNetworksOperandType type = getInt32OperandType();
         uint32_t index = addNewOperand(&type);
@@ -839,7 +849,7 @@ uint32_t ModelBuilder::addInt32Operand(int32_t value) {
     return int32OperandMap[value];
 }
 
-uint32_t ModelBuilder::addFloat32Operand(float value) {
+uint32_t ModelBuilder::addOperand(float value) {
     if (float32OperandMap.find(value) == float32OperandMap.end()) {
         ANeuralNetworksOperandType type = getFloat32OperandType();
         uint32_t index = addNewOperand(&type);
@@ -1007,7 +1017,7 @@ vector<uint32_t> ModelBuilder::getOutputIndexes() {
 uint32_t ModelBuilder::addFC(uint32_t input, uint32_t outputNum, int32_t activation, uint32_t weightIndex,
                     uint32_t biasIndex) {
 
-    uint32_t activationOperandIndex = addInt32Operand(activation);
+    uint32_t activationOperandIndex = addOperand(activation);
 
     vector<uint32_t> outputDimen{1, outputNum};
 
@@ -1031,7 +1041,7 @@ uint32_t ModelBuilder::getBlobIndex(std::string blobName) {
 
 uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
     uint32_t scalarIndex = addFloat32AsTensorOperand(scalar);
-    array<uint32_t, 3> inputOperands{{input, scalarIndex, addInt32Operand(
+    array<uint32_t, 3> inputOperands{{input, scalarIndex, addOperand(
             ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input]);
@@ -1043,7 +1053,7 @@ uint32_t ModelBuilder::addAddScalar(uint32_t input, float scalar) {
 }
 
 uint32_t ModelBuilder::addAddTensor(uint32_t input1, uint32_t input2) {
-    array<uint32_t, 3> inputOperands{{input1, input2, addInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    array<uint32_t, 3> inputOperands{{input1, input2, addOperand(ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input1]);
     uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
@@ -1055,7 +1065,7 @@ uint32_t ModelBuilder::addAddTensor(uint32_t input1, uint32_t input2) {
 
 uint32_t ModelBuilder::addMulScalar(uint32_t input, float scalar) {
     uint32_t scalarIndex = addFloat32AsTensorOperand(scalar);
-    array<uint32_t, 3> inputOperands{{input, scalarIndex, addInt32Operand(
+    array<uint32_t, 3> inputOperands{{input, scalarIndex, addOperand(
             ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input]);
@@ -1067,7 +1077,7 @@ uint32_t ModelBuilder::addMulScalar(uint32_t input, float scalar) {
 }
 
 uint32_t ModelBuilder::addMulTensor(uint32_t input1, uint32_t input2) {
-    array<uint32_t, 3> inputOperands{{input1, input2, addInt32Operand(ModelBuilder::ACTIVATION_NONE)}};
+    array<uint32_t, 3> inputOperands{{input1, input2, addOperand(ModelBuilder::ACTIVATION_NONE)}};
 
     ANeuralNetworksOperandType outputBlobType = getFloat32OperandTypeWithDims(dimensMap[input1]);
     uint32_t outputOperandIndex = addNewOperand(&outputBlobType);
