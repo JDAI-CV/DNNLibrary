@@ -13,6 +13,7 @@
 
 class ModelBuilder {
 private:
+    using IndexSeq = std::vector<uint32_t>;
     ANeuralNetworksModel* model = nullptr;
     std::vector<char *> charBufPointers;
     std::vector<float *> floatBufPointers;
@@ -40,6 +41,7 @@ private:
 
     uint32_t addOperand(int32_t value);
     uint32_t addOperand(float value);
+    uint32_t addOperand(uint32_t value);
     uint32_t addFloat32AsTensorOperand(float value);
     uint32_t addInt32NullOperand();
     uint32_t addFloat32NullOperand();
@@ -160,8 +162,8 @@ public:
     void addIndexIntoOutput(uint32_t index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);
-    std::vector<uint32_t> getInputIndexes();
-    std::vector<uint32_t> getOutputIndexes();
+    IndexSeq getInputIndexes();
+    IndexSeq getOutputIndexes();
     int setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
     int setOutputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
     void registerBufferPointer(char *pointer);
@@ -172,7 +174,10 @@ public:
     ModelBuilder& readFromFile(std::string filename);
     ModelBuilder& simplestModel();
 
-    uint32_t addOperand(uint32_t value);
+    template <typename... Args>
+    void addOperands(IndexSeq &indexes, Args... args) {
+        (indexes.push_back(addOperand(args)), ...);
+    }
 };
 
 

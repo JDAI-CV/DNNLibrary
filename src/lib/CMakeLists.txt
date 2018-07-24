@@ -3,7 +3,7 @@ set(LIB_SRC
     include/Model.h
     include/android_log_helper.h
     src/ModelBuilder.cpp
-    src/Model.cpp)
+    src/Model.cpp include/operand_helper.h)
 
 if (BUILD_JNI)
     list(APPEND

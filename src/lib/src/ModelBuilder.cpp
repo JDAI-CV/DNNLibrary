@@ -6,14 +6,21 @@
 #include <array>
 #include <cmath>
 #include <ctime>
+#include <tuple>
 #include <numeric>
 #include <sstream>
 #include <fstream>
 #include <iostream>
 
 #include "android_log_helper.h"
+#include <operand_helper.h>
+
 
 using namespace std;
+
+#define ADD_OPERATION(operation, input_indexes, output_indexes) \
+ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_##operation, static_cast<uint32_t>(input_indexes.size()),  \
+    &input_indexes[0], static_cast<uint32_t>(output_indexes.size()), &output_indexes[0]);
 
 // Simplest model for test
 ModelBuilder &ModelBuilder::simplestModel() {
@@ -498,15 +505,6 @@ uint32_t ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t
 
     if (input >= nextIndex) return WRONG_INPUT;
 
-    uint32_t strideXOperandIndex = addOperand(strideX);
-    uint32_t strideYOperandIndex = addOperand(strideY);
-    uint32_t paddingLeftOperandIndex = addOperand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addOperand(paddingRight);
-    uint32_t paddingTopOperandIndex = addOperand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addOperand(paddingBottom);
-    uint32_t depthMultiplierOperandIndex = addOperand(depthMultiplier);
-    uint32_t activationOperandIndex = addOperand(activation);
-
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
 
@@ -520,15 +518,13 @@ uint32_t ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t
 
     dimensMap[outputOperandIndex] = outputDimen;
 
-    array<uint32_t, 11> inputOperandsArr{{input, weightIndex, biasIndex,
-                                                 paddingLeftOperandIndex, paddingRightOperandIndex,
-                                                 paddingTopOperandIndex, paddingBottomOperandIndex,
-                                                 strideXOperandIndex, strideYOperandIndex,
-                                                 depthMultiplierOperandIndex,
-                                                 activationOperandIndex}};
+    IndexSeq input_indexes{input, weightIndex, biasIndex};
+    addOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom,
+                strideX, strideY, depthMultiplier, activation);
 
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_DEPTHWISE_CONV_2D, 11, &inputOperandsArr[0], 1,
-                                      &outputOperandIndex);
+    IndexSeq output_indexes{outputOperandIndex};
+
+    ADD_OPERATION(DEPTHWISE_CONV_2D, input_indexes, output_indexes);
     return outputOperandIndex;
 }
 
@@ -538,14 +534,6 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
                                uint32_t weightIndex, uint32_t biasIndex) {
     if (input >= nextIndex) return WRONG_INPUT;
 
-    uint32_t strideXOperandIndex = addOperand(strideX);
-    uint32_t strideYOperandIndex = addOperand(strideY);
-    uint32_t paddingLeftOperandIndex = addOperand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addOperand(paddingRight);
-    uint32_t paddingTopOperandIndex = addOperand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addOperand(paddingBottom);
-    uint32_t activationOperandIndex = addOperand(activation);
-
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
 
@@ -559,14 +547,11 @@ uint32_t ModelBuilder::addConv(uint32_t input, int32_t strideX, int32_t strideY,
 
     dimensMap[outputOperandIndex] = outputDimen;
 
-    array<uint32_t, 10> inputOperandsArr{{input, weightIndex, biasIndex,
-                                                 paddingLeftOperandIndex, paddingRightOperandIndex,
-                                                 paddingTopOperandIndex, paddingBottomOperandIndex,
-                                                 strideXOperandIndex, strideYOperandIndex,
-                                                 activationOperandIndex}};
+    IndexSeq input_indexes{input, weightIndex, biasIndex};
+    addOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom, strideX, strideY, activation);
+    IndexSeq output_indexes{outputOperandIndex};
 
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_CONV_2D, 10, &inputOperandsArr[0], 1,
-                                      &outputOperandIndex);
+    ADD_OPERATION(CONV_2D, input_indexes, output_indexes);
     return outputOperandIndex;
 }
 
@@ -581,9 +566,9 @@ ModelBuilder::addStridedSlice(uint32_t input, const vector<int32_t> &starts, con
     uint32_t startsIndex = addIntTensorFromBuffer(&starts[0], vector<uint32_t>{static_cast<uint32_t>(starts.size())});
     uint32_t endsIndex = addIntTensorFromBuffer(&ends[0], vector<uint32_t>{static_cast<uint32_t>(ends.size())});
     uint32_t stridesIndex = addIntTensorFromBuffer(&strides[0], vector<uint32_t>{static_cast<uint32_t>(strides.size())});
-    uint32_t beginMaskOperandIndex = addInt32Operand(beginMask);
-    uint32_t endMaskOperandIndex = addInt32Operand(endMask);
-    uint32_t shrinkAxisMaskOperandIndex = addInt32Operand(shrinkAxisMask);
+    uint32_t beginMaskOperandIndex = addOperand(beginMask);
+    uint32_t endMaskOperandIndex = addOperand(endMask);
+    uint32_t shrinkAxisMaskOperandIndex = addOperand(shrinkAxisMask);
 
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
@@ -627,7 +612,6 @@ uint32_t ModelBuilder::addCaffePool(uint32_t input, int32_t strideX, int32_t str
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
 
-
     // https://github.com/BVLC/caffe/pull/473#issuecomment-45386156
     unsigned int extraY = (inputDimen[1] - height + paddingTop + paddingBottom) % strideY;
     if (extraY != 0) {
@@ -637,16 +621,6 @@ uint32_t ModelBuilder::addCaffePool(uint32_t input, int32_t strideX, int32_t str
     if (extraX != 0) {
         paddingRight += strideX - extraX;
     }
-
-    uint32_t widthOperandIndex = addOperand(width);
-    uint32_t heightOperandIndex = addOperand(height);
-    uint32_t strideXOperandIndex = addOperand(strideX);
-    uint32_t strideYOperandIndex = addOperand(strideY);
-    uint32_t paddingLeftOperandIndex = addOperand(paddingLeft);
-    uint32_t paddingRightOperandIndex = addOperand(paddingRight);
-    uint32_t paddingTopOperandIndex = addOperand(paddingTop);
-    uint32_t paddingBottomOperandIndex = addOperand(paddingBottom);
-    uint32_t activationOperandIndex = addOperand(activation);
 
     vector<uint32_t> outputDimen{1,
                                  (inputDimen[1] - height + paddingTop + paddingBottom) / strideY + 1,
@@ -658,17 +632,16 @@ uint32_t ModelBuilder::addCaffePool(uint32_t input, int32_t strideX, int32_t str
 
     dimensMap[outputOperandIndex] = outputDimen;
 
-    array<uint32_t, 10> inputOperandsArr{{input, paddingLeftOperandIndex, paddingRightOperandIndex,
-                                                 paddingTopOperandIndex, paddingBottomOperandIndex,
-                                                 strideXOperandIndex, strideYOperandIndex,
-                                                 widthOperandIndex, heightOperandIndex,
-                                                 activationOperandIndex}};
+    IndexSeq input_indexes{input};
+    addOperands(input_indexes, width, height, strideX, strideY,
+                paddingLeft, paddingRight, paddingTop, paddingBottom, activation);
+
+    IndexSeq output_indexes{outputOperandIndex};
+
     if (poolingType == MAX_POOL) {
-        ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_MAX_POOL_2D, 10,
-                                          &inputOperandsArr[0], 1, &outputOperandIndex);
+        ADD_OPERATION(MAX_POOL_2D, input_indexes, output_indexes);
     } else if (poolingType == AVE_POOL) {
-        ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_AVERAGE_POOL_2D, 10,
-                                          &inputOperandsArr[0], 1, &outputOperandIndex);
+        ADD_OPERATION(AVERAGE_POOL_2D, input_indexes, output_indexes);
     } else {
         return WRONG_POOLING_TYPE;
     }
@@ -745,20 +718,16 @@ uint32_t ModelBuilder::addConcat(const vector<uint32_t> &inputs, uint32_t axis) 
 uint32_t ModelBuilder::addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta) {
     vector<uint32_t> dimen = dimensMap[input];
 
-    uint32_t local_sizeIndex = addOperand(local_size);
-    uint32_t biasIndex = addOperand(bias);
-    uint32_t alphaIndex = addOperand(alpha);
-    uint32_t betaIndex = addOperand(beta);
+    IndexSeq input_indexes{input};
+    addOperands(input_indexes, local_size, bias, alpha, beta);
 
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t outputOperandIndex = addNewOperand(&type);
 
     dimensMap[outputOperandIndex] = dimen;
 
-    array<uint32_t, 5> inputOperandsArr{{input, local_sizeIndex, biasIndex, alphaIndex, betaIndex}};
-
-    ANeuralNetworksModel_addOperation(model, ANEURALNETWORKS_LOCAL_RESPONSE_NORMALIZATION, 5, &inputOperandsArr[0],
-                                      1, &outputOperandIndex);
+    IndexSeq output_indexes{outputOperandIndex};
+    ADD_OPERATION(LOCAL_RESPONSE_NORMALIZATION, input_indexes, output_indexes);
     return outputOperandIndex;
 }
 //--------------------------------------------------------------------------------------------------//

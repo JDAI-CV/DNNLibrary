@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.5.2)
 
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 17)
 
 option(BUILD_SHARED_LIBS "Build shared dnnlibrary" OFF)
 option(BUILD_JNI "Build JavaWrapper" OFF)
