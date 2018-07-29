@@ -42,7 +42,8 @@ private:
     uint32_t addNewOperand(ANeuralNetworksOperandType *type);
 
     // IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);
-    IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);
+    template <typename... Shapes>
+    IndexSeq addOperation(int op, IndexSeq input_indexes, Shapes... shapes);
 
     Index addOperand(int32_t value);
     Index addOperand(float value);
