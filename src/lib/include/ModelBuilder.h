@@ -13,20 +13,22 @@
 
 class ModelBuilder {
 private:
-    using IndexSeq = std::vector<uint32_t>;
+    using Index = uint32_t;
+    using IndexSeq = std::vector<Index>;
+    using Shape = std::vector<uint32_t>;
     ANeuralNetworksModel* model = nullptr;
     std::vector<char *> charBufPointers;
     std::vector<float *> floatBufPointers;
     // NHWC
-    std::map<uint32_t, std::vector<uint32_t>> dimensMap;
-    std::vector<uint32_t> inputIndexVector;
-    std::vector<uint32_t> outputIndexVector;
-    std::map<uint32_t , uint32_t> uint32OperandMap;
-    std::map<int32_t , uint32_t> int32OperandMap;
-    std::map<float, uint32_t> float32OperandMap;
-    std::map<float, uint32_t> float32AsTensorOperandMap;
+    std::map<Index, Shape> dimensMap;
+    IndexSeq inputIndexVector;
+    IndexSeq outputIndexVector;
+    std::map<uint32_t , Index> uint32OperandMap;
+    std::map<int32_t , Index> int32OperandMap;
+    std::map<float, Index> float32OperandMap;
+    std::map<float, Index> float32AsTensorOperandMap;
 
-    std::map<std::string, uint32_t> blobNameToIndex;
+    std::map<std::string, Index> blobNameToIndex;
 
     uint32_t missingInt32OperandIndex = UINT32_MAX;
     uint32_t missingFloat32OperandIndex = UINT32_MAX;
@@ -39,17 +41,20 @@ private:
 
     uint32_t addNewOperand(ANeuralNetworksOperandType *type);
 
-    uint32_t addOperand(int32_t value);
-    uint32_t addOperand(float value);
-    uint32_t addOperand(uint32_t value);
-    uint32_t addFloat32AsTensorOperand(float value);
-    uint32_t addInt32NullOperand();
-    uint32_t addFloat32NullOperand();
-    uint32_t addFloat32NullOperandWithDims(std::vector<uint32_t> &dims);
-    uint32_t addFloat32ZeroOperandWithDims(std::vector<uint32_t> &dims);
+    // IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);
+    IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);
 
-    ANeuralNetworksOperandType getFloat32OperandTypeWithDims(std::vector<uint32_t> &dims);
-    ANeuralNetworksOperandType getInt32OperandTypeWithDims(std::vector<uint32_t> &dims);
+    Index addOperand(int32_t value);
+    Index addOperand(float value);
+    Index addOperand(uint32_t value);
+    Index addFloat32AsTensorOperand(float value);
+    Index addInt32NullOperand();
+    Index addFloat32NullOperand();
+    Index addFloat32NullOperandWithDims(Shape &dims);
+    Index addFloat32ZeroOperandWithDims(Shape &dims);
+
+    ANeuralNetworksOperandType getFloat32OperandTypeWithDims(Shape &dims);
+    ANeuralNetworksOperandType getInt32OperandTypeWithDims(Shape &dims);
 
     ANeuralNetworksOperandType getInt32OperandType();
     ANeuralNetworksOperandType getFloat32OperandType();
@@ -125,41 +130,41 @@ public:
     ANeuralNetworksCompilation* compilation = nullptr;
 
     int init();
-    uint32_t getBlobIndex(std::string blobName);
-    std::vector<uint32_t> getBlobDim(std::string blobName);
-    std::vector<uint32_t> getBlobDim(uint32_t index);
-    uint32_t addInput(uint32_t height, uint32_t width, uint32_t depth);
-    uint32_t addDepthWiseConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+    Index getBlobIndex(std::string blobName);
+    Shape getBlobDim(std::string blobName);
+    Shape getBlobDim(Index index);
+    Index addInput(uint32_t height, uint32_t width, uint32_t depth);
+    Index addDepthWiseConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                               int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                               int32_t height, int32_t width, int32_t activation,
                               uint32_t outputDepth,
                               int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
-    uint32_t addConv(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+    Index addConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                      int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                      int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
                      uint32_t weightIndex, uint32_t biasIndex);
-    uint32_t addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
-    uint32_t addIntTensorFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
-    uint32_t addFC(uint32_t input, uint32_t outputNum, int32_t activation,
+    Index addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
+    Index addIntTensorFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
+    Index addFC(Index input, uint32_t outputNum, int32_t activation,
                    uint32_t weightIndex, uint32_t biasIndex);
-    uint32_t addCaffePool(uint32_t input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+    Index addCaffePool(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                           int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
                           int32_t height, int32_t width, int32_t activation,
                           uint32_t poolingType);
-    uint32_t addSoftMax(uint32_t input, float beta);
-    uint32_t addAddScalar(uint32_t input, float scalar);
-    uint32_t addAddTensor(uint32_t input1, uint32_t input2);
-    uint32_t addMulScalar(uint32_t input, float scalar);
-    uint32_t addMulTensor(uint32_t input1, uint32_t input2);
-    uint32_t addReLU(uint32_t input);
-    uint32_t addConcat(const std::vector<uint32_t> &inputs, uint32_t axis);
-    uint32_t addLRN(uint32_t input, uint32_t local_size, float bias, float alpha, float beta);
+    Index addSoftMax(Index input, float beta);
+    Index addAddScalar(Index input, float scalar);
+    Index addAddTensor(Index input1, Index input2);
+    Index addMulScalar(Index input, float scalar);
+    Index addMulTensor(Index input1, Index input2);
+    Index addReLU(Index input);
+    Index addConcat(const IndexSeq &inputs, uint32_t axis);
+    Index addLRN(Index input, uint32_t local_size, float bias, float alpha, float beta);
 #if __ANDROID_API__ >= __ANDROID_API_P__
-    uint32_t addStridedSlice(uint32_t input, const std::vector<int32_t> &starts, const std::vector<int32_t> &ends,
+    Index addStridedSlice(Index input, const std::vector<int32_t> &starts, const std::vector<int32_t> &ends,
                              const std::vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
                              int32_t shrinkAxismask);
 #endif
-    void addIndexIntoOutput(uint32_t index);
+    void addIndexIntoOutput(Index index);
     int compile(uint32_t preference);
     void prepareForExecution(Model &model);
     IndexSeq getInputIndexes();
