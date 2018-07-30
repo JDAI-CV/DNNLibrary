@@ -883,18 +883,6 @@ void ModelBuilder::registerBufferPointer(char *pointer) {
     charBufPointers.push_back(pointer);
 }
 
-void ModelBuilder::clear() {
-    ANeuralNetworksCompilation_free(compilation);
-    ANeuralNetworksModel_free(model);
-    for (auto pointer : charBufPointers) {
-        delete[] pointer;
-    }
-    for (auto pointer : floatBufPointers) {
-        delete[] pointer;
-    }
-    floatBufPointers.clear();
-}
-
 int ModelBuilder::setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length) {
     for (auto i = 0; i < inputIndexVector.size(); i++) {
         int32_t opIndex = inputIndexVector[i];
@@ -1012,10 +1000,6 @@ ModelBuilder::Shape ModelBuilder::getBlobDim(uint32_t index) {
     return dimensMap[index];
 }
 
-int ModelBuilder::init() {
-    return ANeuralNetworksModel_create(&model);
-}
-
 string ModelBuilder::getErrorProcedure(int errorCode) {
     errorCode &= NN_PROCEDURE_MASK;
     switch (errorCode) {
@@ -1076,6 +1060,24 @@ ModelBuilder::IndexSeq ModelBuilder::addOperation(int op, IndexSeq input_indexes
     ANeuralNetworksModel_addOperation(model, op, sizeof(input_indexes), &input_indexes[0],
                                       sizeof(output_indexes), &output_indexes[0]);
     return output_indexes;
+}
+
+ModelBuilder::~ModelBuilder() {
+    ANeuralNetworksCompilation_free(compilation);   // FIXME: there will be an error when compilation is not created
+    ANeuralNetworksModel_free(model);
+    for (auto pointer : charBufPointers) {
+        delete[] pointer;
+    }
+    for (auto pointer : floatBufPointers) {
+        delete[] pointer;
+    }
+}
+
+ModelBuilder::ModelBuilder() {
+    auto ret = ANeuralNetworksModel_create(&model);
+    if (ret == ANEURALNETWORKS_OUT_OF_MEMORY) {
+        throw std::bad_alloc();
+    }
 }
 
 

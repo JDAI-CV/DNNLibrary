@@ -61,6 +61,9 @@ private:
     ANeuralNetworksOperandType getFloat32OperandType();
 
 public:
+    ModelBuilder();
+    ~ModelBuilder();
+
     static const int MAX_POOL = 0;
     static const int AVE_POOL = 1;
 
@@ -130,7 +133,6 @@ public:
 
     ANeuralNetworksCompilation* compilation = nullptr;
 
-    int init();
     Index getBlobIndex(std::string blobName);
     Shape getBlobDim(std::string blobName);
     Shape getBlobDim(Index index);
@@ -174,7 +176,6 @@ public:
     int setOutputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
     void registerBufferPointer(char *pointer);
     void registerBufferPointer(float *pointer);
-    void clear();
 
     ModelBuilder &readFromBuffer(const char *buffer);
     ModelBuilder& readFromFile(std::string filename);
