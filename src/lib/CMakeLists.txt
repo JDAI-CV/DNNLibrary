@@ -41,6 +41,7 @@ find_library(
 
 target_link_libraries(
     dnnlibrary
+    protobuf::libprotobuf-lite
     ${android-lib}
     ${log-lib}
     ${neural-networks-lib}
