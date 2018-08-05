@@ -1,9 +1,18 @@
+dnn_protobuf_generate_cpp(ONNX_SRCS ONNX_HDRS onnx.proto3)
+
 set(LIB_SRC
     include/ModelBuilder.h
     include/Model.h
     include/android_log_helper.h
     src/ModelBuilder.cpp
-    src/Model.cpp include/operand_helper.h)
+    src/Model.cpp
+    include/operand_helper.h
+    src/OnnxReader.cpp
+    include/OnnxReader.h
+        src/NodeAttrHelper.cpp
+        src/NodeAttrHelper.h
+    ${ONNX_SRCS}
+    ${ONNX_HDRS})
 
 if (BUILD_JNI)
     list(APPEND
@@ -22,7 +31,8 @@ target_include_directories(
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
     ${CMAKE_SYSROOT}/usr/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_BINARY_DIR})
 
 find_library(
     android-lib

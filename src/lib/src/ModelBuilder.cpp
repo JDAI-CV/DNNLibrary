@@ -14,6 +14,7 @@
 
 #include "android_log_helper.h"
 #include <operand_helper.h>
+#include <onnx.proto3.pb.h>
 
 using std::vector; using std::ifstream; using std::streamsize; using std::string; using std::ios;
 using std::stringstream; using std::array;
@@ -114,14 +115,14 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                         case MF_WEIGHT: {
                             vector<uint32_t> weightDim{numOutput, filterHeight, filterWidth,
                                                        inputDim[3]};
-                            weightIndex = addWeightOrBiasFromBuffer(intPt, weightDim);
+                            weightIndex = addTensorFromBuffer(reinterpret_cast<const float*>(intPt), weightDim);
                             intPt += product(weightDim);
 
                             break;
                         }
                         case MF_BIAS: {
-                            biasIndex = addWeightOrBiasFromBuffer(intPt,
-                                                                  vector<uint32_t>{numOutput});
+                            biasIndex = addTensorFromBuffer(reinterpret_cast<const float*>(intPt),
+                                                            vector<uint32_t>{numOutput});
                             intPt += numOutput;
                             break;
                         }
@@ -143,11 +144,8 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                     biasIndex = addFloat32ZeroOperandWithDims(dim);
                 }
 
-                index = addConv(input, strideX, strideY, paddingLeft, paddingRight,
-                                paddingBottom, paddingTop,
-                                filterHeight, filterWidth,
-                                activation, numOutput, weightIndex,
-                                biasIndex);
+                index = addConv(input, strideX, strideY, paddingLeft, paddingRight, paddingBottom, paddingTop,
+                                activation, weightIndex, biasIndex);
                 layerToBlob.push_back(index);
                 break;
             }
@@ -193,12 +191,12 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                             break;
                         case MF_WEIGHT: {
                             vector<uint32_t> weightDim{1, filterHeight, filterWidth, numOutput};
-                            weightIndex = addWeightOrBiasFromBuffer(intPt, weightDim);
+                            weightIndex = addTensorFromBuffer(intPt, weightDim);
                             intPt += product(weightDim);
                             break;
                         }
                         case MF_BIAS: {
-                            biasIndex = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{numOutput});
+                            biasIndex = addTensorFromBuffer(intPt, vector<uint32_t>{numOutput});
                             intPt += numOutput;
                             break;
                         }
@@ -220,11 +218,8 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                     biasIndex = addFloat32ZeroOperandWithDims(dim);
                 }
 
-                index = addDepthWiseConv(input, strideX, strideY, paddingLeft, paddingRight,
-                                         paddingBottom, paddingTop,
-                                         filterHeight, filterWidth,
-                                         activation, numOutput, depthMultiplier, weightIndex,
-                                         biasIndex);
+                index = addDepthWiseConv(input, strideX, strideY, paddingLeft, paddingRight, paddingBottom, paddingTop,
+                                         activation, depthMultiplier, weightIndex, biasIndex);
                 layerToBlob.push_back(index);
                 break;
             }
@@ -303,14 +298,14 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                         }
                         case MF_WEIGHT: {
                             vector<uint32_t> weightDim{numOutput, product(inputDim)};
-                            weightIndex = addWeightOrBiasFromBuffer(intPt, weightDim);
+                            weightIndex = addTensorFromBuffer(intPt, weightDim);
                             intPt += product(weightDim);
 
                             break;
                         }
                         case MF_BIAS: {
-                            biasIndex = addWeightOrBiasFromBuffer(intPt,
-                                                                  vector<uint32_t>{numOutput});
+                            biasIndex = addTensorFromBuffer(intPt,
+                                                            vector<uint32_t>{numOutput});
                             intPt += numOutput;
                             break;
                         }
@@ -331,7 +326,7 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                     biasIndex = addFloat32NullOperandWithDims(dim);
                 }
 
-                index = addFC(input, numOutput, activation, weightIndex, biasIndex);
+                index = addFC(input, activation, weightIndex, biasIndex);
 
                 layerToBlob.push_back(index);
                 break;
@@ -368,7 +363,7 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                     }
                     case MF_ARRAY_OP: {
                         uint32_t arrayLength = *intPt++;
-                        uint32_t input2 = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{arrayLength});
+                        uint32_t input2 = addTensorFromBuffer(intPt, vector<uint32_t>{arrayLength});
                         intPt += arrayLength;
                         index = addAddTensor(input1, input2);
                         break;
@@ -394,7 +389,7 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
                     }
                     case MF_ARRAY_OP: {
                         uint32_t arrayLength = *intPt++;
-                        uint32_t input2 = addWeightOrBiasFromBuffer(intPt, vector<uint32_t>{arrayLength});
+                        uint32_t input2 = addTensorFromBuffer(intPt, vector<uint32_t>{arrayLength});
                         intPt += arrayLength;
                         index = addMulTensor(input1, input2);
                         break;
@@ -496,41 +491,55 @@ ModelBuilder::Index ModelBuilder::addInput(uint32_t height, uint32_t width, uint
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::addDepthWiseConv(uint32_t input, int32_t strideX, int32_t strideY,
-                                        int32_t paddingLeft,
-                                        int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
-                                        int32_t height, int32_t width, int32_t activation,
-                                        uint32_t outputDepth,
-                                        int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex) {
+ModelBuilder::Index ModelBuilder::addDepthWiseConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+                                                   int32_t paddingRight,
+                                                   int32_t paddingBottom, int32_t paddingTop, int32_t activation,
+                                                   int32_t depthMultiplier,
+                                                   uint32_t weightIndex, std::optional<uint32_t> biasIndex) {
 
     if (input >= nextIndex) return WRONG_INPUT;
 
+    Shape weightDimen = dimensMap[weightIndex];     // num_output, height, width, num_input
     // NHWC
     Shape inputDimen = dimensMap[input];
     Shape outputDimen{1,
-                                 (inputDimen[1] - height + paddingTop + paddingBottom) / strideY + 1,
-                                 (inputDimen[2] - width + paddingLeft + paddingRight) / strideX + 1,
-                                 outputDepth};
-    IndexSeq input_indexes{input, weightIndex, biasIndex};
+                                 (inputDimen[1] - weightDimen[1] + paddingTop + paddingBottom) / strideY + 1,
+                                 (inputDimen[2] - weightDimen[2] + paddingLeft + paddingRight) / strideX + 1,
+                                 weightDimen[0]};
+    uint32_t biasIndexValue;
+    if (!biasIndex.has_value()) {
+        Shape bias_dims = Shape{weightDimen[0]};
+        biasIndexValue = addFloat32ZeroOperandWithDims(bias_dims);
+    } else {
+        biasIndexValue = biasIndex.value();
+    }
+    IndexSeq input_indexes{input, weightIndex, biasIndexValue};
     addOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom,
                 strideX, strideY, depthMultiplier, activation);
     auto output_index = addOperation(ANEURALNETWORKS_DEPTHWISE_CONV_2D, input_indexes, outputDimen)[0];
     return output_index;
 }
 
-ModelBuilder::Index ModelBuilder::addConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
-                               int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
-                               int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
-                               uint32_t weightIndex, uint32_t biasIndex) {
+ModelBuilder::Index
+ModelBuilder::addConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
+                      int32_t paddingTop, int32_t activation, uint32_t weightIndex, std::optional<uint32_t> biasIndex) {
     if (input >= nextIndex) return WRONG_INPUT;
 
+    Shape weightDimen = dimensMap[weightIndex];     // num_output, height, width, num_input
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
     vector<uint32_t> outputDimen{1,
-                                 (inputDimen[1] - height + paddingTop + paddingBottom) / strideY + 1,
-                                 (inputDimen[2] - width + paddingLeft + paddingRight) / strideX + 1,
-                                 outputDepth};
-    IndexSeq input_indexes{input, weightIndex, biasIndex};
+                                 (inputDimen[1] - weightDimen[1] + paddingTop + paddingBottom) / strideY + 1,
+                                 (inputDimen[2] - weightDimen[2] + paddingLeft + paddingRight) / strideX + 1,
+                                 weightDimen[0]};
+    uint32_t biasIndexValue;
+    if (!biasIndex.has_value()) {
+        Shape bias_dims = Shape{weightDimen[0]};
+        biasIndexValue = addFloat32ZeroOperandWithDims(bias_dims);
+    } else {
+        biasIndexValue = biasIndex.value();
+    }
+    IndexSeq input_indexes{input, weightIndex, biasIndexValue};
     addOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom, strideX, strideY, activation);
     auto output_indexes = addOperation(ANEURALNETWORKS_CONV_2D, input_indexes, outputDimen);
     return output_indexes[0];
@@ -823,20 +832,21 @@ ModelBuilder::Index ModelBuilder::addNewOperand(ANeuralNetworksOperandType *type
     return nextIndex++;
 }
 
-ModelBuilder::Index ModelBuilder::addWeightOrBiasFromBuffer(const void *buffer, Shape dimen) {
+ModelBuilder::Index ModelBuilder::addTensorFromBuffer(const float *buffer, Shape dimen) {
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t index = addNewOperand(&type);
-    ANeuralNetworksModel_setOperandValue(model, index, buffer, product(dimen) * sizeof(uint32_t));
+    ANeuralNetworksModel_setOperandValue(model, index, buffer, product(dimen) * sizeof(float));
+    dimensMap[index] = dimen;
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::addIntTensorFromBuffer(const void *buffer, Shape dimen) {
+ModelBuilder::Index ModelBuilder::addTensorFromBuffer(const int32_t *buffer, Shape dimen) {
     ANeuralNetworksOperandType type = getInt32OperandTypeWithDims(dimen);
     uint32_t index = addNewOperand(&type);
-    ANeuralNetworksModel_setOperandValue(model, index, buffer, product(dimen) * sizeof(uint32_t));
+    ANeuralNetworksModel_setOperandValue(model, index, buffer, product(dimen) * sizeof(int32_t));
+    dimensMap[index] = dimen;
     return index;
 }
-
 
 void ModelBuilder::addIndexIntoOutput(Index index) {
     outputIndexVector.push_back(index);
@@ -922,12 +932,12 @@ ModelBuilder::IndexSeq ModelBuilder::getOutputIndexes() {
     return outputIndexVector;
 }
 
-ModelBuilder::Index ModelBuilder::addFC(uint32_t input, uint32_t outputNum, int32_t activation, uint32_t weightIndex,
-                    uint32_t biasIndex) {
+ModelBuilder::Index ModelBuilder::addFC(Index input, int32_t activation, uint32_t weightIndex, uint32_t biasIndex) {
 
     IndexSeq input_indexes{input, weightIndex, biasIndex};
     addOperands(input_indexes, activation);
-    Shape outputDimen{1, outputNum};
+    Shape weightDimen = dimensMap[weightIndex];     // num_output, num_input
+    Shape outputDimen{1, weightDimen[0]};
     auto output_idx = addOperation(ANEURALNETWORKS_FULLY_CONNECTED, input_indexes, outputDimen)[0];
     return output_idx;
 }
@@ -989,7 +999,7 @@ ModelBuilder::Index ModelBuilder::addFloat32ZeroOperandWithDims(Shape &dims) {
     for (size_t i = 0; i < product(dims); i++) {
         zeros[i] = 0;
     }
-    return addWeightOrBiasFromBuffer(zeros, dims);
+    return addTensorFromBuffer(zeros, dims);
 }
 
 ModelBuilder::Shape ModelBuilder::getBlobDim(std::string blobName) {

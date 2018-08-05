@@ -4,6 +4,7 @@
 # Sets the minimum version of CMake required to build the native library.
 
 cmake_minimum_required(VERSION 3.5.2)
+project(DNNLibrary)
 
 set (CMAKE_CXX_STANDARD 17)
 
@@ -11,13 +12,16 @@ option(BUILD_SHARED_LIBS "Build shared dnnlibrary" OFF)
 option(BUILD_JNI "Build JavaWrapper" OFF)
 option(BUILD_BIN "Build binaries" ON)
 
-macro(build_protobuf)
-    message(STATUS "Building protobuf...")
-    option(protobuf_BUILD_TESTS "" OFF)
-    option(protobuf_BUILD_EXAMPLES "" OFF)
-    option(protobuf_BUILD_SHARED_LIBS "" OFF)
-    add_subdirectory(third_party/protobuf/cmake)
-endmacro()
+include(cmake/protobuf.cmake)
 
 build_protobuf()
+
+if(NOT EXISTS "${PROTOC_EXECUTABLE}")
+    if (EXISTS "${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc")
+        set(PROTOC_EXECUTABLE ${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc)
+    else()
+        message(FATAL_ERROR
+                "No available protoc, please run build_host_protoc.sh first")
+    endif()
+endif()
 add_subdirectory(src)

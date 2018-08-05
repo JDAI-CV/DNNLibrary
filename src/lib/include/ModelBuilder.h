@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <optional>
 #include "Model.h"
 
 class ModelBuilder {
@@ -137,19 +138,14 @@ public:
     Shape getBlobDim(std::string blobName);
     Shape getBlobDim(Index index);
     Index addInput(uint32_t height, uint32_t width, uint32_t depth);
-    Index addDepthWiseConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
-                              int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
-                              int32_t height, int32_t width, int32_t activation,
-                              uint32_t outputDepth,
-                              int32_t depthMultiplier, uint32_t weightIndex, uint32_t biasIndex);
-    Index addConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
-                     int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
-                     int32_t height, int32_t width, int32_t activation, uint32_t outputDepth,
-                     uint32_t weightIndex, uint32_t biasIndex);
-    Index addWeightOrBiasFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
-    Index addIntTensorFromBuffer(const void *buffer, std::vector<uint32_t> dimen);
-    Index addFC(Index input, uint32_t outputNum, int32_t activation,
-                   uint32_t weightIndex, uint32_t biasIndex);
+    Index addDepthWiseConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
+                           int32_t paddingBottom, int32_t paddingTop, int32_t activation, int32_t depthMultiplier,
+                           uint32_t weightIndex, std::optional<uint32_t> biasIndex);
+    Index addConv(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
+                      int32_t paddingTop, int32_t activation, uint32_t weightIndex, std::optional<uint32_t> biasIndex);
+    Index addTensorFromBuffer(const float *buffer, std::vector<uint32_t> dimen);
+    Index addTensorFromBuffer(const int32_t *buffer, std::vector<uint32_t> dimen);
+    Index addFC(Index input, int32_t activation, uint32_t weightIndex, uint32_t biasIndex);
     Index addCaffePool(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                           int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
                           int32_t height, int32_t width, int32_t activation,
