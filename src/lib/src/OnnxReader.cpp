@@ -19,11 +19,9 @@
 
 using std::string; using std::vector;
 
-bool read_proto_from_text(string filepath, google::protobuf::Message& message)
-{
+bool read_proto_from_text(string filepath, google::protobuf::Message &message) {
     std::ifstream fs(filepath, std::ifstream::in);
-    if (!fs.is_open())
-    {
+    if (!fs.is_open()) {
         fprintf(stderr, "open failed %s\n", filepath);
         return false;
     }
@@ -36,11 +34,9 @@ bool read_proto_from_text(string filepath, google::protobuf::Message& message)
     return success;
 }
 
-bool read_proto_from_binary(string filepath, google::protobuf::Message& message)
-{
+bool read_proto_from_binary(string filepath, google::protobuf::Message &message) {
     std::ifstream fs(filepath, std::ifstream::in | std::ifstream::binary);
-    if (!fs.is_open())
-    {
+    if (!fs.is_open()) {
         fprintf(stderr, "open failed %s\n", filepath);
         return false;
     }
@@ -64,8 +60,8 @@ void OnnxReader::ReadFile(std::string filepath) {
     read_proto_from_binary(filepath, model_proto);
     for (auto tensor : model_proto.graph().initializer()) {
         if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT) {
-            const float* ptr = tensor.float_data().empty() ?
-                    reinterpret_cast<const float *>(tensor.raw_data().data()) : tensor.float_data().data();
+            const float *ptr = tensor.float_data().empty() ?
+                               reinterpret_cast<const float *>(tensor.raw_data().data()) : tensor.float_data().data();
             ModelBuilder::Shape shape;
             for (auto dim : tensor.dims()) {
                 shape.push_back(static_cast<uint32_t>(dim));
@@ -105,9 +101,7 @@ void OnnxReader::ReadFile(std::string filepath) {
                 // TODO: Support it
                 throw std::invalid_argument("group != 1 is not supported");
             }
-
             auto activation = find_activation(model_proto, node);
-
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
@@ -115,11 +109,12 @@ void OnnxReader::ReadFile(std::string filepath) {
             if (node.input_size() == 3) {
                 bias_idx = operand_indexes[node.input(2)];
             }
-            auto output_idx = builder.addConv(operand_indexes[node.input(0)], strides[1], strides[0], pads[2], pads[3],
-                                              pads[1], pads[0],
-                                              activation.second, operand_indexes[node.input(1)], bias_idx);
-            operand_indexes[node.output(0)] = output_idx;
-        } else if (op == "AveragePool") {
+            operand_indexes[node.output(0)] = builder.addConv(operand_indexes[node.input(0)], strides[1], strides[0],
+                                                              pads[2], pads[3],
+                                                              pads[1], pads[0],
+                                                              activation.second, operand_indexes[node.input(1)],
+                                                              bias_idx);
+        } else if (op == "AveragePool" || op == "MaxPool") {
             auto strides = helper.get("strides", vector<int>{1, 1});
             auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
             auto kernel_shape = helper.get("kernel_shape", vector<int>{0, 0});
@@ -127,10 +122,22 @@ void OnnxReader::ReadFile(std::string filepath) {
             if (count_include_pad == 1) {
                 throw std::invalid_argument("count_include_pad == 1 is not supported");
             }
+            auto storage_order = helper.get("storage_order", 0);
+            if (storage_order == 1) {
+                throw std::invalid_argument("storage_order == 1 is not supported");
+            }
             if (helper.has_attr("auto_pad")) {
                 throw std::invalid_argument("auto_pad is not supported");
             }
-            // TODO:
+            auto activation = find_activation(model_proto, node);
+            if (activation.first.has_value()) {
+                skipped_act.push_back(activation.first.value());
+            }
+            operand_indexes[node.output(0)] = builder.addPool(operand_indexes[node.input(0)], strides[1], strides[0],
+                                                              pads[2], pads[3], pads[0], pads[1],
+                                                              kernel_shape[0], kernel_shape[1], activation.second,
+                                                              op == "AveragePool" ? ModelBuilder::AVE_POOL
+                                                                                  : ModelBuilder::MAX_POOL);
         } else if (op == "Relu") {
             operand_indexes[node.output(0)] = builder.addReLU(operand_indexes[node.input(0)]);
         }

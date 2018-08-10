@@ -591,6 +591,37 @@ ModelBuilder::addStridedSlice(Index input, const vector<int32_t> &starts, const 
 }
 #endif
 
+ModelBuilder::Index ModelBuilder::addPool(Index input, int32_t strideX, int32_t strideY,
+                                               int32_t paddingLeft, int32_t paddingRight,
+                                               int32_t paddingTop, int32_t paddingBottom,
+                                               int32_t height, int32_t width,
+                                               int32_t activation, uint32_t poolingType) {
+
+    if (input >= nextIndex) return WRONG_INPUT;
+
+    // NHWC
+    auto inputDimen = dimensMap[input];
+
+    Shape outputDimen{1,
+                      (inputDimen[1] - height + paddingTop + paddingBottom) / strideY + 1,
+                      (inputDimen[2] - width + paddingLeft + paddingRight) / strideX + 1,
+                      inputDimen[3]};
+
+    IndexSeq input_indexes{input};
+    addOperands(input_indexes, width, height, strideX, strideY,
+                paddingLeft, paddingRight, paddingTop, paddingBottom, activation);
+
+    Index output_index;
+    if (poolingType == MAX_POOL) {
+        output_index = addOperation(ANEURALNETWORKS_MAX_POOL_2D, input_indexes, outputDimen)[0];
+    } else if (poolingType == AVE_POOL) {
+        output_index = addOperation(ANEURALNETWORKS_AVERAGE_POOL_2D, input_indexes, outputDimen)[0];
+    } else {
+        return WRONG_POOLING_TYPE;
+    }
+    return output_index;
+}
+
 ModelBuilder::Index ModelBuilder::addCaffePool(Index input, int32_t strideX, int32_t strideY,
                                     int32_t paddingLeft, int32_t paddingRight,
                                     int32_t paddingTop, int32_t paddingBottom,
