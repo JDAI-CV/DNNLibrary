@@ -9,14 +9,16 @@
 #include <optional>
 
 #include <onnx.proto3.pb.h>
+#include "ModelBuilder.h"
 
 class OnnxReader {
 public:
-    void ReadFile(std::string filepath);
+    explicit OnnxReader(std::string filepath, ModelBuilder &builder);
 
 private:
-    std::pair<std::optional<string>, FuseCode> find_activation(const onnx::ModelProto &model,
-                                                               const onnx::NodeProto &node);
+    std::pair<std::optional<std::string>, FuseCode> find_activation(const onnx::NodeProto &node);
+    void ReadFile(std::string filepath, ModelBuilder &builder);
+    onnx::ModelProto model_proto_;
 };
 
 

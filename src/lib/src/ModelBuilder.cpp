@@ -15,6 +15,7 @@
 #include "android_log_helper.h"
 #include <operand_helper.h>
 #include <onnx.proto3.pb.h>
+#include <OnnxReader.h>
 
 using std::vector; using std::ifstream; using std::streamsize; using std::string; using std::ios;
 using std::stringstream; using std::array;
@@ -39,7 +40,11 @@ ModelBuilder &ModelBuilder::simplestModel() {
  * @param filename , like "/data/local/tmp/squeezenet.daq"
  * @return ModelBuilder itself
  */
-ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
+ModelBuilder &ModelBuilder::readFromFile(const string &filename) {
+    OnnxReader onnx_reader;
+    onnx_reader.ReadFile(filename, *this);
+    return *this;
+    /*
     std::ifstream ifs(filename, ios::binary | ios::ate);
     streamsize len = ifs.tellg();
     ifs.seekg(0, ios::beg);
@@ -47,13 +52,16 @@ ModelBuilder &ModelBuilder::readFromFile(std::string filename) {
     // read whole content of a file into buffer
     if (ifs.read(buffer, len)) {
         registerBufferPointer(buffer);
-        return readFromBuffer(buffer);
+        OnnxReader onnx_reader;
+        onnx_reader.ReadFile(filename, *this);
+        return *this;
     } else {
         throw string("Read file error");
     }
+    */
 }
 
-
+/*
 ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
     vector<uint32_t> layerToBlob;
     const auto *intPt = reinterpret_cast<const uint32_t *>(buffer);
@@ -480,6 +488,7 @@ ModelBuilder &ModelBuilder::readFromBuffer(const char* buffer) {
 
     return *this;
 }
+ */
 
 ModelBuilder::Index ModelBuilder::addInput(uint32_t height, uint32_t width, uint32_t depth) {
     vector<uint32_t> dimen{1, width, height, depth};

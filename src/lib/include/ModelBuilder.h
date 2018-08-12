@@ -13,10 +13,11 @@
 #include "Model.h"
 
 class ModelBuilder {
-private:
+public:
     using Index = uint32_t;
     using IndexSeq = std::vector<Index>;
     using Shape = std::vector<uint32_t>;
+private:
     ANeuralNetworksModel* model = nullptr;
     std::vector<char *> charBufPointers;
     std::vector<float *> floatBufPointers;
@@ -176,8 +177,8 @@ public:
     void registerBufferPointer(char *pointer);
     void registerBufferPointer(float *pointer);
 
-    ModelBuilder &readFromBuffer(const char *buffer);
-    ModelBuilder& readFromFile(std::string filename);
+    // ModelBuilder &readFromBuffer(const char *buffer);
+    ModelBuilder& readFromFile(const std::string &filename);
     ModelBuilder& simplestModel();
 
     template <typename... Args>
