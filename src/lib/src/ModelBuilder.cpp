@@ -537,7 +537,6 @@ ModelBuilder::addConv(Index input, int32_t strideX, int32_t strideY, int32_t pad
     Shape weightDimen = dimensMap[weightIndex];     // num_output, height, width, num_input
     // NHWC
     vector<uint32_t> inputDimen = dimensMap[input];
-    std::cout << inputDimen[1] << ", " << weightDimen[1] << ", " << paddingTop << ", " << paddingBottom << ", " << strideY << std::endl;
     vector<uint32_t> outputDimen{1,
                                  (inputDimen[1] - weightDimen[1] + paddingTop + paddingBottom) / strideY + 1,
                                  (inputDimen[2] - weightDimen[2] + paddingLeft + paddingRight) / strideX + 1,
@@ -1119,7 +1118,6 @@ template<typename... Shapes>
 ModelBuilder::IndexSeq ModelBuilder::addOperation(int op, IndexSeq input_indexes, Shapes... shapes) {
     vector<Shape> shape_vec;
     (shape_vec.push_back(shapes), ...);
-    std::cout << "Shape: " << shape_vec[0] << std::endl;
     IndexSeq output_indexes;
     for (auto shape : shape_vec) {
         ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(shape);
@@ -1159,7 +1157,6 @@ void ModelBuilder::prepare() {
 }
 
 void ModelBuilder::setMemory(int fd, size_t size, size_t offset) {
-    std::cout << fd << ", " << size << ", " << offset << std::endl;
     ANeuralNetworksMemory *mem = nullptr;
     auto ret = ANeuralNetworksMemory_createFromFd(size, PROT_READ, fd, offset, &mem);
     if (ret != ANEURALNETWORKS_NO_ERROR) {

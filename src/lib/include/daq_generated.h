@@ -14,6 +14,8 @@ struct Input;
 
 struct Conv2D;
 
+struct DepthwiseConv2D;
+
 struct AvePool;
 
 struct MaxPool;
@@ -105,11 +107,12 @@ enum class LayerType : int8_t {
   FC = 5,
   Add = 6,
   Concat = 7,
+  DepthwiseConv2D = 8,
   MIN = Conv2D,
-  MAX = Concat
+  MAX = DepthwiseConv2D
 };
 
-inline const LayerType (&EnumValuesLayerType())[8] {
+inline const LayerType (&EnumValuesLayerType())[9] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -118,7 +121,8 @@ inline const LayerType (&EnumValuesLayerType())[8] {
     LayerType::Softmax,
     LayerType::FC,
     LayerType::Add,
-    LayerType::Concat
+    LayerType::Concat,
+    LayerType::DepthwiseConv2D
   };
   return values;
 }
@@ -133,6 +137,7 @@ inline const char * const *EnumNamesLayerType() {
     "FC",
     "Add",
     "Concat",
+    "DepthwiseConv2D",
     nullptr
   };
   return names;
@@ -311,11 +316,9 @@ struct Conv2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_WEIGHT = 6,
     VT_BIAS = 8,
     VT_PADS = 10,
-    VT_DILATIONS = 12,
-    VT_STRIDES = 14,
-    VT_GROUP = 16,
-    VT_FUSE = 18,
-    VT_OUTPUT = 20
+    VT_STRIDES = 12,
+    VT_FUSE = 14,
+    VT_OUTPUT = 16
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
@@ -329,14 +332,8 @@ struct Conv2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int32_t> *pads() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_PADS);
   }
-  const flatbuffers::Vector<int32_t> *dilations() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_DILATIONS);
-  }
   const flatbuffers::Vector<int32_t> *strides() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_STRIDES);
-  }
-  int32_t group() const {
-    return GetField<int32_t>(VT_GROUP, 0);
   }
   FuseCode fuse() const {
     return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
@@ -354,11 +351,8 @@ struct Conv2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(bias()) &&
            VerifyOffset(verifier, VT_PADS) &&
            verifier.VerifyVector(pads()) &&
-           VerifyOffset(verifier, VT_DILATIONS) &&
-           verifier.VerifyVector(dilations()) &&
            VerifyOffset(verifier, VT_STRIDES) &&
            verifier.VerifyVector(strides()) &&
-           VerifyField<int32_t>(verifier, VT_GROUP) &&
            VerifyField<int8_t>(verifier, VT_FUSE) &&
            VerifyOffset(verifier, VT_OUTPUT) &&
            verifier.VerifyString(output()) &&
@@ -381,14 +375,8 @@ struct Conv2DBuilder {
   void add_pads(flatbuffers::Offset<flatbuffers::Vector<int32_t>> pads) {
     fbb_.AddOffset(Conv2D::VT_PADS, pads);
   }
-  void add_dilations(flatbuffers::Offset<flatbuffers::Vector<int32_t>> dilations) {
-    fbb_.AddOffset(Conv2D::VT_DILATIONS, dilations);
-  }
   void add_strides(flatbuffers::Offset<flatbuffers::Vector<int32_t>> strides) {
     fbb_.AddOffset(Conv2D::VT_STRIDES, strides);
-  }
-  void add_group(int32_t group) {
-    fbb_.AddElement<int32_t>(Conv2D::VT_GROUP, group, 0);
   }
   void add_fuse(FuseCode fuse) {
     fbb_.AddElement<int8_t>(Conv2D::VT_FUSE, static_cast<int8_t>(fuse), 0);
@@ -414,16 +402,12 @@ inline flatbuffers::Offset<Conv2D> CreateConv2D(
     flatbuffers::Offset<flatbuffers::String> weight = 0,
     flatbuffers::Offset<flatbuffers::String> bias = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> pads = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> dilations = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> strides = 0,
-    int32_t group = 0,
     FuseCode fuse = FuseCode::None,
     flatbuffers::Offset<flatbuffers::String> output = 0) {
   Conv2DBuilder builder_(_fbb);
   builder_.add_output(output);
-  builder_.add_group(group);
   builder_.add_strides(strides);
-  builder_.add_dilations(dilations);
   builder_.add_pads(pads);
   builder_.add_bias(bias);
   builder_.add_weight(weight);
@@ -438,9 +422,7 @@ inline flatbuffers::Offset<Conv2D> CreateConv2DDirect(
     const char *weight = nullptr,
     const char *bias = nullptr,
     const std::vector<int32_t> *pads = nullptr,
-    const std::vector<int32_t> *dilations = nullptr,
     const std::vector<int32_t> *strides = nullptr,
-    int32_t group = 0,
     FuseCode fuse = FuseCode::None,
     const char *output = nullptr) {
   return DNN::CreateConv2D(
@@ -449,9 +431,145 @@ inline flatbuffers::Offset<Conv2D> CreateConv2DDirect(
       weight ? _fbb.CreateString(weight) : 0,
       bias ? _fbb.CreateString(bias) : 0,
       pads ? _fbb.CreateVector<int32_t>(*pads) : 0,
-      dilations ? _fbb.CreateVector<int32_t>(*dilations) : 0,
       strides ? _fbb.CreateVector<int32_t>(*strides) : 0,
-      group,
+      fuse,
+      output ? _fbb.CreateString(output) : 0);
+}
+
+struct DepthwiseConv2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT = 4,
+    VT_WEIGHT = 6,
+    VT_BIAS = 8,
+    VT_PADS = 10,
+    VT_STRIDES = 12,
+    VT_MULTIPLIER = 14,
+    VT_FUSE = 16,
+    VT_OUTPUT = 18
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::String *weight() const {
+    return GetPointer<const flatbuffers::String *>(VT_WEIGHT);
+  }
+  const flatbuffers::String *bias() const {
+    return GetPointer<const flatbuffers::String *>(VT_BIAS);
+  }
+  const flatbuffers::Vector<int32_t> *pads() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_PADS);
+  }
+  const flatbuffers::Vector<int32_t> *strides() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_STRIDES);
+  }
+  int32_t multiplier() const {
+    return GetField<int32_t>(VT_MULTIPLIER, 0);
+  }
+  FuseCode fuse() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_WEIGHT) &&
+           verifier.VerifyString(weight()) &&
+           VerifyOffset(verifier, VT_BIAS) &&
+           verifier.VerifyString(bias()) &&
+           VerifyOffset(verifier, VT_PADS) &&
+           verifier.VerifyVector(pads()) &&
+           VerifyOffset(verifier, VT_STRIDES) &&
+           verifier.VerifyVector(strides()) &&
+           VerifyField<int32_t>(verifier, VT_MULTIPLIER) &&
+           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct DepthwiseConv2DBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(DepthwiseConv2D::VT_INPUT, input);
+  }
+  void add_weight(flatbuffers::Offset<flatbuffers::String> weight) {
+    fbb_.AddOffset(DepthwiseConv2D::VT_WEIGHT, weight);
+  }
+  void add_bias(flatbuffers::Offset<flatbuffers::String> bias) {
+    fbb_.AddOffset(DepthwiseConv2D::VT_BIAS, bias);
+  }
+  void add_pads(flatbuffers::Offset<flatbuffers::Vector<int32_t>> pads) {
+    fbb_.AddOffset(DepthwiseConv2D::VT_PADS, pads);
+  }
+  void add_strides(flatbuffers::Offset<flatbuffers::Vector<int32_t>> strides) {
+    fbb_.AddOffset(DepthwiseConv2D::VT_STRIDES, strides);
+  }
+  void add_multiplier(int32_t multiplier) {
+    fbb_.AddElement<int32_t>(DepthwiseConv2D::VT_MULTIPLIER, multiplier, 0);
+  }
+  void add_fuse(FuseCode fuse) {
+    fbb_.AddElement<int8_t>(DepthwiseConv2D::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(DepthwiseConv2D::VT_OUTPUT, output);
+  }
+  explicit DepthwiseConv2DBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  DepthwiseConv2DBuilder &operator=(const DepthwiseConv2DBuilder &);
+  flatbuffers::Offset<DepthwiseConv2D> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<DepthwiseConv2D>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<DepthwiseConv2D> CreateDepthwiseConv2D(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    flatbuffers::Offset<flatbuffers::String> weight = 0,
+    flatbuffers::Offset<flatbuffers::String> bias = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> pads = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> strides = 0,
+    int32_t multiplier = 0,
+    FuseCode fuse = FuseCode::None,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  DepthwiseConv2DBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_multiplier(multiplier);
+  builder_.add_strides(strides);
+  builder_.add_pads(pads);
+  builder_.add_bias(bias);
+  builder_.add_weight(weight);
+  builder_.add_input(input);
+  builder_.add_fuse(fuse);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<DepthwiseConv2D> CreateDepthwiseConv2DDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    const char *weight = nullptr,
+    const char *bias = nullptr,
+    const std::vector<int32_t> *pads = nullptr,
+    const std::vector<int32_t> *strides = nullptr,
+    int32_t multiplier = 0,
+    FuseCode fuse = FuseCode::None,
+    const char *output = nullptr) {
+  return DNN::CreateDepthwiseConv2D(
+      _fbb,
+      input ? _fbb.CreateString(input) : 0,
+      weight ? _fbb.CreateString(weight) : 0,
+      bias ? _fbb.CreateString(bias) : 0,
+      pads ? _fbb.CreateVector<int32_t>(*pads) : 0,
+      strides ? _fbb.CreateVector<int32_t>(*strides) : 0,
+      multiplier,
       fuse,
       output ? _fbb.CreateString(output) : 0);
 }
@@ -1078,7 +1196,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SOFTMAX_PARAM = 14,
     VT_FC_PARAM = 16,
     VT_ADD_PARAM = 18,
-    VT_CONCAT_PARAM = 20
+    VT_CONCAT_PARAM = 20,
+    VT_DEPTHWISE_CONV2D_PARAM = 22
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -1107,6 +1226,9 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const Concat *concat_param() const {
     return GetPointer<const Concat *>(VT_CONCAT_PARAM);
   }
+  const DepthwiseConv2D *depthwise_conv2d_param() const {
+    return GetPointer<const DepthwiseConv2D *>(VT_DEPTHWISE_CONV2D_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -1126,6 +1248,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(add_param()) &&
            VerifyOffset(verifier, VT_CONCAT_PARAM) &&
            verifier.VerifyTable(concat_param()) &&
+           VerifyOffset(verifier, VT_DEPTHWISE_CONV2D_PARAM) &&
+           verifier.VerifyTable(depthwise_conv2d_param()) &&
            verifier.EndTable();
   }
 };
@@ -1160,6 +1284,9 @@ struct LayerBuilder {
   void add_concat_param(flatbuffers::Offset<Concat> concat_param) {
     fbb_.AddOffset(Layer::VT_CONCAT_PARAM, concat_param);
   }
+  void add_depthwise_conv2d_param(flatbuffers::Offset<DepthwiseConv2D> depthwise_conv2d_param) {
+    fbb_.AddOffset(Layer::VT_DEPTHWISE_CONV2D_PARAM, depthwise_conv2d_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1182,8 +1309,10 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<Softmax> softmax_param = 0,
     flatbuffers::Offset<FC> fc_param = 0,
     flatbuffers::Offset<Add> add_param = 0,
-    flatbuffers::Offset<Concat> concat_param = 0) {
+    flatbuffers::Offset<Concat> concat_param = 0,
+    flatbuffers::Offset<DepthwiseConv2D> depthwise_conv2d_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_depthwise_conv2d_param(depthwise_conv2d_param);
   builder_.add_concat_param(concat_param);
   builder_.add_add_param(add_param);
   builder_.add_fc_param(fc_param);

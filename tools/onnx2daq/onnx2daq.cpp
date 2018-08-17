@@ -40,13 +40,10 @@ using Shape = std::vector<int>;
 std::map<std::string, std::string> name_map;
 
 std::string m(const std::string &str) {
-    std::cout << "key: " << str << std::endl;
     if (name_map.find(str) != name_map.end()) {
-        std::cout << "In map, " << name_map[str] << std::endl;
         return name_map[str];
     }
     
-    std::cout << "Not in map" << std::endl;
     return str;
 }
 
@@ -119,10 +116,7 @@ Tensor<T> onnx2nnapi(const Tensor<T> &src) {
             }
         }
     }
-    std::cout << "src shape " << src.shape << std::endl;
     dest.shape = {src.shape[0], src.shape[2], src.shape[3], src.shape[1]};
-    std::cout << "dest shape " << dest.shape << std::endl;
-    std::cout << "dest data " << std::endl << dest.data << std::endl;
     return dest;
 }
 
@@ -143,6 +137,7 @@ int main(int argc, char **argv) {
     flatbuffers::FlatBufferBuilder builder;
 
     std::vector<std::string> operands;
+    std::map<std::string, FTensor> nnapi_tensors;
 
     vector<flatbuffers::Offset<DNN::Tensor>> tensors;
     for (const auto &tensor : model_proto.graph().initializer()) {
@@ -153,7 +148,6 @@ int main(int argc, char **argv) {
             for (auto dim : tensor.dims()) {
                 shape.push_back(static_cast<uint32_t>(dim));
             }
-            std::cout << "tensor shape: " << shape << std::endl;
             auto data_vec = vector<float>(ptr, ptr + product(shape));
             
             FTensor onnx_tensor{data_vec, shape};
@@ -163,6 +157,7 @@ int main(int argc, char **argv) {
             } else {
                 nnapi_tensor = onnx_tensor;
             }
+            nnapi_tensors[tensor.name()] = nnapi_tensor;
             auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr, 
                     &nnapi_tensor.data, &nnapi_tensor.shape, tensor.name().c_str());
             tensors.push_back(flat_tensor);
@@ -201,43 +196,60 @@ int main(int argc, char **argv) {
             auto strides = helper.get("strides", vector<int>{0, 0, 1, 1});
             auto pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
             auto dilations = helper.get("dilations", vector<int>{0, 0, 1, 1});
-            std::cout << strides << ", " << pads << ", " << dilations << std::endl;
             strides = vector<int>(strides.begin() + 2, strides.end());
             pads = vector<int>(pads.begin() + 4, pads.end());
             dilations = vector<int>(dilations.begin() + 2, dilations.end());
-            std::cout << strides << ", " << pads << ", " << dilations << std::endl;
-            auto group = helper.get("group", 1);
-            if (group != 1) {
+            if (dilations != vector<int>{1, 1}) {
                 // TODO: Support it
-                throw std::invalid_argument("group != 1 is not supported");
+                throw std::invalid_argument("dilations != 1 is not supported");
             }
+            auto group = helper.get("group", 1);
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
-            auto param = DNN::CreateConv2DDirect(builder, m(node.input(0)).c_str(), m(node.input(1)).c_str(),
-                    node.input_size() == 3 ? m(node.input(2)).c_str() : nullptr,
-                    &pads, &dilations, &strides, group, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
-            auto layer = DNN::CreateLayer(builder, DNN::LayerType::Conv2D, param);
+            flatbuffers::Offset<DNN::Layer> layer;
+            if (group == 1) {
+                auto param = DNN::CreateConv2DDirect(builder, m(node.input(0)).c_str(), m(node.input(1)).c_str(),
+                        node.input_size() == 3 ? m(node.input(2)).c_str() : nullptr,
+                        &pads, &strides, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
+                layer = DNN::CreateLayer(builder, DNN::LayerType::Conv2D, param);
+            } else if (group == nnapi_tensors[node.input(0)].shape[3]) {    // depthwise
+                auto multiplier = nnapi_tensors[node.input(1)].shape[3] / group;
+                auto param = DNN::CreateDepthwiseConv2DDirect(builder, m(node.input(0)).c_str(), m(node.input(1)).c_str(),
+                        node.input_size() == 3 ? m(node.input(2)).c_str() : nullptr,
+                        &pads, &strides, multiplier, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
+                layer = DNN::CreateLayer(builder, DNN::LayerType::DepthwiseConv2D, 0, 0, 0, 0, 0, 0, 0, 0, param);
+            } else {
+                // TODO: Support it
+                throw std::invalid_argument("group != 1 is not supported");
+            }
             layers.push_back(layer);
-        } else if (op == "AveragePool" || op == "MaxPool") {
-            auto strides = helper.get("strides", vector<int>{0, 0, 1, 1});
-            auto pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
-            auto kernel_shape = helper.get("kernel_shape", vector<int>{0, 0, 0, 0});
-            auto count_include_pad = helper.get("count_include_pad", 0);
-            strides = vector<int>(strides.begin() + 2, strides.end());
-            pads = vector<int>(pads.begin() + 4, pads.end());
-            kernel_shape = vector<int>(kernel_shape.begin() + 2, kernel_shape.end());
-            std::cout << strides << ", " << pads << ", " << kernel_shape << std::endl;
-            if (count_include_pad == 1) {
-                throw std::invalid_argument("count_include_pad == 1 is not supported");
-            }
-            auto storage_order = helper.get("storage_order", 0);
-            if (storage_order == 1) {
-                throw std::invalid_argument("storage_order == 1 is not supported");
-            }
-            if (helper.has_attr("auto_pad")) {
-                throw std::invalid_argument("auto_pad is not supported");
+        } else if (op == "AveragePool" || op == "MaxPool" || op == "GlobalAveragePool" || op == "GlobalMaxPool") {
+            vector<int> strides, pads, kernel_shape;
+            if (op == "AveraagePool" || op == "MaxPool") {
+                strides = helper.get("strides", vector<int>{0, 0, 1, 1});
+                pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
+                kernel_shape = helper.get("kernel_shape", vector<int>{0, 0, 0, 0});
+                auto count_include_pad = helper.get("count_include_pad", 0);
+                strides = vector<int>(strides.begin() + 2, strides.end());
+                pads = vector<int>(pads.begin() + 4, pads.end());
+                kernel_shape = vector<int>(kernel_shape.begin() + 2, kernel_shape.end());
+                if (count_include_pad == 1) {
+                    throw std::invalid_argument("count_include_pad == 1 is not supported");
+                }
+                auto storage_order = helper.get("storage_order", 0);
+                if (storage_order == 1) {
+                    throw std::invalid_argument("storage_order == 1 is not supported");
+                }
+                if (helper.has_attr("auto_pad")) {
+                    throw std::invalid_argument("auto_pad is not supported");
+                }
+            } else {
+                auto input_shape = nnapi_tensors[m(node.input(0))].shape;
+                strides = {input_shape[1], input_shape[2]};
+                pads = {0, 0};
+                kernel_shape = {input_shape[1], input_shape[2]};
             }
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {

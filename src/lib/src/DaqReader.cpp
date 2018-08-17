@@ -30,6 +30,8 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "avepool";
         case DNN::LayerType::Softmax:
             return "softmax";
+        case DNN::LayerType::DepthwiseConv2D:
+            return "depthwsie";
     }
 }
 
@@ -48,7 +50,6 @@ int convert_fuse_code_to_nnapi(DNN::FuseCode fuse_code) {
 }
 
 bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
-    std::cout << "Hi" << std::endl;
     builder.prepare();
     std::ifstream ifs(filepath, std::ifstream::ate | std::ifstream::binary);
     ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
@@ -70,20 +71,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
         for (const auto &tensor : *model->initializers()) {
             if (tensor->data_type() == DNN::DataType::Float32) {
                 ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
-                std::cout << "Add tensor " << tensor->name()->str() << ", shape " << shape << std::endl;
-                auto ptr = reinterpret_cast<const float *>(tensor->float32_data()->Data());
-                size_t n = 50;
-                std::cout << "First " << n << " elements are " << std::endl;
-                for (size_t i = 0; i < n; i++) {
-                    std::cout << ptr[i] << ", ";
-                }
-                std::cout << std::endl;
-                // float *buf = new float[product(shape)];
-                // for (size_t i = 0; i < product(shape); i++) {
-                    // buf[i] = 1;
-                // }
-                // operand_indexes[tensor->name()->str()] = builder.addTensorFromBuffer(buf,
-                                                                                     // shape);
                 operand_indexes[tensor->name()->str()] = builder.addTensorFromMemory(tensor->float32_data()->Data(),
                                                                                      shape);
             }
@@ -91,7 +78,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
 
         for (const auto &input : *model->inputs()) {
             ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
-            std::cout << "Add input " << input->name()->str() << ", shape " << shape << std::endl;
             operand_indexes[input->name()->str()] = builder.addInput(shape[2], shape[3], shape[1]);
         }
 
@@ -101,25 +87,33 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto param = layer->conv2d_param();
                     auto strides = param->strides();
                     auto pads = param->pads();
-                    auto dilations = param->dilations();
-                    auto group = param->group();
                     auto fuse = param->fuse();
-                    if (group != 1) {
-                        // TODO: Support it
-                        throw std::invalid_argument("group != 1 is not supported");
-                    }
                     auto input_name = param->input()->str();
                     auto weight_name = param->weight()->str();
                     auto bias_name = param->bias()->str();
                     auto output_name = param->output()->str();
-                    std::cout << input_name << ", " << weight_name << ", " << bias_name << ", " << output_name << std::endl;
-                    std::cout << pads->Get(0) << std::endl;
                     operand_indexes[output_name] = 
                         builder.addConv(operand_indexes.at(input_name), strides->Get(1), strides->Get(0), 
                                 pads->Get(2), pads->Get(3), pads->Get(1), pads->Get(0), 
                                 convert_fuse_code_to_nnapi(fuse), operand_indexes.at(weight_name), 
                                 (bias_name.empty() ? std::nullopt : std::make_optional(operand_indexes.at(bias_name))));
-                    std::cout << "Conv added" << std::endl;
+                    break;
+                }
+                case DNN::LayerType::DepthwiseConv2D: {
+                    auto param = layer->depthwise_conv2d_param();
+                    auto strides = param->strides();
+                    auto pads = param->pads();
+                    auto multiplier = param->multiplier();
+                    auto fuse = param->fuse();
+                    auto input_name = param->input()->str();
+                    auto weight_name = param->weight()->str();
+                    auto bias_name = param->bias()->str();
+                    auto output_name = param->output()->str();
+                    operand_indexes[output_name] = 
+                        builder.addDepthWiseConv(operand_indexes.at(input_name), strides->Get(1), strides->Get(0), 
+                                pads->Get(2), pads->Get(3), pads->Get(1), pads->Get(0), 
+                                convert_fuse_code_to_nnapi(fuse), multiplier, operand_indexes.at(weight_name), 
+                                (bias_name.empty() ? std::nullopt : std::make_optional(operand_indexes.at(bias_name))));
                     break;
                 }
                 case DNN::LayerType::AvePool: {
@@ -135,7 +129,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1), convert_fuse_code_to_nnapi(fuse),
                                 ModelBuilder::AVE_POOL);
-                    std::cout << "Pool added" << std::endl;
                     break;
                 }
                 case DNN::LayerType::MaxPool: {
@@ -151,7 +144,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1), convert_fuse_code_to_nnapi(fuse),
                                 ModelBuilder::MAX_POOL);
-                    std::cout << "Pool added" << std::endl;
                     break;
                 }
                 case DNN::LayerType::Relu: {
@@ -160,7 +152,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto output_name = param->output()->str();
                     operand_indexes[output_name] =
                         builder.addReLU(operand_indexes.at(input_name));
-                    std::cout << "relu added" << std::endl;
                     break;
                 }
                 case DNN::LayerType::Add: {
@@ -171,7 +162,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     operand_indexes[output_name] = 
                         builder.addAddTensor(operand_indexes.at(input1_name),
                                 operand_indexes.at(input2_name));
-                    std::cout << "Add added" << std::endl;
                     break;
                 }
                 case DNN::LayerType::FC: {
@@ -184,7 +174,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     operand_indexes[output_name] = 
                         builder.addFC(operand_indexes.at(input_name), convert_fuse_code_to_nnapi(fuse),
                                 operand_indexes.at(weight_name), operand_indexes.at(bias_name));
-                    std::cout << "fc added" << std::endl;
                     break;
                 }
                 case DNN::LayerType::Softmax: {
@@ -193,7 +182,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto output_name = param->output()->str();
                     operand_indexes[output_name] =
                         builder.addSoftMax(operand_indexes.at(input_name), 1.f);
-                    std::cout << "softmax added" << std::endl;
                     break;
                 }
                 case DNN::LayerType::Concat: {
@@ -207,7 +195,6 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     }
                     operand_indexes[output_name] =
                         builder.addConcat(input_idxes, axis);
-                    std::cout << "concat added" << std::endl;
                     break;
                 }
                 default: {
