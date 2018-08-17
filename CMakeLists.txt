@@ -13,15 +13,21 @@ option(BUILD_JNI "Build JavaWrapper" OFF)
 option(BUILD_BIN "Build binaries" ON)
 
 include(cmake/protobuf.cmake)
+include(cmake/common.cmake)
 
-build_protobuf()
+# build_protobuf()
 
-if(NOT EXISTS "${PROTOC_EXECUTABLE}")
-    if (EXISTS "${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc")
-        set(PROTOC_EXECUTABLE ${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc)
-    else()
-        message(FATAL_ERROR
-                "No available protoc, please run build_host_protoc.sh first")
-    endif()
+# if(NOT EXISTS "${PROTOC_EXECUTABLE}")
+    # if (EXISTS "${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc")
+        # set(PROTOC_EXECUTABLE ${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc)
+    # else()
+        # message(FATAL_ERROR
+                # "No available protoc, please run build_host_protoc.sh first")
+    # endif()
+# endif()
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    add_subdirectory(src)
+else()
+    add_subdirectory(tools)
 endif()
-add_subdirectory(src)

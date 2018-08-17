@@ -8,10 +8,10 @@ macro(build_protobuf)
 endmacro()
 
 ################################################################################################
-# Modified from https://github.com/pytorch/pytorch/blob/master/cmake/ProtoBuf.cmake
-# Redefinition of protobuf_generate_cpp() for support cross-compilation
+# Modified from https://github.com/pytorch/pytorch/blob/master/cmake/ProtoBuf.cmake and FindProtobuf.cmake in cmake modules
+# Redefinition of protobuf_generate_cpp() for support proto3
 # Usage:
-#   dnn_protobuf_generate_cpp(<srcs_var> <hdrs_var> <python_var>)
+#   dnn_protobuf_generate_cpp(<srcs_var> <hdrs_var> <proto_file>)
 function(dnn_protobuf_generate_cpp srcs_var hdrs_var)
     if(NOT ARGN)
         message(SEND_ERROR "Error: dnn_protobuf_generate_cpp() called without any proto files")
@@ -21,27 +21,30 @@ function(dnn_protobuf_generate_cpp srcs_var hdrs_var)
     set(${srcs_var})
     set(${hdrs_var})
     foreach(fil ${ARGN})
+        message("Compiling ${fil}")
         get_filename_component(abs_fil ${fil} ABSOLUTE)
         get_filename_component(fil_we ${fil} NAME_WE)
         get_filename_component(ext ${fil} EXT)
         if (".proto3" STREQUAL ".proto3")
-            list(APPEND ${srcs_var} "${CMAKE_CURRENT_BINARY_DIR}/${fil}.pb.cc")
-            list(APPEND ${hdrs_var} "${CMAKE_CURRENT_BINARY_DIR}/${fil}.pb.h")
+            set(src_fn "${CMAKE_CURRENT_BINARY_DIR}/${fil}.pb.cc")
+            set(hdr_fn "${CMAKE_CURRENT_BINARY_DIR}/${fil}.pb.h")
         elseif(${ext} STREQUAL ".proto")
-            list(APPEND ${srcs_var} "${CMAKE_CURRENT_BINARY_DIR}/${fil_we}.pb.cc")
-            list(APPEND ${hdrs_var} "${CMAKE_CURRENT_BINARY_DIR}/${fil_we}.pb.h")
+            set(src_fn "${CMAKE_CURRENT_BINARY_DIR}/${fil_we}.pb.cc")
+            set(hdr_fn "${CMAKE_CURRENT_BINARY_DIR}/${fil_we}.pb.h")
         else()
             message(FATAL_ERROR
                     "Invalid proto file ${fil}")
         endif()
+        list(APPEND ${srcs_var} ${src_fn})
+        list(APPEND ${hdrs_var} ${hdr_fn})
 
         add_custom_command(
-                OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${fil_we}.pb.cc"
-                "${CMAKE_CURRENT_BINARY_DIR}/${fil_we}.pb.h"
+                OUTPUT ${src_fn}
+                ${hdr_fn}
                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                 COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}"
-                COMMAND ${PROTOC_EXECUTABLE} -I${PROJECT_SOURCE_DIR} --cpp_out=${DLLEXPORT_STR}${PROJECT_BINARY_DIR} ${abs_fil}
-                DEPENDS ${PROTOC_EXECUTABLE} ${abs_fil}
+                COMMAND protobuf::protoc -I${PROJECT_SOURCE_DIR} --cpp_out=${DLLEXPORT_STR}${PROJECT_BINARY_DIR} ${abs_fil}
+                DEPENDS protobuf::protoc ${abs_fil}
                 COMMENT "Running C++ protocol buffer compiler on ${fil}" VERBATIM )
     endforeach()
 

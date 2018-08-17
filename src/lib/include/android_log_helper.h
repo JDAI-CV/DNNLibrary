@@ -7,6 +7,8 @@
 
 #include <android/log.h>
 
+#include <common/log_helper.h>
+
 #define  LOG_TAG    "DNN Library"
 
 #define  LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)

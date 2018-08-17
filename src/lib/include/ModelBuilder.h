@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
 #include <optional>
 #include "Model.h"
 
@@ -17,8 +18,12 @@ public:
     using Index = uint32_t;
     using IndexSeq = std::vector<Index>;
     using Shape = std::vector<uint32_t>;
+    // FIXME: It's a quick fix, refactor it later
+    std::map<std::string, Index> blobNameToIndex;
+
 private:
     ANeuralNetworksModel* model = nullptr;
+    std::unique_ptr<Model> dnn_model_;
     std::vector<char *> charBufPointers;
     std::vector<float *> floatBufPointers;
     // NHWC
@@ -29,8 +34,6 @@ private:
     std::map<int32_t , Index> int32OperandMap;
     std::map<float, Index> float32OperandMap;
     std::map<float, Index> float32AsTensorOperandMap;
-
-    std::map<std::string, Index> blobNameToIndex;
 
     uint32_t missingInt32OperandIndex = UINT32_MAX;
     uint32_t missingFloat32OperandIndex = UINT32_MAX;
@@ -146,6 +149,7 @@ public:
                       int32_t paddingTop, int32_t activation, uint32_t weightIndex, std::optional<uint32_t> biasIndex);
     Index addTensorFromBuffer(const float *buffer, std::vector<uint32_t> dimen);
     Index addTensorFromBuffer(const int32_t *buffer, std::vector<uint32_t> dimen);
+    Index addTensorFromMemory(const unsigned char *addr, Shape dimen);
     Index addFC(Index input, int32_t activation, uint32_t weightIndex, uint32_t biasIndex);
     Index addCaffePool(Index input, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                           int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
@@ -169,17 +173,20 @@ public:
 #endif
     void addIndexIntoOutput(Index index);
     int compile(uint32_t preference);
-    void prepareForExecution(Model &model);
+    void prepareForExecution();
     IndexSeq getInputIndexes();
     IndexSeq getOutputIndexes();
-    int setInputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
-    int setOutputBuffer(const Model& model, int32_t index, void *buffer, size_t length);
     void registerBufferPointer(char *pointer);
     void registerBufferPointer(float *pointer);
 
     // ModelBuilder &readFromBuffer(const char *buffer);
     ModelBuilder& readFromFile(const std::string &filename);
     ModelBuilder& simplestModel();
+
+    void prepare();
+    void setMemory(int fd, size_t size, size_t offset);
+    void setBuffer(unsigned char *data, size_t data_size);
+    std::unique_ptr<Model> finish();
 
     template <typename... Args>
     void addOperands(IndexSeq &indexes, Args... args) {

@@ -1,4 +1,4 @@
-dnn_protobuf_generate_cpp(ONNX_SRCS ONNX_HDRS onnx.proto3)
+# dnn_protobuf_generate_cpp(ONNX_SRCS ONNX_HDRS onnx.proto3)
 
 set(LIB_SRC
     include/ModelBuilder.h
@@ -7,12 +7,8 @@ set(LIB_SRC
     src/ModelBuilder.cpp
     src/Model.cpp
     include/operand_helper.h
-    src/OnnxReader.cpp
-    include/OnnxReader.h
-        src/NodeAttrHelper.cpp
-        src/NodeAttrHelper.h
-    ${ONNX_SRCS}
-    ${ONNX_HDRS})
+    src/DaqReader.cpp src/DaqReader.h
+    include/daq_generated.h)
 
 if (BUILD_JNI)
     list(APPEND
@@ -28,10 +24,10 @@ target_include_directories(
     dnnlibrary
     PUBLIC
     $<INSTALL_INTERFACE:include>
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    PRIVATE
-    ${CMAKE_SYSROOT}/usr/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    ${CMAKE_SYSROOT}/usr/include
     ${CMAKE_CURRENT_BINARY_DIR})
 
 find_library(
@@ -51,7 +47,7 @@ find_library(
 
 target_link_libraries(
     dnnlibrary
-    protobuf::libprotobuf-lite
+    # protobuf::libprotobuf-lite
     ${android-lib}
     ${log-lib}
     ${neural-networks-lib}

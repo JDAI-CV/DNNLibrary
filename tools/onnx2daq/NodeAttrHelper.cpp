@@ -4,6 +4,7 @@
 
 #include "NodeAttrHelper.h"
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,9 @@ string NodeAttrHelper::get(const std::string &key, string def_val) {
 }
 
 vector<int> NodeAttrHelper::get(const std::string &key, vector<int> def_val) {
+    if (!has_attr(key)) {
+        return def_val;
+    }
     std::vector<int> v;
 
     for (int i = 0; i < node_.attribute_size(); i++) {
@@ -61,10 +65,13 @@ vector<int> NodeAttrHelper::get(const std::string &key, vector<int> def_val) {
         }
     }
 
-    return def_val;
+    return v;
 }
 
 vector<float> NodeAttrHelper::get(const std::string &key, vector<float> def_val) {
+    if (!has_attr(key)) {
+        return def_val;
+    }
     std::vector<float> v;
 
     for (int i = 0; i < node_.attribute_size(); i++) {
@@ -79,7 +86,7 @@ vector<float> NodeAttrHelper::get(const std::string &key, vector<float> def_val)
         }
     }
 
-    return def_val;
+    return v;
 }
 
 bool NodeAttrHelper::has_attr(const std::string &key) {

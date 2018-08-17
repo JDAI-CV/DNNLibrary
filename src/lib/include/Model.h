@@ -12,11 +12,17 @@
 class Model {
     friend class ModelBuilder;
 private:
-    Model(ANeuralNetworksExecution *execution);
+    explicit Model(ANeuralNetworksExecution *execution);
     ANeuralNetworksExecution *execution;
+    ANeuralNetworksMemory *memory;
+    unsigned char *data;
+    size_t data_size;
 public:
     Model();
     int predict();
+    ~Model();
+    void setInputBuffer(int32_t index, void *buffer, size_t length);
+    void setOutputBuffer(int32_t index, void *buffer, size_t length);
 };
 
 
