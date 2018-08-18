@@ -94,7 +94,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto output_name = param->output()->str();
                     operand_indexes[output_name] = 
                         builder.addConv(operand_indexes.at(input_name), strides->Get(1), strides->Get(0), 
-                                pads->Get(2), pads->Get(3), pads->Get(1), pads->Get(0), 
+                                pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 convert_fuse_code_to_nnapi(fuse), operand_indexes.at(weight_name), 
                                 (bias_name.empty() ? std::nullopt : std::make_optional(operand_indexes.at(bias_name))));
                     break;
