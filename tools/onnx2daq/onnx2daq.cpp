@@ -316,14 +316,14 @@ int main(int argc, char **argv) {
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Softmax, 0, 0, 0, 0, param);
             layers.push_back(layer);
         } else if (op == "Concat") {
-            vector<flatbuffers::Offset<flatbuffers::String>> inputs;
+            vector<flatbuffers::Offset<flatbuffers::String>> concat_inputs;
             for (auto onnx_input : node.input()) {
                 auto flat_input = builder.CreateString(m(onnx_input).c_str(), onnx_input.size());
-                inputs.push_back(flat_input);
+                concat_inputs.push_back(flat_input);
             }
             auto axis = helper.get("axis", 1);
             uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
-            auto param = DNN::CreateConcatDirect(builder, &inputs, axis_nchw_to_nhwc[axis], m(node.output(0)).c_str());
+            auto param = DNN::CreateConcatDirect(builder, &concat_inputs, axis_nchw_to_nhwc[axis], m(node.output(0)).c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Concat, 0, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
         } else if (op == "Dropout") {
