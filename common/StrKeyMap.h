@@ -27,6 +27,12 @@ public:
             throw std::out_of_range("Key " + key + " not found.");
         }
     }
+    auto begin() {
+        return map_.begin();
+    }
+    auto end() {
+        return map_.end();
+    }
 };
 
 

@@ -4,7 +4,6 @@
 #include "ModelBuilder.h"
 
 #include <array>
-#include <cmath>
 #include <ctime>
 #include <tuple>
 #include <numeric>
@@ -1218,6 +1217,10 @@ void ModelBuilder::setBuffer(unsigned char *data, size_t data_size) {
 }
 
 std::unique_ptr<Model> ModelBuilder::finish() {
+    LOG(INFO) << "Finishing.. Here are operands in the model:";
+    for (const auto &pair : operand_indexes) {
+        LOG(INFO) << pair.first << ": " << dimensMap[operand_indexes[pair.first]];
+    }
     return std::move(dnn_model_);
 }
 
