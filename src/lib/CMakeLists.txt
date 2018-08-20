@@ -8,7 +8,7 @@ set(LIB_SRC
     src/Model.cpp
     include/operand_helper.h
     src/DaqReader.cpp src/DaqReader.h
-    include/daq_generated.h src/StrKeyMap.h)
+    include/daq_generated.h ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h)
 
 if (BUILD_JNI)
     list(APPEND
@@ -48,6 +48,7 @@ find_library(
 target_link_libraries(
     dnnlibrary
     # protobuf::libprotobuf-lite
+    glog::glog
     ${android-lib}
     ${log-lib}
     ${neural-networks-lib}

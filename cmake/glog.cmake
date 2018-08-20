@@ -1,0 +1,5 @@
+macro(build_glog)
+    message(STATUS "Building glog...")
+    option(BUILD_TESTING "" OFF)
+    add_subdirectory(third_party/glog)
+endmacro()

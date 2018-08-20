@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <glog/logging.h>
 #include <android_log_helper.h>
 
 std::string layer_type_to_str(DNN::LayerType type) {
@@ -92,6 +93,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto weight_name = param->weight()->str();
                     auto bias = param->bias();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "Conv, input: " << input_name << ", weight: " << weight_name << ", output: " << output_name;
                     builder.addConv(input_name, strides->Get(1), strides->Get(0),
                                     pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                     convert_fuse_code_to_nnapi(fuse), weight_name,
@@ -109,6 +111,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto weight_name = param->weight()->str();
                     auto bias = param->bias();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "Depthwise Conv, input: " << input_name << ", weight: " << weight_name << ", output: " << output_name;
                     builder.addDepthWiseConv(input_name, strides->Get(1), strides->Get(0),
                                              pads->Get(2), pads->Get(3), pads->Get(1), pads->Get(0),
                                              convert_fuse_code_to_nnapi(fuse), multiplier,
@@ -125,6 +128,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto fuse = param->fuse();
                     auto input_name = param->input()->str();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "Average pool, input: " << input_name << ", output: " << output_name;
                     builder.addPool(input_name, strides->Get(1), strides->Get(0),
                                     pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                     kernel_shape->Get(0), kernel_shape->Get(1),
@@ -140,6 +144,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto fuse = param->fuse();
                     auto input_name = param->input()->str();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "Max pool, input: " << input_name << ", output: " << output_name;
                     builder.addPool(input_name, strides->Get(1), strides->Get(0),
                                     pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                     kernel_shape->Get(0), kernel_shape->Get(1),
@@ -151,6 +156,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto param = layer->relu_param();
                     auto input_name = param->input()->str();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "Relu, input " << input_name << ", output: " << output_name;
                     builder.addReLU(input_name, output_name);
                     break;
                 }
@@ -159,6 +165,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto input1_name = param->input1()->str();
                     auto input2_name = param->input2()->str();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "Add, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
                     builder.addAddTensor(input1_name, input2_name, output_name);
                     break;
                 }
@@ -169,6 +176,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto bias_name = param->bias()->str();
                     auto input_name = param->input()->str();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "FC, input " << input_name << ", output: " << output_name;
                     builder.addFC(input_name, convert_fuse_code_to_nnapi(fuse),
                             weight_name, bias_name, output_name);
                     break;
@@ -177,6 +185,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     auto param = layer->softmax_param();
                     auto input_name = param->input()->str();
                     auto output_name = param->output()->str();
+                    LOG(INFO) << "Softmax, input " << input_name << ", output: " << output_name;
                     builder.addSoftMax(input_name, 1.f, output_name);
                     break;
                 }
@@ -189,6 +198,7 @@ bool DaqReader::ReadDaq(std::string filepath, ModelBuilder &builder) {
                     for (size_t i = 0; i < inputs->size(); i++) {
                         input_names.push_back(inputs->Get(i)->str());
                     }
+                    LOG(INFO) << "Concat, input " << input_names << ", output: " << output_name;
                     builder.addConcat(input_names, axis, output_name);
                     break;
                 }

@@ -12,7 +12,7 @@
 #include <memory>
 #include <optional>
 
-#include "StrKeyMap.h"
+#include <common/StrKeyMap.h>
 #include "Model.h"
 
 class ModelBuilder {

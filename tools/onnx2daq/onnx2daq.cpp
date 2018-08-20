@@ -3,6 +3,8 @@
 #include <numeric>
 #include <map>
 
+#include <glog/logging.h>
+#include <common/StrKeyMap.h>
 #include <daq_generated.h>
 #include <onnx.proto3.pb.h>
 #include "NodeAttrHelper.h"
@@ -96,19 +98,45 @@ std::pair<std::optional<std::string>, FuseCode> find_activation(const onnx::Mode
 }
 
 /**
+ * onnx: [filter_out_channel, filter_in_channel / group, height, width]
+ * nnapi: [1, height, width, depth_out]
+ */
+template <typename T>
+Tensor<T> onnx2nnapi_dw(const Tensor<T> &src) {
+    Tensor<T> dest;
+    dest.data.resize(product(src.shape));
+    // t for total
+    auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
+    CHECK_EQ(in_t, 1);
+    for (int out = 0; out < out_t; out++) {
+        for (int in = 0; in < in_t; in++) {
+            for (int h = 0; h < h_t; h++) {
+                for (int w = 0; w < w_t; w++) {
+                    auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
+                    auto nnapi_idx = h * w_t * out_t + w * out_t + out;
+                    dest.data[nnapi_idx] = src.data[onnx_idx];
+                }
+            }
+        }
+    }
+    dest.shape = {in_t, h_t, w_t, out_t};
+    return dest;
+}
+
+/**
  * onnx: [filter_out_channel, filter_in_channel, height, width]
  * nnapi: [depth_out, height, width, depth_in]
  */
 template <typename T>
-Tensor<T> onnx2nnapi(const Tensor<T> &src) {
+Tensor<T> onnx2nnapi_vanilla(const Tensor<T> &src) {
     Tensor<T> dest;
     dest.data.resize(product(src.shape));
     // t for total
-    size_t out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
-    for (size_t out = 0; out < out_t; out++) {
-        for (size_t in = 0; in < in_t; in++) {
-            for (size_t h = 0; h < h_t; h++) {
-                for (size_t w = 0; w < w_t; w++) {
+    auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
+    for (int out = 0; out < out_t; out++) {
+        for (int in = 0; in < in_t; in++) {
+            for (int h = 0; h < h_t; h++) {
+                for (int w = 0; w < w_t; w++) {
                     auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
                     auto nnapi_idx = out * h_t * w_t * in_t + h * w_t * in_t + w * in_t + in;
                     dest.data[nnapi_idx] = src.data[onnx_idx];
@@ -116,11 +144,13 @@ Tensor<T> onnx2nnapi(const Tensor<T> &src) {
             }
         }
     }
-    dest.shape = {src.shape[0], src.shape[2], src.shape[3], src.shape[1]};
+    dest.shape = {out_t, h_t, w_t, in_t};
     return dest;
 }
 
 int main(int argc, char **argv) {
+    FLAGS_logtostderr = true;
+    google::InitGoogleLogging(argv[0]);
     if (argc != 3) {
         std::cerr << "argc must be 3" << std::endl;
         return -1;
@@ -137,7 +167,8 @@ int main(int argc, char **argv) {
     flatbuffers::FlatBufferBuilder builder;
 
     std::vector<std::string> operands;
-    std::map<std::string, FTensor> nnapi_tensors;
+    StrKeyMap<FTensor> nnapi_tensors;
+    StrKeyMap<FTensor> onnx_tensors;
 
     vector<flatbuffers::Offset<DNN::Tensor>> tensors;
     for (const auto &tensor : model_proto.graph().initializer()) {
@@ -150,17 +181,7 @@ int main(int argc, char **argv) {
             }
             auto data_vec = vector<float>(ptr, ptr + product(shape));
             
-            FTensor onnx_tensor{data_vec, shape};
-            FTensor nnapi_tensor;
-            if (shape.size() == 4) {
-                nnapi_tensor = onnx2nnapi(onnx_tensor);
-            } else {
-                nnapi_tensor = onnx_tensor;
-            }
-            nnapi_tensors[tensor.name()] = nnapi_tensor;
-            auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr, 
-                    &nnapi_tensor.data, &nnapi_tensor.shape, tensor.name().c_str());
-            tensors.push_back(flat_tensor);
+            onnx_tensors[tensor.name()] = {data_vec, shape};
         }
         operands.push_back(tensor.name());
     }
@@ -192,7 +213,9 @@ int main(int argc, char **argv) {
         }
         NodeAttrHelper helper(node);
         const auto &op = node.op_type();
+        LOG(INFO) << "Node " << node.name();
         if (op == "Conv") {
+            LOG(INFO) << "Start converting Conv";
             auto strides = helper.get("strides", vector<int>{0, 0, 1, 1});
             auto pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
             auto dilations = helper.get("dilations", vector<int>{0, 0, 1, 1});
@@ -208,26 +231,52 @@ int main(int argc, char **argv) {
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
+            string bias_name;
+            if (node.input_size() >= 3) {
+                auto ori_bias_name = m(node.input(2));
+                bias_name = ori_bias_name + "_conv_b";
+                nnapi_tensors[bias_name] = onnx_tensors.at(ori_bias_name);
+                auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr, 
+                        &nnapi_tensors.at(bias_name).data, &nnapi_tensors.at(bias_name).shape, bias_name.c_str());
+                tensors.push_back(flat_tensor);
+            }
+
+            auto ori_weight_name = m(node.input(1));
+            const auto &onnx_weight = onnx_tensors.at(ori_weight_name);
+            string weight_name;
+            FTensor weight_tensor;
             flatbuffers::Offset<DNN::Layer> layer;
             if (group == 1) {
-                auto param = DNN::CreateConv2DDirect(builder, m(node.input(0)).c_str(), m(node.input(1)).c_str(),
-                        node.input_size() == 3 ? m(node.input(2)).c_str() : nullptr,
+                weight_name = ori_weight_name + "_conv_w";
+                weight_tensor = onnx2nnapi_vanilla(onnx_weight);
+                nnapi_tensors[weight_name] = weight_tensor;
+                auto param = DNN::CreateConv2DDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
+                        node.input_size() >= 3 ? bias_name.c_str() : nullptr,
                         &pads, &strides, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
                 layer = DNN::CreateLayer(builder, DNN::LayerType::Conv2D, param);
-            } else if (group == nnapi_tensors[node.input(0)].shape[3]) {    // depthwise
-                auto multiplier = nnapi_tensors[node.input(1)].shape[3] / group;
-                auto param = DNN::CreateDepthwiseConv2DDirect(builder, m(node.input(0)).c_str(), m(node.input(1)).c_str(),
-                        node.input_size() == 3 ? m(node.input(2)).c_str() : nullptr,
+            } else if (onnx_weight.shape[1] == 1) {    // depthwise
+                LOG(INFO) << "Depthwise conv";
+                weight_name = ori_weight_name + "_dwconv_w";
+                weight_tensor = onnx2nnapi_dw(onnx_weight);
+                nnapi_tensors[weight_name] = weight_tensor;
+                auto multiplier = nnapi_tensors.at(weight_name).shape[0] / group;
+                auto param = DNN::CreateDepthwiseConv2DDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
+                        node.input_size() >= 3 ? bias_name.c_str() : nullptr,
                         &pads, &strides, multiplier, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
                 layer = DNN::CreateLayer(builder, DNN::LayerType::DepthwiseConv2D, 0, 0, 0, 0, 0, 0, 0, 0, param);
             } else {
                 // TODO: Support it
                 throw std::invalid_argument("group != 1 is not supported");
             }
+            auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr, 
+                    &weight_tensor.data, &weight_tensor.shape, weight_name.c_str());
+            tensors.push_back(flat_tensor);
             layers.push_back(layer);
+            LOG(INFO) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" || op == "GlobalAveragePool" || op == "GlobalMaxPool") {
+            LOG(INFO) << "Start converting Pool";
             vector<int> strides, pads, kernel_shape;
-            if (op == "AveraagePool" || op == "MaxPool") {
+            if (op == "AveragePool" || op == "MaxPool") {
                 strides = helper.get("strides", vector<int>{0, 0, 1, 1});
                 pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
                 kernel_shape = helper.get("kernel_shape", vector<int>{0, 0, 0, 0});
@@ -246,17 +295,19 @@ int main(int argc, char **argv) {
                     throw std::invalid_argument("auto_pad is not supported");
                 }
             } else {
-                auto input_shape = nnapi_tensors[m(node.input(0))].shape;
-                strides = {input_shape[1], input_shape[2]};
-                pads = {0, 0};
-                kernel_shape = {input_shape[1], input_shape[2]};
+                strides = {0, 0};
+                pads = {0, 0, 0, 0};
+                kernel_shape = {-1, -1};    // -1 for global
             }
+            CHECK_EQ(pads.size(), 4);
+            CHECK_EQ(kernel_shape.size(), 2);
+            CHECK_EQ(strides.size(), 2);
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
             flatbuffers::Offset<DNN::Layer> layer;
-            if (op == "AveragePool") {
+            if (op == "AveragePool" || op == "GlobalAveragePool") {
                 auto param = DNN::CreateAvePoolDirect(builder, m(node.input(0)).c_str(), &kernel_shape, &pads, &strides,
                         convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
                 layer = DNN::CreateLayer(builder, DNN::LayerType::AvePool, 0, param);
@@ -271,12 +322,16 @@ int main(int argc, char **argv) {
                                                               // kernel_shape[0], kernel_shape[1], activation.second,
                                                               // op == "AveragePool" ? ModelBuilder::AVE_POOL
                                                                                   // : ModelBuilder::MAX_POOL);
+            LOG(INFO) << "Converting Pool completed";
         } else if (op == "Relu") {
+            LOG(INFO) << "Start converting Relu";
             auto param = DNN::CreateReluDirect(builder, m(node.input(0)).c_str(), m(node.output(0)).c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Relu, 0, 0, 0, param);
             layers.push_back(layer);
+            LOG(INFO) << "Converting Relu completed";
             // operand_indexes[node.output(0)] = builder.addReLU(operand_indexes.at(node.input(0)));
         } else if (op == "Add") {
+            LOG(INFO) << "Start converting Add";
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
@@ -285,10 +340,12 @@ int main(int argc, char **argv) {
                     convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Add, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
+            LOG(INFO) << "Converting Add completed";
             // auto input1 = operand_indexes.at(node.input(0));
             // auto input2 = operand_indexes.at(node.input(1));
             // operand_indexes[node.output(1)] = builder.addAddTensor(input1, input2);
         } else if (op == "Gemm") {
+            LOG(INFO) << "Start converting Gemm";
             auto transA = helper.get("transA", 0);
             auto transB = helper.get("transB", 0);
             auto alpha = helper.get("alpha", 1.0f);
@@ -310,12 +367,16 @@ int main(int argc, char **argv) {
                 throw std::invalid_argument(
                         "Only transA == 0, transB == 1, alpha == 1.0 and beta == 1.0 is supported.");
             }
+            LOG(INFO) << "Converting Gemm completed";
         } else if (op == "Softmax") {
+            LOG(INFO) << "Start converting Softmax";
             // simply ignore attribute "axis", because nnapi softmax didn't has this attr, and we will check the equality of the two ops in DaqReader.cpp
             auto param = DNN::CreateSoftmaxDirect(builder, m(node.input(0)).c_str(), m(node.output(0)).c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Softmax, 0, 0, 0, 0, param);
             layers.push_back(layer);
+            LOG(INFO) << "Converting Softmax completed";
         } else if (op == "Concat") {
+            LOG(INFO) << "Start converting Concat";
             vector<flatbuffers::Offset<flatbuffers::String>> concat_inputs;
             for (auto onnx_input : node.input()) {
                 auto flat_input = builder.CreateString(m(onnx_input).c_str(), onnx_input.size());
@@ -326,11 +387,16 @@ int main(int argc, char **argv) {
             auto param = DNN::CreateConcatDirect(builder, &concat_inputs, axis_nchw_to_nhwc[axis], m(node.output(0)).c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Concat, 0, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
+            LOG(INFO) << "Converting Concat completed";
         } else if (op == "Dropout") {
+            LOG(INFO) << "Start converting Dropout";
             // Dropout does nothing, so the output is the same as the input
             name_map[node.output(0)] = m(node.input(0));
+            LOG(INFO) << "Converting Dropout completed";
         } else if (op == "Reshape") {
+            LOG(INFO) << "Start converting Reshape";
             has_reshape = true;
+            LOG(INFO) << "Converting Reshape completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
         }

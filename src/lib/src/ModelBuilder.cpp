@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 
+#include <glog/logging.h>
 #include "android_log_helper.h"
 #include <operand_helper.h>
 #include <ModelBuilder.h>
@@ -625,6 +626,13 @@ ModelBuilder::Index ModelBuilder::addPool(std::string input_name, int32_t stride
                       inputDimen[3]};
 
     IndexSeq input_indexes{input};
+    if (height == -1 && width == -1) {
+        LOG(INFO) << "Global pool, input: " << input_name;
+        height = inputDimen[1];
+        width = inputDimen[2];
+        strideX = width;
+        strideY = height;
+    }
     addOperands(input_indexes, 
             paddingLeft, paddingRight, paddingTop, paddingBottom, 
             strideX, strideY, width, height, activation);

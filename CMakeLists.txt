@@ -13,6 +13,7 @@ option(BUILD_JNI "Build JavaWrapper" OFF)
 option(BUILD_BIN "Build binaries" ON)
 
 include(cmake/protobuf.cmake)
+include(cmake/glog.cmake)
 include(cmake/common.cmake)
 
 # build_protobuf()
@@ -25,6 +26,8 @@ include(cmake/common.cmake)
                 # "No available protoc, please run build_host_protoc.sh first")
     # endif()
 # endif()
+
+build_glog()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     add_subdirectory(src)
