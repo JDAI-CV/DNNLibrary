@@ -259,7 +259,7 @@ int main(int argc, char **argv) {
                 weight_name = ori_weight_name + "_dwconv_w";
                 weight_tensor = onnx2nnapi_dw(onnx_weight);
                 nnapi_tensors[weight_name] = weight_tensor;
-                auto multiplier = nnapi_tensors.at(weight_name).shape[0] / group;
+                auto multiplier = nnapi_tensors.at(weight_name).shape[3] / group;
                 auto param = DNN::CreateDepthwiseConv2DDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
                         node.input_size() >= 3 ? bias_name.c_str() : nullptr,
                         &pads, &strides, multiplier, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());

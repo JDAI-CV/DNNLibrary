@@ -508,13 +508,13 @@ ModelBuilder::Index ModelBuilder::addDepthWiseConv(string input_name, int32_t st
     auto weight = operand_indexes[weight_name];
     if (input >= nextIndex) return WRONG_INPUT;
 
-    Shape weightDimen = dimensMap[weight];     // num_output, height, width, num_input
+    Shape weightDimen = dimensMap[weight];     // 1, height, width, num_output
     // NHWC
     Shape inputDimen = dimensMap[input];
     Shape outputDimen{1,
                       (inputDimen[1] - weightDimen[1] + paddingTop + paddingBottom) / strideY + 1,
                       (inputDimen[2] - weightDimen[2] + paddingLeft + paddingRight) / strideX + 1,
-                      weightDimen[0]};
+                      weightDimen[3]};
     uint32_t biasIndexValue;
     if (!bias_name.has_value()) {
         Shape bias_dims = Shape{weightDimen[0]};
@@ -927,7 +927,7 @@ ModelBuilder::Index ModelBuilder::addTensorFromMemory(std::string name, const un
         throw std::invalid_argument("addTensorFromBuffer error, ret: " + getErrorCause(ret));
     }
     dimensMap[index] = dimen;
-    operand_indexes[std::move(name)] = index;
+    operand_indexes[std::move(name)] = index;   // TODO: replace std::move to const reference
     return index;
 }
 
