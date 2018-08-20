@@ -11,6 +11,8 @@
 #include <map>
 #include <memory>
 #include <optional>
+
+#include "StrKeyMap.h"
 #include "Model.h"
 
 class ModelBuilder {
@@ -24,7 +26,7 @@ private:
     std::unique_ptr<Model> dnn_model_;
     std::vector<char *> charBufPointers;
     std::vector<float *> floatBufPointers;
-    std::map<std::string, Index> operand_indexes;
+    StrKeyMap<Index> operand_indexes;
     // NHWC
     std::map<Index, Shape> dimensMap;
     IndexSeq inputIndexVector;
