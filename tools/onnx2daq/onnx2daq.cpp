@@ -351,12 +351,30 @@ int main(int argc, char **argv) {
             auto alpha = helper.get("alpha", 1.0f);
             auto beta = helper.get("beta", 1.0f);
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
+                auto weight_name = m(node.input(1));
+                {
+                    nnapi_tensors[weight_name] = onnx_tensors.at(weight_name);
+                    const auto &weight_tensor = nnapi_tensors[weight_name];
+                    auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr,
+                                                               &weight_tensor.data, &weight_tensor.shape,
+                                                               weight_name.c_str());
+                    tensors.push_back(flat_tensor);
+                }
+                string bias_name;
+                if (node.input_size() >= 3) {
+                    bias_name = m(node.input(2));
+                    nnapi_tensors[bias_name] = onnx_tensors.at(bias_name);
+                    const auto &bias_tensor = nnapi_tensors[bias_name];
+                    auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr,
+                                                          &bias_tensor.data, &bias_tensor.shape, bias_name.c_str());
+                    tensors.push_back(flat_tensor);
+                }
                 auto activation = find_activation(model_proto, node);
                 if (activation.first.has_value()) {
                     skipped_act.push_back(activation.first.value());
                 }
-                auto param = DNN::CreateFCDirect(builder, m(node.input(0)).c_str(), m(node.input(1)).c_str(),
-                                                 node.input_size() == 3 ? m(node.input(2)).c_str() : nullptr,
+                auto param = DNN::CreateFCDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
+                                                 node.input_size() >= 3 ? bias_name.c_str() : nullptr,
                                                  convert_fuse_code_type(activation.second), m(node.output(0)).c_str()
                 );
                 auto layer = DNN::CreateLayer(builder, DNN::LayerType::FC, 0, 0, 0, 0, 0, param, 0);
