@@ -12,6 +12,7 @@ option(BUILD_SHARED_LIBS "Build shared dnnlibrary" OFF)
 option(BUILD_JNI "Build JavaWrapper" OFF)
 option(BUILD_BIN "Build binaries" ON)
 
+include(cmake/system.cmake)
 include(cmake/protobuf.cmake)
 include(cmake/glog.cmake)
 include(cmake/common.cmake)
