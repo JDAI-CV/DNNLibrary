@@ -65,6 +65,10 @@ vector<int> NodeAttrHelper::get(const std::string &key, vector<int> def_val) {
         }
     }
 
+    if (v.empty()) {
+        return def_val;
+    }
+
     return v;
 }
 
@@ -84,6 +88,10 @@ vector<float> NodeAttrHelper::get(const std::string &key, vector<float> def_val)
 
             break;
         }
+    }
+
+    if (v.empty()) {
+        return def_val;
     }
 
     return v;

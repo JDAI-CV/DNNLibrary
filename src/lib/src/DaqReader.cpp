@@ -73,14 +73,12 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
     if (fd == -1) {
         throw std::invalid_argument("Open file error " + std::to_string(errno));
     }
-    LOG(INFO) << "hh";
     auto data = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
     builder.setBuffer(static_cast<unsigned char *>(data));
     builder.setMemory(fd, size, 0);
     close(fd);
     auto model = DNN::GetModel(data);
 
-    LOG(INFO) << "hh";
     for (const auto &tensor : *model->initializers()) {
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
@@ -95,7 +93,6 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
         builder.addInput(input->name()->str(), shape[2], shape[3], shape[1]);
     }
 
-    LOG(INFO) << "hh";
 
     for (auto layer : *model->layers()) {
         switch (layer->type()) {

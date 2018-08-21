@@ -138,6 +138,7 @@ void add_conv(const string &input_name, const std::vector<int> &strides, const s
         const string &ori_weight_name, const std::optional<std::string> &bias_name, const string &output_name) {
     flatbuffers::Offset<DNN::Layer> layer;
     if (dilations != vector<int>{1, 1}) {
+        LOG(INFO) << "Dilations of conv: " << dilations << ", converting..";
         const auto s2b_name = input_name + "_s2b";
         const auto im_name = input_name + "_im";
         {
@@ -145,7 +146,8 @@ void add_conv(const string &input_name, const std::vector<int> &strides, const s
             layer = DNN::CreateLayer(builder, DNN::LayerType::SpaceToBatch, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
         }
-        add_conv(s2b_name, strides, pads, vector<int>{1, 1}, group, activation, ori_weight_name, bias_name, im_name);
+        // paddings are applied in spacetobatch
+        add_conv(s2b_name, strides, vector<int>{0, 0, 0, 0}, vector<int>{1, 1}, group, activation, ori_weight_name, bias_name, im_name);
         {
             auto param = DNN::CreateBatchToSpaceDirect(builder, im_name.c_str(), &dilations, output_name.c_str());
             layer = DNN::CreateLayer(builder, DNN::LayerType::BatchToSpace, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -158,6 +160,7 @@ void add_conv(const string &input_name, const std::vector<int> &strides, const s
     string weight_name;
     FTensor weight_tensor;
     if (group == 1) {
+        LOG(INFO) << "Vanilla conv";
         weight_name = ori_weight_name + "_conv_w";
         weight_tensor = onnx2nnapi_vanilla(onnx_weight);
         nnapi_tensors[weight_name] = weight_tensor;
@@ -245,13 +248,12 @@ int main(int argc, char **argv) {
         LOG(INFO) << "Node " << node.name();
         if (op == "Conv") {
             LOG(INFO) << "Start converting Conv";
-            auto strides = helper.get("strides", vector<int>{0, 0, 1, 1});
-            auto pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
-            auto dilations = helper.get("dilations", vector<int>{0, 0, 1, 1});
-            LOG(INFO) << pads << ", " << dilations;
-            strides = vector<int>(strides.begin() + 2, strides.end());
-            pads = vector<int>(pads.begin() + 4, pads.end());
-            dilations = vector<int>(dilations.begin() + 2, dilations.end());
+            auto strides = helper.get("strides", vector<int>{1, 1});
+            auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+            auto dilations = helper.get("dilations", vector<int>{1, 1});
+            CHECK_EQ(pads.size(), 4);
+            CHECK_EQ(strides.size(), 2);
+            CHECK_EQ(dilations.size(), 2);
             auto group = helper.get("group", 1);
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
@@ -275,13 +277,10 @@ int main(int argc, char **argv) {
             LOG(INFO) << "Start converting Pool";
             vector<int> strides, pads, kernel_shape;
             if (op == "AveragePool" || op == "MaxPool") {
-                strides = helper.get("strides", vector<int>{0, 0, 1, 1});
-                pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
-                kernel_shape = helper.get("kernel_shape", vector<int>{0, 0, 0, 0});
+                strides = helper.get("strides", vector<int>{1, 1});
+                pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+                kernel_shape = helper.get("kernel_shape", vector<int>{0, 0});
                 auto count_include_pad = helper.get("count_include_pad", 0);
-                strides = vector<int>(strides.begin() + 2, strides.end());
-                pads = vector<int>(pads.begin() + 4, pads.end());
-                kernel_shape = vector<int>(kernel_shape.begin() + 2, kernel_shape.end());
                 if (count_include_pad == 1) {
                     throw std::invalid_argument("count_include_pad == 1 is not supported");
                 }
