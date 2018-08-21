@@ -6,23 +6,27 @@
 #ifndef NNAPIEXAMPLE_MODEL_H
 #define NNAPIEXAMPLE_MODEL_H
 
+#include <vector>
 
 #include <android/NeuralNetworks.h>
 
 class Model {
     friend class ModelBuilder;
 private:
-    explicit Model(ANeuralNetworksExecution *execution);
+    ANeuralNetworksModel* model;
+    ANeuralNetworksCompilation* compilation;
     ANeuralNetworksExecution *execution;
     ANeuralNetworksMemory *memory;
     unsigned char *data;
     size_t data_size;
+    std::vector<char *> charBufPointers;
+    std::vector<float *> floatBufPointers;
 public:
-    Model();
     int predict();
     ~Model();
     void setInputBuffer(int32_t index, void *buffer, size_t length);
     void setOutputBuffer(int32_t index, void *buffer, size_t length);
+    void prepareForExecution();
 };
 
 

@@ -8,12 +8,16 @@
 #include <stdexcept>
 #include <sys/mman.h>
 
-Model::Model() {
+#include <glog/logging.h>
 
-}
-
-Model::Model(ANeuralNetworksExecution *execution) :execution(execution){
-
+void Model::prepareForExecution() {
+    if (compilation == nullptr) {
+        throw std::invalid_argument("Error in prepareForExecution, compilation == nullptr");
+    }
+    auto ret = ANeuralNetworksExecution_create(compilation, &execution);
+    if (ret != ANEURALNETWORKS_NO_ERROR) {
+        throw std::invalid_argument("Error in prepareForExecution, ret: " + std::to_string(ret));
+    }
 }
 
 int Model::predict() {
@@ -35,7 +39,15 @@ int Model::predict() {
 
 Model::~Model() {
     munmap(data, data_size);
+    ANeuralNetworksModel_free(model);
+    ANeuralNetworksCompilation_free(compilation);
     ANeuralNetworksMemory_free(memory);
+    for (auto pointer : charBufPointers) {
+        delete[] pointer;
+    }
+    for (auto pointer : floatBufPointers) {
+        delete[] pointer;
+    }
 }
 
 void Model::setInputBuffer(int32_t index, void *buffer, size_t length) {

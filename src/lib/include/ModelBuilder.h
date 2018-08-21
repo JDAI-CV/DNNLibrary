@@ -22,10 +22,7 @@ public:
     using Shape = std::vector<uint32_t>;
 
 private:
-    ANeuralNetworksModel* model = nullptr;
     std::unique_ptr<Model> dnn_model_;
-    std::vector<char *> charBufPointers;
-    std::vector<float *> floatBufPointers;
     StrKeyMap<Index> operand_indexes;
     // NHWC
     std::map<Index, Shape> dimensMap;
@@ -67,9 +64,6 @@ private:
     ANeuralNetworksOperandType getFloat32OperandType();
 
 public:
-    ModelBuilder();
-    ~ModelBuilder();
-
     static const int MAX_POOL = 0;
     static const int AVE_POOL = 1;
 
@@ -137,8 +131,6 @@ public:
     static std::string getErrorProcedure(int errorCode);
     static std::string getErrorCause(int errorCode);
 
-    ANeuralNetworksCompilation* compilation = nullptr;
-
     Index getBlobIndex(const std::string &blobName);
     Shape getBlobDim(const std::string &blobName);
     Shape getBlobDim(Index index);
@@ -184,7 +176,6 @@ public:
 #endif
     void addIndexIntoOutput(Index index);
     int compile(uint32_t preference);
-    void prepareForExecution();
     IndexSeq getInputIndexes();
     IndexSeq getOutputIndexes();
     void registerBufferPointer(char *pointer);
