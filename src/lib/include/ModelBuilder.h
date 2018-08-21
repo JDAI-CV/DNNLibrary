@@ -8,6 +8,7 @@
 #include <android/NeuralNetworks.h>
 #include <string>
 #include <vector>
+#include <numeric>
 #include <map>
 #include <memory>
 #include <optional>
@@ -135,6 +136,10 @@ public:
     Shape getBlobDim(const std::string &blobName);
     Shape getBlobDim(Index index);
     Index addInput(std::string name, uint32_t height, uint32_t width, uint32_t depth);
+    ModelBuilder::Index addSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+            const std::vector<int32_t> &pads, const std::string &output_name);
+    ModelBuilder::Index addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+            const std::string &output_name);
     ModelBuilder::Index addDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
                                          int32_t paddingLeft,
                                          int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
@@ -178,8 +183,8 @@ public:
     int compile(uint32_t preference);
     IndexSeq getInputIndexes();
     IndexSeq getOutputIndexes();
-    void registerBufferPointer(char *pointer);
-    void registerBufferPointer(float *pointer);
+    void registerBufferPointer(std::unique_ptr<char[]> &&pointer);
+    void registerBufferPointer(std::unique_ptr<float[]> &&pointer);
 
     // ModelBuilder &readFromBuffer(const char *buffer);
     ModelBuilder& readFromFile(const std::string &filename);
@@ -195,6 +200,8 @@ public:
     }
 };
 
-
-uint32_t product(const std::vector<uint32_t> &v);
+template<typename T>
+T product(const std::vector<T> &v) {
+    return static_cast<T> (accumulate(v.begin(), v.end(), 1, std::multiplies<>()));
+}
 #endif //NNAPIEXAMPLE_MODELBUILDER_H

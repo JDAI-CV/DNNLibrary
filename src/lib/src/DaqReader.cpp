@@ -33,6 +33,10 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "softmax";
         case DNN::LayerType::DepthwiseConv2D:
             return "depthwsie";
+        case DNN::LayerType::BatchToSpace:
+            return "batch2space";
+        case DNN::LayerType::SpaceToBatch:
+            return "space2batch";
     }
 }
 
@@ -69,12 +73,14 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
     if (fd == -1) {
         throw std::invalid_argument("Open file error " + std::to_string(errno));
     }
+    LOG(INFO) << "hh";
     auto data = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
     builder.setBuffer(static_cast<unsigned char *>(data));
     builder.setMemory(fd, size, 0);
     close(fd);
     auto model = DNN::GetModel(data);
 
+    LOG(INFO) << "hh";
     for (const auto &tensor : *model->initializers()) {
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
@@ -88,6 +94,8 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
         ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
         builder.addInput(input->name()->str(), shape[2], shape[3], shape[1]);
     }
+
+    LOG(INFO) << "hh";
 
     for (auto layer : *model->layers()) {
         switch (layer->type()) {
@@ -209,8 +217,41 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
                 builder.addConcat(input_names, axis, output_name);
                 break;
             }
+            case DNN::LayerType::BatchToSpace: {
+                auto param = layer->batch_to_space_param();
+                auto input_name = param->input()->str();
+                auto block_sizes_fbs = param->block_sizes();
+                auto output_name = param->output()->str();
+                std::vector<int> block_sizes;
+                for (size_t i = 0; i < block_sizes_fbs->size(); i++) {
+                    block_sizes.push_back(block_sizes_fbs->Get(static_cast<flatbuffers::uoffset_t>(i)));
+                }
+                LOG(INFO) << "BatchToSpaceND, input " << input_name 
+                    << ", block sizes " << block_sizes << ", output: " << output_name;
+                builder.addBatchToSpaceND(input_name, block_sizes, output_name);
+                break;
+            }
+            case DNN::LayerType::SpaceToBatch: {
+                auto param = layer->space_to_batch_param();
+                auto input_name = param->input()->str();
+                auto block_sizes_fbs = param->block_sizes();
+                auto pads_fbs = param->pads();
+                auto output_name = param->output()->str();
+                std::vector<int> block_sizes;
+                for (size_t i = 0; i < block_sizes_fbs->size(); i++) {
+                    block_sizes.push_back(block_sizes_fbs->Get(static_cast<flatbuffers::uoffset_t>(i)));
+                }
+                std::vector<int> pads;
+                for (size_t i = 0; i < pads_fbs->size(); i++) {
+                    pads.push_back(pads_fbs->Get(static_cast<flatbuffers::uoffset_t>(i)));
+                }
+                LOG(INFO) << "SpaceToBatchND, input " << input_name 
+                    << ", block sizes " << block_sizes << ", pads " << pads << "output: " << output_name;
+                builder.addSpaceToBatchND(input_name, block_sizes, pads, output_name);
+                break;
+            }
             default: {
-                throw std::invalid_argument("Unsupported layer" + layer_type_to_str(layer->type()));
+                throw std::invalid_argument("Unsupported layer " + layer_type_to_str(layer->type()));
             }
         }
     }

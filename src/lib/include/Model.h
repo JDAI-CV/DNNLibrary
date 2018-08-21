@@ -7,6 +7,7 @@
 #define NNAPIEXAMPLE_MODEL_H
 
 #include <vector>
+#include <memory>
 
 #include <android/NeuralNetworks.h>
 
@@ -19,8 +20,9 @@ private:
     ANeuralNetworksMemory *memory;
     unsigned char *data;
     size_t data_size;
-    std::vector<char *> charBufPointers;
-    std::vector<float *> floatBufPointers;
+    std::vector<std::unique_ptr<char[]>> charBufPointers;
+    std::vector<std::unique_ptr<float[]>> floatBufPointers;
+    std::vector<std::unique_ptr<int32_t[]>> int32BufPointers;
 public:
     int predict();
     ~Model();

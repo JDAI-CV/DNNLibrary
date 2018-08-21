@@ -2,7 +2,7 @@ namespace DNN;
 
 enum DataType:byte { Float32 = 0, Int8 }
 enum FuseCode:byte { None = 0, Relu, Relu1, Relu6 }
-enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat, DepthwiseConv2D }
+enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat, DepthwiseConv2D, BatchToSpace, SpaceToBatch }
 
 table Tensor {
     data_type:DataType;
@@ -15,6 +15,19 @@ table Tensor {
 table Input {
     shape:[int];
     name:string;
+}
+
+table BatchToSpace {
+    input:string;
+    block_sizes:[int];
+    output:string;
+}
+
+table SpaceToBatch {
+    input:string;
+    block_sizes:[int];
+    pads:[int];
+    output:string;
 }
 
 table Conv2D {
@@ -98,6 +111,8 @@ table Layer {
     add_param:Add;
     concat_param:Concat;
     depthwise_conv2d_param:DepthwiseConv2D;
+    batch_to_space_param:BatchToSpace;
+    space_to_batch_param:SpaceToBatch;
 }
 
 table Model {

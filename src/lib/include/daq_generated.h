@@ -12,6 +12,10 @@ struct Tensor;
 
 struct Input;
 
+struct BatchToSpace;
+
+struct SpaceToBatch;
+
 struct Conv2D;
 
 struct DepthwiseConv2D;
@@ -108,11 +112,13 @@ enum class LayerType : int8_t {
   Add = 6,
   Concat = 7,
   DepthwiseConv2D = 8,
+  BatchToSpace = 9,
+  SpaceToBatch = 10,
   MIN = Conv2D,
-  MAX = DepthwiseConv2D
+  MAX = SpaceToBatch
 };
 
-inline const LayerType (&EnumValuesLayerType())[9] {
+inline const LayerType (&EnumValuesLayerType())[11] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -122,7 +128,9 @@ inline const LayerType (&EnumValuesLayerType())[9] {
     LayerType::FC,
     LayerType::Add,
     LayerType::Concat,
-    LayerType::DepthwiseConv2D
+    LayerType::DepthwiseConv2D,
+    LayerType::BatchToSpace,
+    LayerType::SpaceToBatch
   };
   return values;
 }
@@ -138,6 +146,8 @@ inline const char * const *EnumNamesLayerType() {
     "Add",
     "Concat",
     "DepthwiseConv2D",
+    "BatchToSpace",
+    "SpaceToBatch",
     nullptr
   };
   return names;
@@ -308,6 +318,169 @@ inline flatbuffers::Offset<Input> CreateInputDirect(
       _fbb,
       shape ? _fbb.CreateVector<int32_t>(*shape) : 0,
       name ? _fbb.CreateString(name) : 0);
+}
+
+struct BatchToSpace FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT = 4,
+    VT_BLOCK_SIZES = 6,
+    VT_OUTPUT = 8
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::Vector<int32_t> *block_sizes() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_BLOCK_SIZES);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_BLOCK_SIZES) &&
+           verifier.VerifyVector(block_sizes()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct BatchToSpaceBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(BatchToSpace::VT_INPUT, input);
+  }
+  void add_block_sizes(flatbuffers::Offset<flatbuffers::Vector<int32_t>> block_sizes) {
+    fbb_.AddOffset(BatchToSpace::VT_BLOCK_SIZES, block_sizes);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(BatchToSpace::VT_OUTPUT, output);
+  }
+  explicit BatchToSpaceBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  BatchToSpaceBuilder &operator=(const BatchToSpaceBuilder &);
+  flatbuffers::Offset<BatchToSpace> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<BatchToSpace>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<BatchToSpace> CreateBatchToSpace(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> block_sizes = 0,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  BatchToSpaceBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_block_sizes(block_sizes);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<BatchToSpace> CreateBatchToSpaceDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    const std::vector<int32_t> *block_sizes = nullptr,
+    const char *output = nullptr) {
+  return DNN::CreateBatchToSpace(
+      _fbb,
+      input ? _fbb.CreateString(input) : 0,
+      block_sizes ? _fbb.CreateVector<int32_t>(*block_sizes) : 0,
+      output ? _fbb.CreateString(output) : 0);
+}
+
+struct SpaceToBatch FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT = 4,
+    VT_BLOCK_SIZES = 6,
+    VT_PADS = 8,
+    VT_OUTPUT = 10
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::Vector<int32_t> *block_sizes() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_BLOCK_SIZES);
+  }
+  const flatbuffers::Vector<int32_t> *pads() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_PADS);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_BLOCK_SIZES) &&
+           verifier.VerifyVector(block_sizes()) &&
+           VerifyOffset(verifier, VT_PADS) &&
+           verifier.VerifyVector(pads()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SpaceToBatchBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(SpaceToBatch::VT_INPUT, input);
+  }
+  void add_block_sizes(flatbuffers::Offset<flatbuffers::Vector<int32_t>> block_sizes) {
+    fbb_.AddOffset(SpaceToBatch::VT_BLOCK_SIZES, block_sizes);
+  }
+  void add_pads(flatbuffers::Offset<flatbuffers::Vector<int32_t>> pads) {
+    fbb_.AddOffset(SpaceToBatch::VT_PADS, pads);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(SpaceToBatch::VT_OUTPUT, output);
+  }
+  explicit SpaceToBatchBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SpaceToBatchBuilder &operator=(const SpaceToBatchBuilder &);
+  flatbuffers::Offset<SpaceToBatch> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<SpaceToBatch>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SpaceToBatch> CreateSpaceToBatch(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> block_sizes = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> pads = 0,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  SpaceToBatchBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_pads(pads);
+  builder_.add_block_sizes(block_sizes);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<SpaceToBatch> CreateSpaceToBatchDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    const std::vector<int32_t> *block_sizes = nullptr,
+    const std::vector<int32_t> *pads = nullptr,
+    const char *output = nullptr) {
+  return DNN::CreateSpaceToBatch(
+      _fbb,
+      input ? _fbb.CreateString(input) : 0,
+      block_sizes ? _fbb.CreateVector<int32_t>(*block_sizes) : 0,
+      pads ? _fbb.CreateVector<int32_t>(*pads) : 0,
+      output ? _fbb.CreateString(output) : 0);
 }
 
 struct Conv2D FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1197,7 +1370,9 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_FC_PARAM = 16,
     VT_ADD_PARAM = 18,
     VT_CONCAT_PARAM = 20,
-    VT_DEPTHWISE_CONV2D_PARAM = 22
+    VT_DEPTHWISE_CONV2D_PARAM = 22,
+    VT_BATCH_TO_SPACE_PARAM = 24,
+    VT_SPACE_TO_BATCH_PARAM = 26
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -1229,6 +1404,12 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const DepthwiseConv2D *depthwise_conv2d_param() const {
     return GetPointer<const DepthwiseConv2D *>(VT_DEPTHWISE_CONV2D_PARAM);
   }
+  const BatchToSpace *batch_to_space_param() const {
+    return GetPointer<const BatchToSpace *>(VT_BATCH_TO_SPACE_PARAM);
+  }
+  const SpaceToBatch *space_to_batch_param() const {
+    return GetPointer<const SpaceToBatch *>(VT_SPACE_TO_BATCH_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -1250,6 +1431,10 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(concat_param()) &&
            VerifyOffset(verifier, VT_DEPTHWISE_CONV2D_PARAM) &&
            verifier.VerifyTable(depthwise_conv2d_param()) &&
+           VerifyOffset(verifier, VT_BATCH_TO_SPACE_PARAM) &&
+           verifier.VerifyTable(batch_to_space_param()) &&
+           VerifyOffset(verifier, VT_SPACE_TO_BATCH_PARAM) &&
+           verifier.VerifyTable(space_to_batch_param()) &&
            verifier.EndTable();
   }
 };
@@ -1287,6 +1472,12 @@ struct LayerBuilder {
   void add_depthwise_conv2d_param(flatbuffers::Offset<DepthwiseConv2D> depthwise_conv2d_param) {
     fbb_.AddOffset(Layer::VT_DEPTHWISE_CONV2D_PARAM, depthwise_conv2d_param);
   }
+  void add_batch_to_space_param(flatbuffers::Offset<BatchToSpace> batch_to_space_param) {
+    fbb_.AddOffset(Layer::VT_BATCH_TO_SPACE_PARAM, batch_to_space_param);
+  }
+  void add_space_to_batch_param(flatbuffers::Offset<SpaceToBatch> space_to_batch_param) {
+    fbb_.AddOffset(Layer::VT_SPACE_TO_BATCH_PARAM, space_to_batch_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1310,8 +1501,12 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<FC> fc_param = 0,
     flatbuffers::Offset<Add> add_param = 0,
     flatbuffers::Offset<Concat> concat_param = 0,
-    flatbuffers::Offset<DepthwiseConv2D> depthwise_conv2d_param = 0) {
+    flatbuffers::Offset<DepthwiseConv2D> depthwise_conv2d_param = 0,
+    flatbuffers::Offset<BatchToSpace> batch_to_space_param = 0,
+    flatbuffers::Offset<SpaceToBatch> space_to_batch_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_space_to_batch_param(space_to_batch_param);
+  builder_.add_batch_to_space_param(batch_to_space_param);
   builder_.add_depthwise_conv2d_param(depthwise_conv2d_param);
   builder_.add_concat_param(concat_param);
   builder_.add_add_param(add_param);

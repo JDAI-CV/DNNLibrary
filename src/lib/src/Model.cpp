@@ -42,12 +42,6 @@ Model::~Model() {
     ANeuralNetworksModel_free(model);
     ANeuralNetworksCompilation_free(compilation);
     ANeuralNetworksMemory_free(memory);
-    for (auto pointer : charBufPointers) {
-        delete[] pointer;
-    }
-    for (auto pointer : floatBufPointers) {
-        delete[] pointer;
-    }
 }
 
 void Model::setInputBuffer(int32_t index, void *buffer, size_t length) {

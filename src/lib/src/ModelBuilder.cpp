@@ -6,7 +6,6 @@
 #include <array>
 #include <ctime>
 #include <tuple>
-#include <numeric>
 #include <sstream>
 #include <sys/mman.h>
 #include <fstream>
@@ -42,6 +41,37 @@ ModelBuilder::Index ModelBuilder::addInput(string name, uint32_t height, uint32_
     inputIndexVector.push_back(index);
     operand_indexes[name] = index;
     return index;
+}
+
+ModelBuilder::Index ModelBuilder::addSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+        const std::vector<int32_t> &pads, const std::string &output_name) {
+    auto input = operand_indexes[input_name];
+
+    auto block_sizes_idx = addTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
+    auto pads_idx = addTensorFromBuffer(output_name + "_pad", &pads[0], Shape{static_cast<uint32_t>(pads.size()) / 2, 2});
+
+    auto input_dimen = dimensMap[input];
+    auto output_dimen = {input_dimen[0] * product(block_sizes), (input_dimen[1] + pads[0] + pads[1]) / block_sizes[0], 
+        (input_dimen[2] + pads[2] + pads[3]) / block_sizes[1], input_dimen[3]};
+    IndexSeq input_indexes{input, block_sizes_idx, pads_idx};
+    auto output_index = addOperation(ANEURALNETWORKS_SPACE_TO_BATCH_ND, input_indexes, output_dimen)[0];
+    operand_indexes[output_name] = output_index;
+    return output_index;
+}
+
+ModelBuilder::Index ModelBuilder::addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+        const std::string &output_name) {
+    auto input = operand_indexes[input_name];
+
+    auto block_sizes_idx = addTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
+
+    auto input_dimen = dimensMap[input];
+    auto output_dimen = {input_dimen[0] / product(block_sizes), input_dimen[1] * block_sizes[0], 
+        input_dimen[2] * block_sizes[1], input_dimen[3]};
+    IndexSeq input_indexes{input, block_sizes_idx};
+    auto output_index = addOperation(ANEURALNETWORKS_BATCH_TO_SPACE_ND, input_indexes, output_dimen)[0];
+    operand_indexes[output_name] = output_index;
+    return output_index;
 }
 
 ModelBuilder::Index ModelBuilder::addDepthWiseConv(const string &input_name, int32_t strideX, int32_t strideY,
@@ -522,12 +552,12 @@ int ModelBuilder::compile(uint32_t preference) {
     return 0;
 }
 
-void ModelBuilder::registerBufferPointer(float *pointer) {
-    dnn_model_->floatBufPointers.push_back(pointer);
+void ModelBuilder::registerBufferPointer(std::unique_ptr<float[]> &&pointer) {
+    dnn_model_->floatBufPointers.push_back(std::move(pointer));
 }
 
-void ModelBuilder::registerBufferPointer(char *pointer) {
-    dnn_model_->charBufPointers.push_back(pointer);
+void ModelBuilder::registerBufferPointer(std::unique_ptr<char[]> &&pointer) {
+    dnn_model_->charBufPointers.push_back(std::move(pointer));
 }
 
 ModelBuilder::IndexSeq ModelBuilder::getInputIndexes() {
@@ -623,12 +653,13 @@ ModelBuilder::Index ModelBuilder::addFloat32NullOperandWithDims(Shape &dims) {
 }
 
 ModelBuilder::Index ModelBuilder::addFloat32ZeroOperandWithDims(Shape &dims) {
-    auto *zeros = new float[product(dims)];
-    registerBufferPointer(zeros);
+    auto zeros = std::unique_ptr<float[]>(new float[product(dims)]);
     for (size_t i = 0; i < product(dims); i++) {
         zeros[i] = 0;
     }
-    return addTensorFromBuffer(std::string(), zeros, dims);
+    auto idx = addTensorFromBuffer(std::string(), zeros.get(), dims);
+    registerBufferPointer(std::move(zeros));
+    return idx;
 }
 
 ModelBuilder::Shape ModelBuilder::getBlobDim(const string &blobName) {
@@ -701,6 +732,7 @@ ModelBuilder::IndexSeq ModelBuilder::addOperation(int op, IndexSeq input_indexes
     if (ret != ANEURALNETWORKS_NO_ERROR) {
         throw std::invalid_argument("Add operation failed, op = " + std::to_string(op) + ", error " + getErrorCause(ret));
     }
+    
     return output_indexes;
 }
 
@@ -731,8 +763,4 @@ std::unique_ptr<Model> ModelBuilder::finish() {
         LOG(INFO) << pair.first << ": " << dimensMap[operand_indexes[pair.first]];
     }
     return std::move(dnn_model_);
-}
-
-uint32_t product(const vector<uint32_t> &v) {
-    return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, std::multiplies<>()));
 }

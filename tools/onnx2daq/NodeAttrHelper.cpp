@@ -56,7 +56,7 @@ vector<int> NodeAttrHelper::get(const std::string &key, vector<int> def_val) {
     for (int i = 0; i < node_.attribute_size(); i++) {
         const onnx::AttributeProto& attr = node_.attribute(i);
         if (attr.name() == key) {
-            v.resize(static_cast<unsigned long>(attr.ints_size()));
+            v.reserve(static_cast<size_t>(attr.ints_size()));
             for (int j = 0; j < attr.ints_size(); j++) {
                 v.push_back(static_cast<int>(attr.ints(j)));
             }
@@ -77,7 +77,7 @@ vector<float> NodeAttrHelper::get(const std::string &key, vector<float> def_val)
     for (int i = 0; i < node_.attribute_size(); i++) {
         const onnx::AttributeProto &attr = node_.attribute(i);
         if (attr.name() == key) {
-            v.resize(attr.floats_size());
+            v.reserve(static_cast<size_t>(attr.floats_size()));
             for (int j = 0; j < attr.floats_size(); j++) {
                 v.push_back(attr.floats(j));
             }

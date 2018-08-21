@@ -12,31 +12,6 @@
 
 using std::string; using std::vector;
 
-#if 0
-bool read_proto_from_binary(string filepath, google::protobuf::Message &message) {
-    std::ifstream fs;
-    fs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-    bool success;
-    try {
-        fs.open(filepath, std::ifstream::in | std::ifstream::binary);
-
-        google::protobuf::io::IstreamInputStream input(&fs);
-        google::protobuf::io::CodedInputStream codedstr(&input);
-
-        codedstr.SetTotalBytesLimit(INT_MAX, INT_MAX / 2);
-
-        success = message.ParseFromCodedStream(&codedstr);
-
-        fs.close();
-    } catch (const std::ifstream::failure &e) {
-        LOGE("Open file %s error", filepath.c_str());
-        success = false;
-    }
-
-    return success;
-}
-#endif
-
 using Shape = std::vector<int>;
 
 std::map<std::string, std::string> name_map;
@@ -61,6 +36,15 @@ struct Tensor {
 };
 
 using FTensor = Tensor<float>;
+
+flatbuffers::FlatBufferBuilder builder;
+
+std::vector<std::string> operands;
+StrKeyMap<FTensor> nnapi_tensors;
+StrKeyMap<FTensor> onnx_tensors;
+vector<flatbuffers::Offset<DNN::Layer>> layers;
+
+vector<flatbuffers::Offset<DNN::Tensor>> tensors;
 
 enum class FuseCode {
     FUSED_NONE,
@@ -148,6 +132,59 @@ Tensor<T> onnx2nnapi_vanilla(const Tensor<T> &src) {
     return dest;
 }
 
+void add_conv(const string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
+        const std::vector<int> &dilations, int group, 
+        const std::pair<std::optional<std::string>, FuseCode>& activation,
+        const string &ori_weight_name, const std::optional<std::string> &bias_name, const string &output_name) {
+    flatbuffers::Offset<DNN::Layer> layer;
+    if (dilations != vector<int>{1, 1}) {
+        const auto s2b_name = input_name + "_s2b";
+        const auto im_name = input_name + "_im";
+        {
+            auto param = DNN::CreateSpaceToBatchDirect(builder, input_name.c_str(), &dilations, &pads, s2b_name.c_str());
+            layer = DNN::CreateLayer(builder, DNN::LayerType::SpaceToBatch, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+            layers.push_back(layer);
+        }
+        add_conv(s2b_name, strides, pads, vector<int>{1, 1}, group, activation, ori_weight_name, bias_name, im_name);
+        {
+            auto param = DNN::CreateBatchToSpaceDirect(builder, im_name.c_str(), &dilations, output_name.c_str());
+            layer = DNN::CreateLayer(builder, DNN::LayerType::BatchToSpace, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+            layers.push_back(layer);
+        }
+        return;
+    }
+
+    const auto &onnx_weight = onnx_tensors.at(ori_weight_name);
+    string weight_name;
+    FTensor weight_tensor;
+    if (group == 1) {
+        weight_name = ori_weight_name + "_conv_w";
+        weight_tensor = onnx2nnapi_vanilla(onnx_weight);
+        nnapi_tensors[weight_name] = weight_tensor;
+        auto param = DNN::CreateConv2DDirect(builder, input_name.c_str(), weight_name.c_str(),
+                bias_name ? bias_name.value().c_str() : nullptr,
+                &pads, &strides, convert_fuse_code_type(activation.second), output_name.c_str());
+        layer = DNN::CreateLayer(builder, DNN::LayerType::Conv2D, param);
+    } else if (onnx_weight.shape[1] == 1) {    // depthwise
+        LOG(INFO) << "Depthwise conv";
+        weight_name = ori_weight_name + "_dwconv_w";
+        weight_tensor = onnx2nnapi_dw(onnx_weight);
+        nnapi_tensors[weight_name] = weight_tensor;
+        auto multiplier = nnapi_tensors.at(weight_name).shape[3] / group;
+        auto param = DNN::CreateDepthwiseConv2DDirect(builder, input_name.c_str(), weight_name.c_str(),
+                bias_name ? bias_name.value().c_str() : nullptr,
+                &pads, &strides, multiplier, convert_fuse_code_type(activation.second), output_name.c_str());
+        layer = DNN::CreateLayer(builder, DNN::LayerType::DepthwiseConv2D, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    } else {
+        // TODO: Support it
+        throw std::invalid_argument("group != 1 is not supported");
+    }
+    auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr, 
+            &weight_tensor.data, &weight_tensor.shape, weight_name.c_str());
+    tensors.push_back(flat_tensor);
+    layers.push_back(layer);
+}
+
 int main(int argc, char **argv) {
     FLAGS_logtostderr = true;
     google::InitGoogleLogging(argv[0]);
@@ -164,23 +201,16 @@ int main(int argc, char **argv) {
         ifs.close();
     }
 
-    flatbuffers::FlatBufferBuilder builder;
-
-    std::vector<std::string> operands;
-    StrKeyMap<FTensor> nnapi_tensors;
-    StrKeyMap<FTensor> onnx_tensors;
-
-    vector<flatbuffers::Offset<DNN::Tensor>> tensors;
     for (const auto &tensor : model_proto.graph().initializer()) {
         if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT) {
             const float *ptr = tensor.float_data().empty() ?
-                               reinterpret_cast<const float *>(tensor.raw_data().data()) : tensor.float_data().data();
+                reinterpret_cast<const float *>(tensor.raw_data().data()) : tensor.float_data().data();
             Shape shape;
             for (auto dim : tensor.dims()) {
                 shape.push_back(static_cast<uint32_t>(dim));
             }
             auto data_vec = vector<float>(ptr, ptr + product(shape));
-            
+
             onnx_tensors[tensor.name()] = {data_vec, shape};
         }
         operands.push_back(tensor.name());
@@ -204,7 +234,6 @@ int main(int argc, char **argv) {
         inputs.push_back(flat_input);
     }
 
-    vector<flatbuffers::Offset<DNN::Layer>> layers;
     vector<string> skipped_act;
     bool has_reshape = false;
     for (const auto &node : model_proto.graph().node()) {
@@ -219,59 +248,28 @@ int main(int argc, char **argv) {
             auto strides = helper.get("strides", vector<int>{0, 0, 1, 1});
             auto pads = helper.get("pads", vector<int>{0, 0, 0, 0, 0, 0, 0, 0});
             auto dilations = helper.get("dilations", vector<int>{0, 0, 1, 1});
+            LOG(INFO) << pads << ", " << dilations;
             strides = vector<int>(strides.begin() + 2, strides.end());
             pads = vector<int>(pads.begin() + 4, pads.end());
             dilations = vector<int>(dilations.begin() + 2, dilations.end());
-            if (dilations != vector<int>{1, 1}) {
-                // TODO: Support it
-                throw std::invalid_argument("dilations != 1 is not supported");
-            }
             auto group = helper.get("group", 1);
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
-            string bias_name;
+            std::optional<string> bias_name;
             if (node.input_size() >= 3) {
                 auto ori_bias_name = m(node.input(2));
                 bias_name = ori_bias_name + "_conv_b";
-                nnapi_tensors[bias_name] = onnx_tensors.at(ori_bias_name);
+                nnapi_tensors[bias_name.value()] = onnx_tensors.at(ori_bias_name);
                 auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr, 
-                        &nnapi_tensors.at(bias_name).data, &nnapi_tensors.at(bias_name).shape, bias_name.c_str());
+                        &nnapi_tensors.at(bias_name.value()).data, &nnapi_tensors.at(bias_name.value()).shape, 
+                        bias_name.value().c_str());
                 tensors.push_back(flat_tensor);
             }
 
             auto ori_weight_name = m(node.input(1));
-            const auto &onnx_weight = onnx_tensors.at(ori_weight_name);
-            string weight_name;
-            FTensor weight_tensor;
-            flatbuffers::Offset<DNN::Layer> layer;
-            if (group == 1) {
-                weight_name = ori_weight_name + "_conv_w";
-                weight_tensor = onnx2nnapi_vanilla(onnx_weight);
-                nnapi_tensors[weight_name] = weight_tensor;
-                auto param = DNN::CreateConv2DDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
-                        node.input_size() >= 3 ? bias_name.c_str() : nullptr,
-                        &pads, &strides, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
-                layer = DNN::CreateLayer(builder, DNN::LayerType::Conv2D, param);
-            } else if (onnx_weight.shape[1] == 1) {    // depthwise
-                LOG(INFO) << "Depthwise conv";
-                weight_name = ori_weight_name + "_dwconv_w";
-                weight_tensor = onnx2nnapi_dw(onnx_weight);
-                nnapi_tensors[weight_name] = weight_tensor;
-                auto multiplier = nnapi_tensors.at(weight_name).shape[3] / group;
-                auto param = DNN::CreateDepthwiseConv2DDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
-                        node.input_size() >= 3 ? bias_name.c_str() : nullptr,
-                        &pads, &strides, multiplier, convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
-                layer = DNN::CreateLayer(builder, DNN::LayerType::DepthwiseConv2D, 0, 0, 0, 0, 0, 0, 0, 0, param);
-            } else {
-                // TODO: Support it
-                throw std::invalid_argument("group != 1 is not supported");
-            }
-            auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr, 
-                    &weight_tensor.data, &weight_tensor.shape, weight_name.c_str());
-            tensors.push_back(flat_tensor);
-            layers.push_back(layer);
+            add_conv(m(node.input(0)), strides, pads, dilations, group, activation, ori_weight_name, bias_name, m(node.output(0)));
             LOG(INFO) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" || op == "GlobalAveragePool" || op == "GlobalMaxPool") {
             LOG(INFO) << "Start converting Pool";
@@ -313,15 +311,15 @@ int main(int argc, char **argv) {
                 layer = DNN::CreateLayer(builder, DNN::LayerType::AvePool, 0, param);
             } else {
                 auto param = DNN::CreateMaxPoolDirect(builder, m(node.input(0)).c_str(), &kernel_shape, &pads, &strides,
-                                                      convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
+                        convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
                 layer = DNN::CreateLayer(builder, DNN::LayerType::MaxPool, 0, 0, param);
             }
             layers.push_back(layer);
             // operand_indexes[node.output(0)] = builder.addPool(operand_indexes.at(node.input(0)), strides[1], strides[0],
-                                                              // pads[2], pads[3], pads[0], pads[1],
-                                                              // kernel_shape[0], kernel_shape[1], activation.second,
-                                                              // op == "AveragePool" ? ModelBuilder::AVE_POOL
-                                                                                  // : ModelBuilder::MAX_POOL);
+            // pads[2], pads[3], pads[0], pads[1],
+            // kernel_shape[0], kernel_shape[1], activation.second,
+            // op == "AveragePool" ? ModelBuilder::AVE_POOL
+            // : ModelBuilder::MAX_POOL);
             LOG(INFO) << "Converting Pool completed";
         } else if (op == "Relu") {
             LOG(INFO) << "Start converting Relu";
@@ -356,8 +354,8 @@ int main(int argc, char **argv) {
                     nnapi_tensors[weight_name] = onnx_tensors.at(weight_name);
                     const auto &weight_tensor = nnapi_tensors[weight_name];
                     auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr,
-                                                               &weight_tensor.data, &weight_tensor.shape,
-                                                               weight_name.c_str());
+                            &weight_tensor.data, &weight_tensor.shape,
+                            weight_name.c_str());
                     tensors.push_back(flat_tensor);
                 }
                 string bias_name;
@@ -366,7 +364,7 @@ int main(int argc, char **argv) {
                     nnapi_tensors[bias_name] = onnx_tensors.at(bias_name);
                     const auto &bias_tensor = nnapi_tensors[bias_name];
                     auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr,
-                                                          &bias_tensor.data, &bias_tensor.shape, bias_name.c_str());
+                            &bias_tensor.data, &bias_tensor.shape, bias_name.c_str());
                     tensors.push_back(flat_tensor);
                 }
                 auto activation = find_activation(model_proto, node);
@@ -374,13 +372,13 @@ int main(int argc, char **argv) {
                     skipped_act.push_back(activation.first.value());
                 }
                 auto param = DNN::CreateFCDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
-                                                 node.input_size() >= 3 ? bias_name.c_str() : nullptr,
-                                                 convert_fuse_code_type(activation.second), m(node.output(0)).c_str()
-                );
+                        node.input_size() >= 3 ? bias_name.c_str() : nullptr,
+                        convert_fuse_code_type(activation.second), m(node.output(0)).c_str()
+                        );
                 auto layer = DNN::CreateLayer(builder, DNN::LayerType::FC, 0, 0, 0, 0, 0, param, 0);
                 layers.push_back(layer);
                 // builder.addFC(operand_indexes.at(node.input(0)), activation.second,
-                              // operand_indexes.at(node.input(1)), operand_indexes.at(node.input(2)));
+                // operand_indexes.at(node.input(1)), operand_indexes.at(node.input(2)));
             } else {
                 throw std::invalid_argument(
                         "Only transA == 0, transB == 1, alpha == 1.0 and beta == 1.0 is supported.");
