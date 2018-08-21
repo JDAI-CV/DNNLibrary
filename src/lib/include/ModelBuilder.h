@@ -24,6 +24,7 @@ public:
 
 private:
     std::unique_ptr<Model> dnn_model_;
+    std::vector<std::string> ordered_operands;  // operands in insertion order, for printing in finish()
     StrKeyMap<Index> operand_indexes;
     // NHWC
     std::map<Index, Shape> dimensMap;
@@ -43,6 +44,7 @@ private:
     static const uint32_t WRONG_POOLING_TYPE = UINT32_MAX -2;
     static const int WRONG_OPERAND_INDEX = -10;
 
+    void AppendOperandIndex(const std::string &name, Index index);
     uint32_t addNewOperand(ANeuralNetworksOperandType *type);
 
     // IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);

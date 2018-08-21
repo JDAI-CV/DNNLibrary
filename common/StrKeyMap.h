@@ -33,6 +33,9 @@ public:
     auto end() {
         return map_.end();
     }
+    auto clear() {
+        return map_.clear();
+    }
 };
 
 
