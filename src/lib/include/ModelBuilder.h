@@ -139,43 +139,48 @@ public:
 
     ANeuralNetworksCompilation* compilation = nullptr;
 
-    Index getBlobIndex(std::string blobName);
-    Shape getBlobDim(std::string blobName);
+    Index getBlobIndex(const std::string &blobName);
+    Shape getBlobDim(const std::string &blobName);
     Shape getBlobDim(Index index);
     Index addInput(std::string name, uint32_t height, uint32_t width, uint32_t depth);
-    ModelBuilder::Index addDepthWiseConv(std::string input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
-                                             int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop, int32_t activation,
-                                             int32_t depthMultiplier, std::string weight_name, std::optional<std::string> bias_name,
-                                             std::string output_name);
-    ModelBuilder::Index addConv(std::string input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
-                                    int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
-                                    int32_t activation, std::string weight_name,
-                                    std::optional<std::string> bias_name, std::string output_name);
-    Index addTensorFromBuffer(std::string name, const float *buffer, std::vector<uint32_t> dimen);
-    Index addTensorFromBuffer(std::string name, const int32_t *buffer, std::vector<uint32_t> dimen);
-    Index addTensorFromMemory(std::string name, const unsigned char *addr, Shape dimen);
-    Index addFC(std::string input_name, int32_t activation, std::string weight_name,
-            std::optional<std::string> bias_name, std::string output_name);
-    Index addCaffePool(std::string input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
-                int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
-                uint32_t poolingType, std::string output_name);
+    ModelBuilder::Index addDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
+                                         int32_t paddingLeft,
+                                         int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
+                                         int32_t activation,
+                                         int32_t depthMultiplier, const std::string &weight_name,
+                                         const std::optional<std::string> &bias_name,
+                                         const std::string &output_name);
+    ModelBuilder::Index addConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+                                int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
+                                int32_t activation, const std::string &weight_name,
+                                const std::optional<std::string> &bias_name, const std::string &output_name);
+    Index addTensorFromBuffer(const std::string &name, const float *buffer, std::vector<uint32_t> dimen);
+    Index addTensorFromBuffer(const std::string &name, const int32_t *buffer, std::vector<uint32_t> dimen);
+    Index addTensorFromMemory(const std::string &name, const unsigned char *addr, Shape dimen);
+    Index addFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
+                const std::optional<std::string> &bias_name, const std::string &output_name);
+    Index addCaffePool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+                       int32_t paddingRight,
+                       int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
+                       uint32_t poolingType, const std::string &output_name);
     Index
-    addPool(std::string input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
-                int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
-                uint32_t poolingType, std::string output_name);
-    Index addSoftMax(std::string input_name, float beta, std::string output_name);
-    Index addAddScalar(std::string input_name, float scalar, std::string output_name);
-    Index addAddTensor(std::string input1_name, std::string input2_name, std::string output_name);
-    Index addMulScalar(std::string input_name, float scalar, std::string output_name);
-    Index addMulTensor(std::string input1_name, std::string input2_name, std::string output_name);
-    Index addReLU(std::string input_name, std::string output_name);
-    Index addConcat(const std::vector<std::string> &input_names, uint32_t axis, std::string output_name);
-    Index addLRN(std::string input_name, uint32_t local_size, float bias, float alpha, float beta,
-            std::string output_name);
+    addPool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
+            int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
+            uint32_t poolingType, const std::string &output_name);
+    Index addSoftMax(const std::string &input_name, float beta, const std::string &output_name);
+    Index addAddScalar(const std::string &input_name, float scalar, std::string output_name);
+    Index addAddTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index addMulScalar(const std::string &input_name, float scalar, const std::string &output_name);
+    Index addMulTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index addReLU(const std::string &input_name, const std::string &output_name);
+    Index addConcat(const std::vector<std::string> &input_names, uint32_t axis, const std::string &output_name);
+    Index addLRN(const std::string &input_name, uint32_t local_size, float bias, float alpha, float beta,
+                 const std::string &output_name);
 #if __ANDROID_API__ >= __ANDROID_API_P__
-    Index addStridedSlice(std::string input_name, const std::vector<int32_t> &starts, const std::vector<int32_t> &ends,
-                              const std::vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
-                              int32_t shrinkAxisMask, std::string output_name);
+    Index addStridedSlice(const std::string &input_name, const std::vector<int32_t> &starts,
+                          const std::vector<int32_t> &ends,
+                          const std::vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
+                          int32_t shrinkAxisMask, const std::string &output_name);
 #endif
     void addIndexIntoOutput(Index index);
     int compile(uint32_t preference);
@@ -191,7 +196,7 @@ public:
 
     void prepare();
     void setMemory(int fd, size_t size, size_t offset);
-    void setBuffer(unsigned char *data, size_t data_size);
+    void setBuffer(unsigned char *data);
     std::unique_ptr<Model> finish();
     template <typename... Args>
     void addOperands(IndexSeq &indexes, Args... args) {

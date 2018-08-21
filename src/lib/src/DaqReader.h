@@ -13,7 +13,7 @@
 
 class DaqReader {
 public:
-    bool ReadDaq(std::string filepath, ModelBuilder &builder);
+    void ReadDaq(const std::string &filepath, ModelBuilder &builder);
 };
 
 

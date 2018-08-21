@@ -396,7 +396,7 @@ int main(int argc, char **argv) {
         } else if (op == "Concat") {
             LOG(INFO) << "Start converting Concat";
             vector<flatbuffers::Offset<flatbuffers::String>> concat_inputs;
-            for (auto onnx_input : node.input()) {
+            for (const auto &onnx_input : node.input()) {
                 auto flat_input = builder.CreateString(m(onnx_input).c_str(), onnx_input.size());
                 concat_inputs.push_back(flat_input);
             }
