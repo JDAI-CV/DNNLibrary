@@ -39,7 +39,7 @@ std::string layer_type_to_str(DNN::LayerType type) {
         case DNN::LayerType::SpaceToBatch:
             return "space2batch";
         case DNN::LayerType::StridedSlice:
-            return "stridedslice"
+            return "stridedslice";
     }
 }
 

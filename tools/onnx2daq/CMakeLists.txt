@@ -5,6 +5,8 @@ message(${ONNX_PROTO_SRCS})
 message(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(onnx2daq
     ${CMAKE_CURRENT_SOURCE_DIR}/onnx2daq.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/OnnxConverter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/OnnxConverter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.h
     ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h
