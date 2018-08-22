@@ -8,7 +8,7 @@ set(LIB_SRC
     src/Model.cpp
     include/operand_helper.h
     src/DaqReader.cpp src/DaqReader.h
-    include/daq_generated.h ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h)
+    include/daq_generated.h ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h include/flatbuffers_helper.h)
 
 if (BUILD_JNI)
     list(APPEND

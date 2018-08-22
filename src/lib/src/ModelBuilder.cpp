@@ -767,6 +767,7 @@ std::unique_ptr<Model> ModelBuilder::finish() {
     LOG(INFO) << "Finishing.. Here are operands in the model:";
     for (const auto &name : ordered_operands) {
         LOG(INFO) << name << ": " << dimensMap[operand_indexes[name]];
+
     }
     operand_indexes.clear();
     ordered_operands.clear();

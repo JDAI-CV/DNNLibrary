@@ -12,6 +12,7 @@
 
 #include <glog/logging.h>
 #include <android_log_helper.h>
+#include <flatbuffers_helper.h>
 
 std::string layer_type_to_str(DNN::LayerType type) {
     switch (type) {
@@ -37,6 +38,8 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "batch2space";
         case DNN::LayerType::SpaceToBatch:
             return "space2batch";
+        case DNN::LayerType::StridedSlice:
+            return "stridedslice"
     }
 }
 
@@ -234,17 +237,29 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
                 auto block_sizes_fbs = param->block_sizes();
                 auto pads_fbs = param->pads();
                 auto output_name = param->output()->str();
-                std::vector<int> block_sizes;
-                for (size_t i = 0; i < block_sizes_fbs->size(); i++) {
-                    block_sizes.push_back(block_sizes_fbs->Get(static_cast<flatbuffers::uoffset_t>(i)));
-                }
-                std::vector<int> pads;
-                for (size_t i = 0; i < pads_fbs->size(); i++) {
-                    pads.push_back(pads_fbs->Get(static_cast<flatbuffers::uoffset_t>(i)));
-                }
-                LOG(INFO) << "SpaceToBatchND, input " << input_name 
+                std::vector<int> block_sizes = fbs_to_std_vector(block_sizes_fbs);
+                std::vector<int> pads = fbs_to_std_vector(pads_fbs);
+                LOG(INFO) << "SpaceToBatchND, input " << input_name
                     << ", block sizes " << block_sizes << ", pads " << pads << "output: " << output_name;
                 builder.addSpaceToBatchND(input_name, block_sizes, pads, output_name);
+                break;
+            }
+            case DNN::LayerType::StridedSlice: {
+                auto param = layer->strided_slice_param();
+                auto input_name = param->input()->str();
+                auto starts = fbs_to_std_vector(param->starts());
+                auto ends = fbs_to_std_vector(param->ends());
+                auto strides = fbs_to_std_vector(param->strides());
+                int32_t begin_mask = param->begin_mask();
+                int32_t end_mask = param->end_mask();
+                int32_t shrink_axis_mask = param->shrink_axis_mask();
+                auto output_name = param->ou
+                LOG(INFO) << "StridedSlice, input " << input_name
+                    << ", starts " << starts << ", ends " << ends << ", strides " << strides
+                    << ", begin_mask " << begin_mask << ", end_mask " << end_mask
+                    << ", shrink_axis_mask " << shrink_axis_mask;
+                builder.addStridedSlice(input_name, starts, ends, strides, begin_mask, end_mask, shrink_axis_mask,
+                        )
                 break;
             }
             default: {

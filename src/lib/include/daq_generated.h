@@ -12,6 +12,8 @@ struct Tensor;
 
 struct Input;
 
+struct StridedSlice;
+
 struct BatchToSpace;
 
 struct SpaceToBatch;
@@ -114,11 +116,12 @@ enum class LayerType : int8_t {
   DepthwiseConv2D = 8,
   BatchToSpace = 9,
   SpaceToBatch = 10,
+  StridedSlice = 11,
   MIN = Conv2D,
-  MAX = SpaceToBatch
+  MAX = StridedSlice
 };
 
-inline const LayerType (&EnumValuesLayerType())[11] {
+inline const LayerType (&EnumValuesLayerType())[12] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -130,7 +133,8 @@ inline const LayerType (&EnumValuesLayerType())[11] {
     LayerType::Concat,
     LayerType::DepthwiseConv2D,
     LayerType::BatchToSpace,
-    LayerType::SpaceToBatch
+    LayerType::SpaceToBatch,
+    LayerType::StridedSlice
   };
   return values;
 }
@@ -148,6 +152,7 @@ inline const char * const *EnumNamesLayerType() {
     "DepthwiseConv2D",
     "BatchToSpace",
     "SpaceToBatch",
+    "StridedSlice",
     nullptr
   };
   return names;
@@ -318,6 +323,143 @@ inline flatbuffers::Offset<Input> CreateInputDirect(
       _fbb,
       shape ? _fbb.CreateVector<int32_t>(*shape) : 0,
       name ? _fbb.CreateString(name) : 0);
+}
+
+struct StridedSlice FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT = 4,
+    VT_STARTS = 6,
+    VT_ENDS = 8,
+    VT_STRIDES = 10,
+    VT_BEGIN_MASK = 12,
+    VT_END_MASK = 14,
+    VT_SHRINK_AXIS_MASK = 16,
+    VT_OUTPUT = 18
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::Vector<int32_t> *starts() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_STARTS);
+  }
+  const flatbuffers::Vector<int32_t> *ends() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_ENDS);
+  }
+  const flatbuffers::Vector<int32_t> *strides() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_STRIDES);
+  }
+  int32_t begin_mask() const {
+    return GetField<int32_t>(VT_BEGIN_MASK, 0);
+  }
+  int32_t end_mask() const {
+    return GetField<int32_t>(VT_END_MASK, 0);
+  }
+  int32_t shrink_axis_mask() const {
+    return GetField<int32_t>(VT_SHRINK_AXIS_MASK, 0);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_STARTS) &&
+           verifier.VerifyVector(starts()) &&
+           VerifyOffset(verifier, VT_ENDS) &&
+           verifier.VerifyVector(ends()) &&
+           VerifyOffset(verifier, VT_STRIDES) &&
+           verifier.VerifyVector(strides()) &&
+           VerifyField<int32_t>(verifier, VT_BEGIN_MASK) &&
+           VerifyField<int32_t>(verifier, VT_END_MASK) &&
+           VerifyField<int32_t>(verifier, VT_SHRINK_AXIS_MASK) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct StridedSliceBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(StridedSlice::VT_INPUT, input);
+  }
+  void add_starts(flatbuffers::Offset<flatbuffers::Vector<int32_t>> starts) {
+    fbb_.AddOffset(StridedSlice::VT_STARTS, starts);
+  }
+  void add_ends(flatbuffers::Offset<flatbuffers::Vector<int32_t>> ends) {
+    fbb_.AddOffset(StridedSlice::VT_ENDS, ends);
+  }
+  void add_strides(flatbuffers::Offset<flatbuffers::Vector<int32_t>> strides) {
+    fbb_.AddOffset(StridedSlice::VT_STRIDES, strides);
+  }
+  void add_begin_mask(int32_t begin_mask) {
+    fbb_.AddElement<int32_t>(StridedSlice::VT_BEGIN_MASK, begin_mask, 0);
+  }
+  void add_end_mask(int32_t end_mask) {
+    fbb_.AddElement<int32_t>(StridedSlice::VT_END_MASK, end_mask, 0);
+  }
+  void add_shrink_axis_mask(int32_t shrink_axis_mask) {
+    fbb_.AddElement<int32_t>(StridedSlice::VT_SHRINK_AXIS_MASK, shrink_axis_mask, 0);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(StridedSlice::VT_OUTPUT, output);
+  }
+  explicit StridedSliceBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  StridedSliceBuilder &operator=(const StridedSliceBuilder &);
+  flatbuffers::Offset<StridedSlice> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<StridedSlice>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<StridedSlice> CreateStridedSlice(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> starts = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> ends = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> strides = 0,
+    int32_t begin_mask = 0,
+    int32_t end_mask = 0,
+    int32_t shrink_axis_mask = 0,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  StridedSliceBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_shrink_axis_mask(shrink_axis_mask);
+  builder_.add_end_mask(end_mask);
+  builder_.add_begin_mask(begin_mask);
+  builder_.add_strides(strides);
+  builder_.add_ends(ends);
+  builder_.add_starts(starts);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<StridedSlice> CreateStridedSliceDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    const std::vector<int32_t> *starts = nullptr,
+    const std::vector<int32_t> *ends = nullptr,
+    const std::vector<int32_t> *strides = nullptr,
+    int32_t begin_mask = 0,
+    int32_t end_mask = 0,
+    int32_t shrink_axis_mask = 0,
+    const char *output = nullptr) {
+  return DNN::CreateStridedSlice(
+      _fbb,
+      input ? _fbb.CreateString(input) : 0,
+      starts ? _fbb.CreateVector<int32_t>(*starts) : 0,
+      ends ? _fbb.CreateVector<int32_t>(*ends) : 0,
+      strides ? _fbb.CreateVector<int32_t>(*strides) : 0,
+      begin_mask,
+      end_mask,
+      shrink_axis_mask,
+      output ? _fbb.CreateString(output) : 0);
 }
 
 struct BatchToSpace FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1372,7 +1514,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_CONCAT_PARAM = 20,
     VT_DEPTHWISE_CONV2D_PARAM = 22,
     VT_BATCH_TO_SPACE_PARAM = 24,
-    VT_SPACE_TO_BATCH_PARAM = 26
+    VT_SPACE_TO_BATCH_PARAM = 26,
+    VT_STRIDED_SLICE_PARAM = 28
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -1410,6 +1553,9 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const SpaceToBatch *space_to_batch_param() const {
     return GetPointer<const SpaceToBatch *>(VT_SPACE_TO_BATCH_PARAM);
   }
+  const StridedSlice *strided_slice_param() const {
+    return GetPointer<const StridedSlice *>(VT_STRIDED_SLICE_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -1435,6 +1581,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(batch_to_space_param()) &&
            VerifyOffset(verifier, VT_SPACE_TO_BATCH_PARAM) &&
            verifier.VerifyTable(space_to_batch_param()) &&
+           VerifyOffset(verifier, VT_STRIDED_SLICE_PARAM) &&
+           verifier.VerifyTable(strided_slice_param()) &&
            verifier.EndTable();
   }
 };
@@ -1478,6 +1626,9 @@ struct LayerBuilder {
   void add_space_to_batch_param(flatbuffers::Offset<SpaceToBatch> space_to_batch_param) {
     fbb_.AddOffset(Layer::VT_SPACE_TO_BATCH_PARAM, space_to_batch_param);
   }
+  void add_strided_slice_param(flatbuffers::Offset<StridedSlice> strided_slice_param) {
+    fbb_.AddOffset(Layer::VT_STRIDED_SLICE_PARAM, strided_slice_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1503,8 +1654,10 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<Concat> concat_param = 0,
     flatbuffers::Offset<DepthwiseConv2D> depthwise_conv2d_param = 0,
     flatbuffers::Offset<BatchToSpace> batch_to_space_param = 0,
-    flatbuffers::Offset<SpaceToBatch> space_to_batch_param = 0) {
+    flatbuffers::Offset<SpaceToBatch> space_to_batch_param = 0,
+    flatbuffers::Offset<StridedSlice> strided_slice_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_strided_slice_param(strided_slice_param);
   builder_.add_space_to_batch_param(space_to_batch_param);
   builder_.add_batch_to_space_param(batch_to_space_param);
   builder_.add_depthwise_conv2d_param(depthwise_conv2d_param);
