@@ -7,12 +7,14 @@
 
 #include <glog/logging.h>
 #include <common/StrKeyMap.h>
+#include <common/Shaper.h>
 #include <daq_generated.h>
 #include <onnx.proto3.pb.h>
 #include "NodeAttrHelper.h"
 #include "log_helper.h"
 
 using std::string; using std::vector;
+using Shape = Shaper::Shape;
 
 std::string OnnxConverter::m(const std::string &str) {
     if (name_map.find(str) != name_map.end()) {
@@ -20,11 +22,6 @@ std::string OnnxConverter::m(const std::string &str) {
     }
     
     return str;
-}
-
-template <typename T>
-uint32_t product(const vector<T> &v) {
-    return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, std::multiplies<T>()));
 }
 
 DNN::FuseCode OnnxConverter::convert_fuse_code_type(FuseCode fuse_code) {
@@ -61,19 +58,49 @@ void OnnxConverter::add_conv(const string &input_name, const std::vector<int> &s
         const string &ori_weight_name, const std::optional<std::string> &bias_name, const string &output_name) {
     flatbuffers::Offset<DNN::Layer> layer;
     if (dilations != vector<int>{1, 1}) {
+        if (strides != vector<int>{1, 1}) {
+            throw std::invalid_argument("Both dilations and strides > 1 is not supported for now");
+        }
         LOG(INFO) << "Dilations of conv: " << dilations << ", converting..";
         const auto s2b_name = input_name + "_s2b";
-        const auto im_name = input_name + "_im";
+        const auto im_name = input_name + "_conv_imm";
+        const auto b2s_name = input_name + "_b2s";
+        std::vector<int> new_pads = pads;
+        auto input_shape = shaper[input_name];
+        new_pads[1] = (input_shape[1] + pads[1] + (dilations[0] - 1)) / dilations[0] * dilations[0] - input_shape[1];
+        new_pads[3] = (input_shape[2] + pads[3] + (dilations[1] - 1)) / dilations[1] * dilations[1] - input_shape[2];
+        LOG(INFO) << input_shape << ", " << pads << ", " << dilations << ", " << new_pads;
         {
-            auto param = DNN::CreateSpaceToBatchDirect(builder, input_name.c_str(), &dilations, &pads, s2b_name.c_str());
+            shaper.SpaceToBatch(input_name, dilations, new_pads, s2b_name);
+            auto param = DNN::CreateSpaceToBatchDirect(builder, input_name.c_str(), &dilations, &new_pads, s2b_name.c_str());
             layer = DNN::CreateLayer(builder, DNN::LayerType::SpaceToBatch, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
         }
-        // paddings are applied in spacetobatch
-        add_conv(s2b_name, strides, vector<int>{0, 0, 0, 0}, vector<int>{1, 1}, group, activation, ori_weight_name, bias_name, im_name);
         {
-            auto param = DNN::CreateBatchToSpaceDirect(builder, im_name.c_str(), &dilations, output_name.c_str());
+            // paddings are applied in spacetobatch
+            add_conv(s2b_name, strides, vector<int>{0, 0, 0, 0}, vector<int>{1, 1}, group, activation, ori_weight_name, bias_name, im_name);
+        }
+        {
+            shaper.BatchToSpace(im_name, dilations, b2s_name);
+            auto param = DNN::CreateBatchToSpaceDirect(builder, im_name.c_str(), &dilations, b2s_name.c_str());
             layer = DNN::CreateLayer(builder, DNN::LayerType::BatchToSpace, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+            layers.push_back(layer);
+        }
+        {
+            auto b2s_shape = shaper[b2s_name];
+            std::vector<int32_t> starts{0, 0, 0, 0};
+            std::vector<int32_t> ends{static_cast<int32_t>(b2s_shape[0]), 
+                static_cast<int32_t>(b2s_shape[1]) - (new_pads[1] - pads[0]), 
+                static_cast<int32_t>(b2s_shape[2]) - (new_pads[3] - pads[3]), 
+                static_cast<int32_t>(b2s_shape[3])};
+            std::vector<int32_t> strides{1, 1, 1, 1};
+            int32_t begin_mask = 0;
+            int32_t end_mask = 0;
+            int32_t shrink_axis_mask = 0;
+            shaper.StridedSlice(b2s_name, starts, ends, strides, begin_mask, end_mask, shrink_axis_mask, output_name);
+            auto param = DNN::CreateStridedSliceDirect(builder, b2s_name.c_str(), &starts, &ends, &strides, 
+                    begin_mask, end_mask, shrink_axis_mask, output_name.c_str());
+            layer = DNN::CreateLayer(builder, DNN::LayerType::StridedSlice, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
         }
         return;
@@ -86,7 +113,10 @@ void OnnxConverter::add_conv(const string &input_name, const std::vector<int> &s
         LOG(INFO) << "Vanilla conv";
         weight_name = ori_weight_name + "_conv_w";
         weight_tensor = onnx2nnapi_vanilla(onnx_weight);
+        shaper.AddShape(weight_name, weight_tensor.shape);
+        shaper.Conv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3], pads[0], pads[1], weight_name, output_name);
         nnapi_tensors[weight_name] = weight_tensor;
+
         auto param = DNN::CreateConv2DDirect(builder, input_name.c_str(), weight_name.c_str(),
                 bias_name ? bias_name.value().c_str() : nullptr,
                 &pads, &strides, convert_fuse_code_type(activation.second), output_name.c_str());
@@ -95,6 +125,8 @@ void OnnxConverter::add_conv(const string &input_name, const std::vector<int> &s
         LOG(INFO) << "Depthwise conv";
         weight_name = ori_weight_name + "_dwconv_w";
         weight_tensor = onnx2nnapi_dw(onnx_weight);
+        shaper.AddShape(weight_name, weight_tensor.shape);
+        shaper.DepthwiseConv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3], pads[0], pads[1], weight_name, output_name);
         nnapi_tensors[weight_name] = weight_tensor;
         auto multiplier = nnapi_tensors.at(weight_name).shape[3] / group;
         auto param = DNN::CreateDepthwiseConv2DDirect(builder, input_name.c_str(), weight_name.c_str(),
@@ -110,6 +142,7 @@ void OnnxConverter::add_conv(const string &input_name, const std::vector<int> &s
     tensors.push_back(flat_tensor);
     layers.push_back(layer);
 }
+
 void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::string &filepath) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -142,7 +175,9 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
                 throw std::invalid_argument("The input of graph doesn't have dim_value");
             }
         }
-        auto flat_input = DNN::CreateInputDirect(builder, &shape, input.name().c_str());
+        Shape nnapi_shape{shape[0], shape[2], shape[3], shape[1]};
+        shaper.AddShape(input.name(), nnapi_shape);
+        auto flat_input = DNN::CreateInputDirect(builder, &nnapi_shape, input.name().c_str());
         inputs.push_back(flat_input);
     }
 
@@ -184,6 +219,8 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             LOG(INFO) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" || op == "GlobalAveragePool" || op == "GlobalMaxPool") {
             LOG(INFO) << "Start converting Pool";
+            auto input_name = m(node.input(0));
+            auto output_name = m(node.output(0));
             vector<int> strides, pads, kernel_shape;
             if (op == "AveragePool" || op == "MaxPool") {
                 strides = helper.get("strides", vector<int>{1, 1});
@@ -212,14 +249,15 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
+            shaper.Pool(input_name, strides[1], strides[0], pads[2], pads[3], pads[0], pads[1], kernel_shape[0], kernel_shape[1], output_name);
             flatbuffers::Offset<DNN::Layer> layer;
             if (op == "AveragePool" || op == "GlobalAveragePool") {
-                auto param = DNN::CreateAvePoolDirect(builder, m(node.input(0)).c_str(), &kernel_shape, &pads, &strides,
-                        convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
+                auto param = DNN::CreateAvePoolDirect(builder, input_name.c_str(), &kernel_shape, &pads, &strides,
+                        convert_fuse_code_type(activation.second), output_name.c_str());
                 layer = DNN::CreateLayer(builder, DNN::LayerType::AvePool, 0, param);
             } else {
-                auto param = DNN::CreateMaxPoolDirect(builder, m(node.input(0)).c_str(), &kernel_shape, &pads, &strides,
-                        convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
+                auto param = DNN::CreateMaxPoolDirect(builder, input_name.c_str(), &kernel_shape, &pads, &strides,
+                        convert_fuse_code_type(activation.second), output_name.c_str());
                 layer = DNN::CreateLayer(builder, DNN::LayerType::MaxPool, 0, 0, param);
             }
             layers.push_back(layer);
@@ -231,19 +269,26 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             LOG(INFO) << "Converting Pool completed";
         } else if (op == "Relu") {
             LOG(INFO) << "Start converting Relu";
-            auto param = DNN::CreateReluDirect(builder, m(node.input(0)).c_str(), m(node.output(0)).c_str());
+            auto input_name = m(node.input(0));
+            auto output_name = m(node.output(0));
+            shaper.Relu(input_name, output_name);
+            auto param = DNN::CreateReluDirect(builder, input_name.c_str(), output_name.c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Relu, 0, 0, 0, param);
             layers.push_back(layer);
             LOG(INFO) << "Converting Relu completed";
             // operand_indexes[node.output(0)] = builder.addReLU(operand_indexes.at(node.input(0)));
         } else if (op == "Add") {
             LOG(INFO) << "Start converting Add";
+            auto input1_name = m(node.input(0));
+            auto input2_name = m(node.input(1));
+            auto output_name = m(node.output(0));
+            shaper.Eltwise(input1_name, input2_name, output_name);
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
-            auto param = DNN::CreateAddDirect(builder, m(node.input(0)).c_str(), m(node.input(1)).c_str(),
-                    convert_fuse_code_type(activation.second), m(node.output(0)).c_str());
+            auto param = DNN::CreateAddDirect(builder, input1_name.c_str(), input2_name.c_str(),
+                    convert_fuse_code_type(activation.second), output_name.c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Add, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
             LOG(INFO) << "Converting Add completed";
@@ -257,10 +302,12 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             auto alpha = helper.get("alpha", 1.0f);
             auto beta = helper.get("beta", 1.0f);
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
+                auto input_name = m(node.input(0));
                 auto weight_name = m(node.input(1));
                 {
                     nnapi_tensors[weight_name] = onnx_tensors.at(weight_name);
                     const auto &weight_tensor = nnapi_tensors[weight_name];
+                    shaper.AddShape(weight_name, weight_tensor.shape);
                     auto flat_tensor = DNN::CreateTensorDirect(builder, DNN::DataType::Float32, nullptr,
                             &weight_tensor.data, &weight_tensor.shape,
                             weight_name.c_str());
@@ -279,9 +326,11 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
                 if (activation.first.has_value()) {
                     skipped_act.push_back(activation.first.value());
                 }
-                auto param = DNN::CreateFCDirect(builder, m(node.input(0)).c_str(), weight_name.c_str(),
+                auto output_name = m(node.output(0));
+                shaper.FC(input_name, weight_name, output_name);
+                auto param = DNN::CreateFCDirect(builder, input_name.c_str(), weight_name.c_str(),
                         node.input_size() >= 3 ? bias_name.c_str() : nullptr,
-                        convert_fuse_code_type(activation.second), m(node.output(0)).c_str()
+                        convert_fuse_code_type(activation.second), output_name.c_str()
                         );
                 auto layer = DNN::CreateLayer(builder, DNN::LayerType::FC, 0, 0, 0, 0, 0, param, 0);
                 layers.push_back(layer);
@@ -294,21 +343,28 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             LOG(INFO) << "Converting Gemm completed";
         } else if (op == "Softmax") {
             LOG(INFO) << "Start converting Softmax";
+            auto input_name = m(node.input(0));
+            auto output_name = m(node.output(0));
+            shaper.Softmax(input_name, output_name);
             // simply ignore attribute "axis", because nnapi softmax didn't has this attr, and we will check the equality of the two ops in DaqReader.cpp
-            auto param = DNN::CreateSoftmaxDirect(builder, m(node.input(0)).c_str(), m(node.output(0)).c_str());
+            auto param = DNN::CreateSoftmaxDirect(builder, input_name.c_str(), output_name.c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Softmax, 0, 0, 0, 0, param);
             layers.push_back(layer);
             LOG(INFO) << "Converting Softmax completed";
         } else if (op == "Concat") {
             LOG(INFO) << "Start converting Concat";
             vector<flatbuffers::Offset<flatbuffers::String>> concat_inputs;
+            vector<std::string> concat_inputs_str;
             for (const auto &onnx_input : node.input()) {
+                concat_inputs_str.push_back(onnx_input);
                 auto flat_input = builder.CreateString(m(onnx_input).c_str(), onnx_input.size());
                 concat_inputs.push_back(flat_input);
             }
             auto axis = helper.get("axis", 1);
             uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
-            auto param = DNN::CreateConcatDirect(builder, &concat_inputs, axis_nchw_to_nhwc[axis], m(node.output(0)).c_str());
+            auto output_name = m(node.output(0));
+            shaper.Concat(concat_inputs_str, axis, output_name);
+            auto param = DNN::CreateConcatDirect(builder, &concat_inputs, axis_nchw_to_nhwc[axis], output_name.c_str());
             auto layer = DNN::CreateLayer(builder, DNN::LayerType::Concat, 0, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
             LOG(INFO) << "Converting Concat completed";
@@ -331,6 +387,9 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
     auto flat_model = DNN::CreateModel(builder, flat_layers, flat_tensors, flat_inputs);
 
     builder.Finish(flat_model);
+
+    LOG(INFO) << "Shapes: ";
+    LOG(INFO) << shaper;
 
     std::ofstream ofs(filepath);
     ofs.write(reinterpret_cast<char *>(builder.GetBufferPointer()), builder.GetSize());

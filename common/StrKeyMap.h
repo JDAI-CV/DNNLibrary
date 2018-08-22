@@ -27,10 +27,10 @@ public:
             throw std::out_of_range("Key " + key + " not found.");
         }
     }
-    auto begin() {
+    const auto begin() const {
         return map_.begin();
     }
-    auto end() {
+    const auto end() const {
         return map_.end();
     }
     auto clear() {

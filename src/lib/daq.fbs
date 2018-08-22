@@ -9,12 +9,12 @@ table Tensor {
     data_type:DataType;
     int8_data: [uint8];
     float32_data: [float32];
-    shape: [int];
+    shape: [uint32];
     name: string;
 }
 
 table Input {
-    shape:[int];
+    shape:[uint32];
     name:string;
 }
 

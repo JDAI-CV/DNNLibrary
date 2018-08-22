@@ -180,8 +180,8 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<float> *float32_data() const {
     return GetPointer<const flatbuffers::Vector<float> *>(VT_FLOAT32_DATA);
   }
-  const flatbuffers::Vector<int32_t> *shape() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  const flatbuffers::Vector<uint32_t> *shape() const {
+    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_SHAPE);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -213,7 +213,7 @@ struct TensorBuilder {
   void add_float32_data(flatbuffers::Offset<flatbuffers::Vector<float>> float32_data) {
     fbb_.AddOffset(Tensor::VT_FLOAT32_DATA, float32_data);
   }
-  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
+  void add_shape(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> shape) {
     fbb_.AddOffset(Tensor::VT_SHAPE, shape);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
@@ -236,7 +236,7 @@ inline flatbuffers::Offset<Tensor> CreateTensor(
     DataType data_type = DataType::Float32,
     flatbuffers::Offset<flatbuffers::Vector<uint8_t>> int8_data = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> float32_data = 0,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0) {
   TensorBuilder builder_(_fbb);
   builder_.add_name(name);
@@ -252,14 +252,14 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
     DataType data_type = DataType::Float32,
     const std::vector<uint8_t> *int8_data = nullptr,
     const std::vector<float> *float32_data = nullptr,
-    const std::vector<int32_t> *shape = nullptr,
+    const std::vector<uint32_t> *shape = nullptr,
     const char *name = nullptr) {
   return DNN::CreateTensor(
       _fbb,
       data_type,
       int8_data ? _fbb.CreateVector<uint8_t>(*int8_data) : 0,
       float32_data ? _fbb.CreateVector<float>(*float32_data) : 0,
-      shape ? _fbb.CreateVector<int32_t>(*shape) : 0,
+      shape ? _fbb.CreateVector<uint32_t>(*shape) : 0,
       name ? _fbb.CreateString(name) : 0);
 }
 
@@ -268,8 +268,8 @@ struct Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SHAPE = 4,
     VT_NAME = 6
   };
-  const flatbuffers::Vector<int32_t> *shape() const {
-    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_SHAPE);
+  const flatbuffers::Vector<uint32_t> *shape() const {
+    return GetPointer<const flatbuffers::Vector<uint32_t> *>(VT_SHAPE);
   }
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
@@ -287,7 +287,7 @@ struct Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 struct InputBuilder {
   flatbuffers::FlatBufferBuilder &fbb_;
   flatbuffers::uoffset_t start_;
-  void add_shape(flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape) {
+  void add_shape(flatbuffers::Offset<flatbuffers::Vector<uint32_t>> shape) {
     fbb_.AddOffset(Input::VT_SHAPE, shape);
   }
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
@@ -307,7 +307,7 @@ struct InputBuilder {
 
 inline flatbuffers::Offset<Input> CreateInput(
     flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<int32_t>> shape = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint32_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0) {
   InputBuilder builder_(_fbb);
   builder_.add_name(name);
@@ -317,11 +317,11 @@ inline flatbuffers::Offset<Input> CreateInput(
 
 inline flatbuffers::Offset<Input> CreateInputDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<int32_t> *shape = nullptr,
+    const std::vector<uint32_t> *shape = nullptr,
     const char *name = nullptr) {
   return DNN::CreateInput(
       _fbb,
-      shape ? _fbb.CreateVector<int32_t>(*shape) : 0,
+      shape ? _fbb.CreateVector<uint32_t>(*shape) : 0,
       name ? _fbb.CreateString(name) : 0);
 }
 

@@ -10,6 +10,8 @@ add_executable(onnx2daq
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.h
     ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h
+    ${PROJECT_SOURCE_DIR}/common/Shaper.h
+    ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     ${ONNX_PROTO_SRCS}
     ${ONNX_PROTO_HDRS})
 

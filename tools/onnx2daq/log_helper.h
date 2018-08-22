@@ -1,3 +1,6 @@
+#ifndef DNN_LOG_HELPER_H
+#define DNN_LOG_HELPER_H
+
 #include <iostream>
 #include <vector>
 
@@ -13,3 +16,5 @@ std::ostream& operator<<(std::ostream& output, std::vector<T> const& values) {
     output << "]";
     return output;
 }
+
+#endif

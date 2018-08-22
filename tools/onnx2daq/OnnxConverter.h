@@ -2,16 +2,17 @@
 
 #include <glog/logging.h>
 #include <common/StrKeyMap.h>
+#include <common/Shaper.h>
 #include <daq_generated.h>
 
 class OnnxConverter {
 private:
-    using Shape = std::vector<int>;
+    Shaper shaper;
 
     template <typename T>
     struct Tensor {
         std::vector<T> data;
-        Shape shape;
+        Shaper::Shape shape;
     };
 
     using FTensor = Tensor<float>;
@@ -59,10 +60,10 @@ private:
         // t for total
         auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
         CHECK_EQ(in_t, 1);
-        for (int out = 0; out < out_t; out++) {
-            for (int in = 0; in < in_t; in++) {
-                for (int h = 0; h < h_t; h++) {
-                    for (int w = 0; w < w_t; w++) {
+        for (uint32_t out = 0; out < out_t; out++) {
+            for (uint32_t in = 0; in < in_t; in++) {
+                for (uint32_t h = 0; h < h_t; h++) {
+                    for (uint32_t w = 0; w < w_t; w++) {
                         auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
                         auto nnapi_idx = h * w_t * out_t + w * out_t + out;
                         dest.data[nnapi_idx] = src.data[onnx_idx];
@@ -84,10 +85,10 @@ private:
         dest.data.resize(product(src.shape));
         // t for total
         auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
-        for (int out = 0; out < out_t; out++) {
-            for (int in = 0; in < in_t; in++) {
-                for (int h = 0; h < h_t; h++) {
-                    for (int w = 0; w < w_t; w++) {
+        for (uint32_t out = 0; out < out_t; out++) {
+            for (uint32_t in = 0; in < in_t; in++) {
+                for (uint32_t h = 0; h < h_t; h++) {
+                    for (uint32_t w = 0; w < w_t; w++) {
                         auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
                         auto nnapi_idx = out * h_t * w_t * in_t + h * w_t * in_t + w * in_t + in;
                         dest.data[nnapi_idx] = src.data[onnx_idx];

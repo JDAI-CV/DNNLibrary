@@ -14,20 +14,20 @@
 #include <optional>
 
 #include <common/StrKeyMap.h>
+#include <common/Shaper.h>
 #include "Model.h"
 
 class ModelBuilder {
 public:
     using Index = uint32_t;
     using IndexSeq = std::vector<Index>;
-    using Shape = std::vector<uint32_t>;
+    using Shape = Shaper::Shape;
 
 private:
     std::unique_ptr<Model> dnn_model_;
     std::vector<std::string> ordered_operands;  // operands in insertion order, for printing in finish()
     StrKeyMap<Index> operand_indexes;
-    // NHWC
-    std::map<Index, Shape> dimensMap;
+    Shaper shaper;
     IndexSeq inputIndexVector;
     IndexSeq outputIndexVector;
     std::map<uint32_t , Index> uint32OperandMap;
@@ -153,8 +153,8 @@ public:
                                 int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
                                 int32_t activation, const std::string &weight_name,
                                 const std::optional<std::string> &bias_name, const std::string &output_name);
-    Index addTensorFromBuffer(const std::string &name, const float *buffer, std::vector<uint32_t> dimen);
-    Index addTensorFromBuffer(const std::string &name, const int32_t *buffer, std::vector<uint32_t> dimen);
+    Index addTensorFromBuffer(const std::string &name, const float *buffer, Shape dimen);
+    Index addTensorFromBuffer(const std::string &name, const int32_t *buffer, Shape dimen);
     Index addTensorFromMemory(const std::string &name, const unsigned char *addr, Shape dimen);
     Index addFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
                 const std::optional<std::string> &bias_name, const std::string &output_name);
@@ -201,9 +201,4 @@ public:
         (indexes.push_back(addOperand(args)), ...);
     }
 };
-
-template<typename T>
-T product(const std::vector<T> &v) {
-    return static_cast<T> (accumulate(v.begin(), v.end(), 1, std::multiplies<>()));
-}
 #endif //NNAPIEXAMPLE_MODELBUILDER_H

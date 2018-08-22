@@ -93,13 +93,14 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
 
     for (const auto &input : *model->inputs()) {
         ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
-        builder.addInput(input->name()->str(), shape[2], shape[3], shape[1]);
+        builder.addInput(input->name()->str(), shape[1], shape[2], shape[3]);
     }
 
 
     for (auto layer : *model->layers()) {
         switch (layer->type()) {
             case DNN::LayerType::Conv2D: {
+                LOG(INFO) << "Conv";
                 auto param = layer->conv2d_param();
                 auto strides = param->strides();
                 auto pads = param->pads();
@@ -253,13 +254,12 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
                 int32_t begin_mask = param->begin_mask();
                 int32_t end_mask = param->end_mask();
                 int32_t shrink_axis_mask = param->shrink_axis_mask();
-                auto output_name = param->ou
-                LOG(INFO) << "StridedSlice, input " << input_name
+                auto output_name = param->output()->str();
                     << ", starts " << starts << ", ends " << ends << ", strides " << strides
                     << ", begin_mask " << begin_mask << ", end_mask " << end_mask
                     << ", shrink_axis_mask " << shrink_axis_mask;
                 builder.addStridedSlice(input_name, starts, ends, strides, begin_mask, end_mask, shrink_axis_mask,
-                        )
+                        output_name);
                 break;
             }
             default: {
