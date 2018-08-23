@@ -195,9 +195,9 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             auto strides = helper.get("strides", vector<int>{1, 1});
             auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
             auto dilations = helper.get("dilations", vector<int>{1, 1});
-            CHECK_EQ(pads.size(), 4);
-            CHECK_EQ(strides.size(), 2);
-            CHECK_EQ(dilations.size(), 2);
+            CHECK_EQ(pads.size(), 4ul);
+            CHECK_EQ(strides.size(), 2ul);
+            CHECK_EQ(dilations.size(), 2ul);
             auto group = helper.get("group", 1);
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
@@ -242,9 +242,9 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
                 pads = {0, 0, 0, 0};
                 kernel_shape = {-1, -1};    // -1 for global
             }
-            CHECK_EQ(pads.size(), 4);
-            CHECK_EQ(kernel_shape.size(), 2);
-            CHECK_EQ(strides.size(), 2);
+            CHECK_EQ(pads.size(), 4ul);
+            CHECK_EQ(kernel_shape.size(), 2ul);
+            CHECK_EQ(strides.size(), 2ul);
             auto activation = find_activation(model_proto, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());

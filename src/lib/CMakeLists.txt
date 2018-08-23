@@ -56,3 +56,5 @@ target_link_libraries(
     ${log-lib}
     ${neural-networks-lib}
     )
+
+treat_warnings_as_errors(dnnlibrary)

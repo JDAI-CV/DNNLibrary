@@ -59,7 +59,7 @@ private:
         dest.data.resize(product(src.shape));
         // t for total
         auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
-        CHECK_EQ(in_t, 1);
+        CHECK_EQ(in_t, 1u);
         for (uint32_t out = 0; out < out_t; out++) {
             for (uint32_t in = 0; in < in_t; in++) {
                 for (uint32_t h = 0; h < h_t; h++) {

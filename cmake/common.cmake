@@ -1,8 +1,7 @@
 function(treat_warnings_as_errors target)
     if(MSVC)
-        target_compile_options(${target} PRIVATE "/W4")
+        target_compile_options(${target} PRIVATE "/W4" "/WX")
     elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
-        # Update if necessary
-        target_compile_options(${target} PRIVATE "-Wall")
+        target_compile_options(${target} PRIVATE "-Wall" "-Wextra" "-Werror")
     endif()
 endfunction()

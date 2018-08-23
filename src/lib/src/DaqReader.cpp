@@ -255,6 +255,7 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
                 int32_t end_mask = param->end_mask();
                 int32_t shrink_axis_mask = param->shrink_axis_mask();
                 auto output_name = param->output()->str();
+                LOG(INFO) << "StridedSlice, input " << input_name
                     << ", starts " << starts << ", ends " << ends << ", strides " << strides
                     << ", begin_mask " << begin_mask << ", end_mask " << end_mask
                     << ", shrink_axis_mask " << shrink_axis_mask;

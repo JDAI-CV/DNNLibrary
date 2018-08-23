@@ -37,14 +37,14 @@ void Shaper::StridedSlice(const std::string &input_name, const std::vector<int32
         if (shrinkAxisMask & (1 << i)) {
             continue;
         }
-        int32_t start = starts[i], end = ends[i];
+        int32_t start = starts[i], end = ends[i], stride = strides[i];
         if (beginMask & (1 << i)) {
             start = 0;
         }
         if (endMask & (1 << i)) {
             end = inputDimen[i];
         }
-        outputDimen.emplace_back(end - start);
+        outputDimen.emplace_back((end - start) / stride);
     }
     shape_map_[output_name] = outputDimen;
 }
