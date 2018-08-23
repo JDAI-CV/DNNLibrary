@@ -6,7 +6,6 @@
 #include <glog/logging.h>
 #include <common/StrKeyMap.h>
 #include <daq_generated.h>
-#include <onnx.proto3.pb.h>
 #include "OnnxConverter.h"
 #include "NodeAttrHelper.h"
 #include "log_helper.h"
@@ -21,7 +20,7 @@ int main(int argc, char **argv) {
         std::cerr << "argc must be 3" << std::endl;
         return -1;
     }
-    onnx::ModelProto model_proto;
+    ONNX_NAMESPACE::ModelProto model_proto;
     {
         std::ifstream ifs(argv[1], std::ios::in | std::ios::binary);
         model_proto.ParseFromIstream(&ifs);

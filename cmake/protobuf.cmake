@@ -4,7 +4,7 @@ macro(build_protobuf)
     option(protobuf_BUILD_EXAMPLES "" OFF)
     option(protobuf_BUILD_SHARED_LIBS "" OFF)
     option(protobuf_BUILD_PROTOC_BINARIES "" OFF)
-    add_subdirectory(third_party/protobuf/cmake)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/protobuf/cmake)
 endmacro()
 
 ################################################################################################

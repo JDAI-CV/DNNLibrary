@@ -6,10 +6,11 @@
 #include <map>
 
 #include <glog/logging.h>
+#include <onnx/onnx.pb.h>
+#include <onnx/optimizer/optimize.h>
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
 #include <daq_generated.h>
-#include <onnx.proto3.pb.h>
 #include "NodeAttrHelper.h"
 #include "log_helper.h"
 
@@ -38,7 +39,7 @@ DNN::FuseCode OnnxConverter::convert_fuse_code_type(FuseCode fuse_code) {
     throw std::invalid_argument("Invalid FuseCode");
 }
 
-std::pair<std::optional<std::string>, OnnxConverter::FuseCode> OnnxConverter::find_activation(const onnx::ModelProto &model_proto, const onnx::NodeProto &node) {
+std::pair<std::optional<std::string>, OnnxConverter::FuseCode> OnnxConverter::find_activation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node) {
     std::pair<std::optional<string>, FuseCode> activation{{}, FuseCode::FUSED_NONE};
     for (const auto &_node : model_proto.graph().node()) {
         if (node.output(0) == _node.input(0) && _node.op_type() == "Relu") {
@@ -143,11 +144,13 @@ void OnnxConverter::add_conv(const string &input_name, const std::vector<int> &s
     layers.push_back(layer);
 }
 
-void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::string &filepath) {
+void OnnxConverter::convert(const ONNX_NAMESPACE::ModelProto &model_proto, const std::string &filepath) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    for (const auto &tensor : model_proto.graph().initializer()) {
-        if (tensor.data_type() == onnx::TensorProto_DataType_FLOAT) {
+    auto optimized = ONNX_NAMESPACE::optimization::Optimize(model_proto, vector<string>{"fuse_bn_into_conv"});
+
+    for (const auto &tensor : optimized.graph().initializer()) {
+        if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
             const float *ptr = tensor.float_data().empty() ?
                 reinterpret_cast<const float *>(tensor.raw_data().data()) : tensor.float_data().data();
             Shape shape;
@@ -162,14 +165,14 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
     }
 
     vector<flatbuffers::Offset<DNN::Input>> inputs;
-    for (const auto &input : model_proto.graph().input()) {
+    for (const auto &input : optimized.graph().input()) {
         if (std::find(operands.begin(), operands.end(), input.name()) != operands.end()) {
             continue;
         }
 
         Shape shape;
         for (const auto &dim : input.type().tensor_type().shape().dim()) {
-            if (dim.value_case() == onnx::TensorShapeProto_Dimension::kDimValue) {
+            if (dim.value_case() == ONNX_NAMESPACE::TensorShapeProto_Dimension::kDimValue) {
                 shape.push_back(static_cast<uint32_t>(dim.dim_value()));
             } else {
                 throw std::invalid_argument("The input of graph doesn't have dim_value");
@@ -183,7 +186,7 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
 
     vector<string> skipped_act;
     bool has_reshape = false;
-    for (const auto &node : model_proto.graph().node()) {
+    for (const auto &node : optimized.graph().node()) {
         if (has_reshape) {
             throw std::invalid_argument("Reshape can only be the last layer for now");
         }
@@ -199,7 +202,7 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             CHECK_EQ(strides.size(), 2ul);
             CHECK_EQ(dilations.size(), 2ul);
             auto group = helper.get("group", 1);
-            auto activation = find_activation(model_proto, node);
+            auto activation = find_activation(optimized, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
@@ -245,7 +248,7 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             CHECK_EQ(pads.size(), 4ul);
             CHECK_EQ(kernel_shape.size(), 2ul);
             CHECK_EQ(strides.size(), 2ul);
-            auto activation = find_activation(model_proto, node);
+            auto activation = find_activation(optimized, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
@@ -283,7 +286,7 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
             auto input2_name = m(node.input(1));
             auto output_name = m(node.output(0));
             shaper.Eltwise(input1_name, input2_name, output_name);
-            auto activation = find_activation(model_proto, node);
+            auto activation = find_activation(optimized, node);
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
@@ -322,7 +325,7 @@ void OnnxConverter::convert(const onnx::ModelProto &model_proto, const std::stri
                             &bias_tensor.data, &bias_tensor.shape, bias_name.c_str());
                     tensors.push_back(flat_tensor);
                 }
-                auto activation = find_activation(model_proto, node);
+                auto activation = find_activation(optimized, node);
                 if (activation.first.has_value()) {
                     skipped_act.push_back(activation.first.value());
                 }

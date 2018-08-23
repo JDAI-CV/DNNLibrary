@@ -1,5 +1,4 @@
-#include <onnx.proto3.pb.h>
-
+#include <onnx/onnx.pb.h>
 #include <glog/logging.h>
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
@@ -38,7 +37,7 @@ private:
     std::vector<flatbuffers::Offset<DNN::Tensor>> tensors;
 
     DNN::FuseCode convert_fuse_code_type(FuseCode fuse_code);
-    std::pair<std::optional<std::string>, FuseCode> find_activation(const onnx::ModelProto &model_proto, const onnx::NodeProto &node);
+    std::pair<std::optional<std::string>, FuseCode> find_activation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node);
 
     void add_conv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
             const std::vector<int> &dilations, int group, 
@@ -101,5 +100,5 @@ private:
     }
 
 public:
-    void convert(const onnx::ModelProto &model, const std::string &filepath);
+    void convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath);
 };
