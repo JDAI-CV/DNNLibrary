@@ -94,12 +94,12 @@ void OnnxConverter::add_conv(const string &input_name, const std::vector<int> &s
                 static_cast<int32_t>(b2s_shape[1]) - (new_pads[1] - pads[0]), 
                 static_cast<int32_t>(b2s_shape[2]) - (new_pads[3] - pads[3]), 
                 static_cast<int32_t>(b2s_shape[3])};
-            std::vector<int32_t> strides{1, 1, 1, 1};
+            std::vector<int32_t> strides_in_ss{1, 1, 1, 1};
             int32_t begin_mask = 0;
             int32_t end_mask = 0;
             int32_t shrink_axis_mask = 0;
-            shaper.StridedSlice(b2s_name, starts, ends, strides, begin_mask, end_mask, shrink_axis_mask, output_name);
-            auto param = DNN::CreateStridedSliceDirect(builder, b2s_name.c_str(), &starts, &ends, &strides, 
+            shaper.StridedSlice(b2s_name, starts, ends, strides_in_ss, begin_mask, end_mask, shrink_axis_mask, output_name);
+            auto param = DNN::CreateStridedSliceDirect(builder, b2s_name.c_str(), &starts, &ends, &strides_in_ss,
                     begin_mask, end_mask, shrink_axis_mask, output_name.c_str());
             layer = DNN::CreateLayer(builder, DNN::LayerType::StridedSlice, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
             layers.push_back(layer);
