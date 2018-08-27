@@ -79,8 +79,8 @@ void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder) {
     auto fsize = static_cast<size_t>(lseek(fd, 0, SEEK_END));
     builder.prepare();
     auto data = mmap(nullptr, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
-    builder.setBuffer(static_cast<unsigned char *>(data));
     builder.setMemory(fd, fsize, 0);
+    // builder.setBuffer(static_cast<unsigned char*>(data));
     close(fd);
     auto model = DNN::GetModel(data);
 

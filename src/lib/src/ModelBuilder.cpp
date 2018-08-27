@@ -18,21 +18,22 @@
 #include <ModelBuilder.h>
 #include <src/lib/include/ModelBuilder.h>
 
+#define THROW_ON_ERROR(val) \
+    if ((val) != ANEURALNETWORKS_NO_ERROR) {  \
+        throw std::invalid_argument(std::string("Error in ") + __FILE__ + std::string(":") + \
+                std::to_string(__LINE__) + std::string(", function name: ") + \
+                std::string(__func__) + "error, ret: " + getErrorCause(val));   \
+    }   \
+
+#define THROW_ON_ERROR_WITH_NOTE(val, note) \
+    if ((val) != ANEURALNETWORKS_NO_ERROR) {  \
+        throw std::invalid_argument(std::string("Error in ") + __FILE__ + std::string(":") + \
+                std::to_string(__LINE__) + std::string(", function name: ") + \
+                std::string(__func__) + "error, ret: " + getErrorCause(val) + std::string(", ") + (note));   \
+    }   \
 
 using std::vector; using std::ifstream; using std::streamsize; using std::string; using std::ios;
 using std::stringstream; using std::array;
-
-#define ADD_OPERATION(operation, input_indexes, output_indexes) \
-ANeuralNetworksModel_addOperation(dnn_model_->model, ANEURALNETWORKS_##operation, static_cast<uint32_t>(input_indexes.size()),  \
-    &input_indexes[0], static_cast<uint32_t>(output_indexes.size()), &output_indexes[0]);
-
-// Simplest model for test
-ModelBuilder &ModelBuilder::simplestModel() {
-    auto input = addInput("input", 4, 3, 2);
-    auto add = addAddScalar("input", 1.5f, "add");
-    // addIndexIntoOutput(add);
-    return *this;
-}
 
 void ModelBuilder::AppendOperandIndex(const std::string &name, ModelBuilder::Index index) {
     operand_indexes[name] = index;
@@ -192,51 +193,6 @@ ModelBuilder::Index ModelBuilder::addPool(const string &input_name, int32_t stri
     return output_index;
 }
 
-ModelBuilder::Index ModelBuilder::addCaffePool(const string &input_name, int32_t strideX, int32_t strideY,
-                                               int32_t paddingLeft, int32_t paddingRight,
-                                               int32_t paddingTop, int32_t paddingBottom,
-                                               int32_t height, int32_t width,
-                                               int32_t activation, uint32_t poolingType,
-                                               const string &output_name) {
-    throw std::invalid_argument("CaffePool is unsupported");
-    /*auto input = operand_indexes[input_name];
-    if (input >= nextIndex) return WRONG_INPUT;
-
-    // NHWC
-    auto inputDimen = dimensMap[input];
-
-    // https://github.com/BVLC/caffe/pull/473#issuecomment-45386156
-    unsigned int extraY = (inputDimen[1] - height + paddingTop + paddingBottom) % strideY;
-    if (extraY != 0) {
-        paddingBottom += strideY - extraY;
-    }
-    unsigned int extraX = (inputDimen[2] - width + paddingLeft + paddingRight) % strideX;
-    if (extraX != 0) {
-        paddingRight += strideX - extraX;
-    }
-
-    Shape outputDimen{inputDimen[0],
-                      (inputDimen[1] - height + paddingTop + paddingBottom) / strideY + 1,
-                      (inputDimen[2] - width + paddingLeft + paddingRight) / strideX + 1,
-                      inputDimen[3]};
-
-    IndexSeq input_indexes{input};
-    addOperands(input_indexes, 
-            paddingLeft, paddingRight, paddingTop, paddingBottom, 
-            strideX, strideY, width, height, activation);
-
-    Index output_index;
-    if (poolingType == MAX_POOL) {
-        output_index = addOperation(ANEURALNETWORKS_MAX_POOL_2D, input_indexes, outputDimen)[0];
-    } else if (poolingType == AVE_POOL) {
-        output_index = addOperation(ANEURALNETWORKS_AVERAGE_POOL_2D, input_indexes, outputDimen)[0];
-    } else {
-        return WRONG_POOLING_TYPE;
-    }
-    AppendOperandIndex(output_name, output_index);
-    return output_index;*/
-}
-
 ModelBuilder::Index ModelBuilder::addSoftMax(const string &input_name, float beta, const string &output_name) {
     auto input = operand_indexes[input_name];
 
@@ -285,6 +241,73 @@ ModelBuilder::Index ModelBuilder::addLRN(const string &input_name, uint32_t loca
     addOperands(input_indexes, local_size, bias, alpha, beta);
 
     auto output_idx = addOperation(ANEURALNETWORKS_LOCAL_RESPONSE_NORMALIZATION, input_indexes, shaper[output_name])[0];
+    AppendOperandIndex(output_name, output_idx);
+    return output_idx;
+}
+
+ModelBuilder::Index ModelBuilder::addFC(const string &input_name, int32_t activation,
+                                        const string &weight_name, const std::optional<string> &bias_name,
+                                        const string &output_name) {
+    auto input = operand_indexes[input_name];
+    auto weight = operand_indexes[weight_name];
+    uint32_t biasIndexValue;
+    if (!bias_name.has_value()) {
+        auto weightDimen = shaper[weight_name];
+        Shape bias_dims = Shape{weightDimen[0]};
+        biasIndexValue = addFloat32ZeroOperandWithDims(bias_dims);
+    } else {
+        biasIndexValue = operand_indexes[bias_name.value()];
+    }
+    shaper.FC(input_name, weight_name, output_name);
+    IndexSeq input_indexes{input, weight, biasIndexValue};
+    addOperands(input_indexes, activation);
+    auto output_idx = addOperation(ANEURALNETWORKS_FULLY_CONNECTED, input_indexes, shaper[output_name])[0];
+    AppendOperandIndex(output_name, output_idx);
+    return output_idx;
+}
+
+ModelBuilder::Index ModelBuilder::addAddScalar(const string &input_name, float scalar, string output_name) {
+    auto input = operand_indexes[input_name];
+    uint32_t scalarIndex = addFloat32AsTensorOperand(scalar);
+    IndexSeq inputOperands{input, scalarIndex, addOperand(
+            ModelBuilder::ACTIVATION_NONE)};
+    shaper.Eltwise(input_name, output_name);
+    auto output_index = addOperation(ANEURALNETWORKS_ADD, inputOperands, shaper[output_name])[0];
+    AppendOperandIndex(output_name, output_index);
+    return output_index;
+}
+
+ModelBuilder::Index ModelBuilder::addAddTensor(const string &input1_name, const string &input2_name,
+                                               const string &output_name) {
+    auto input1 = operand_indexes[input1_name];
+    auto input2 = operand_indexes[input2_name];
+    shaper.Eltwise(input1_name, input2_name, output_name);
+    IndexSeq input_indexes{input1, input2};
+    addOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
+    auto output_idx = addOperation(ANEURALNETWORKS_ADD, input_indexes, shaper[output_name])[0];
+    AppendOperandIndex(output_name, output_idx);
+    return output_idx;
+}
+
+ModelBuilder::Index ModelBuilder::addMulScalar(const string &input_name, float scalar, const string &output_name) {
+    auto input = operand_indexes[input_name];
+    Index scalarIndex = addFloat32AsTensorOperand(scalar);
+    IndexSeq inputOperands{input, scalarIndex, addOperand(
+            ModelBuilder::ACTIVATION_NONE)};
+
+    shaper.Eltwise(input_name, output_name);
+    auto output_index = addOperation(ANEURALNETWORKS_MUL, inputOperands, shaper[output_name])[0];
+    AppendOperandIndex(output_name, output_index);
+    return output_index;
+}
+
+ModelBuilder::Index ModelBuilder::addMulTensor(const string &input1_name, const string &input2_name,
+                                               const string &output_name) {
+    auto input1 = operand_indexes[input1_name];
+    auto input2 = operand_indexes[input2_name];
+    IndexSeq input_indexes{input1, input2};
+    addOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
+    auto output_idx = addOperation(ANEURALNETWORKS_MUL, input_indexes, shaper[output_name])[0];
     AppendOperandIndex(output_name, output_idx);
     return output_idx;
 }
@@ -338,10 +361,8 @@ ModelBuilder::Index ModelBuilder::addOperand(uint32_t value) {
     if (uint32OperandMap.find(value) == uint32OperandMap.end()) {
         ANeuralNetworksOperandType type = getInt32OperandType();
         uint32_t index = addNewOperand(&type);
-        auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value));
-        if (ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Add operand failed, value: " + std::to_string(value) + ", error " + getErrorCause(ret));
-        }
+        THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value)), 
+                "value: " + std::to_string(value));
         uint32OperandMap[value] = index;
     }
     return uint32OperandMap[value];
@@ -351,10 +372,8 @@ ModelBuilder::Index ModelBuilder::addOperand(int32_t value) {
     if (int32OperandMap.find(value) == int32OperandMap.end()) {
         ANeuralNetworksOperandType type = getInt32OperandType();
         uint32_t index = addNewOperand(&type);
-        auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value));
-        if (ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Add operand failed, value: " + std::to_string(value) + ", error " + getErrorCause(ret));
-        }
+        THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value)),
+                "value: " + std::to_string(value));
         int32OperandMap[value] = index;
     }
     return int32OperandMap[value];
@@ -364,10 +383,8 @@ ModelBuilder::Index ModelBuilder::addOperand(float value) {
     if (float32OperandMap.find(value) == float32OperandMap.end()) {
         ANeuralNetworksOperandType type = getFloat32OperandType();
         uint32_t index = addNewOperand(&type);
-        auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value));
-        if (ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Add operand failed, value: " + std::to_string(value) + ", error " + getErrorCause(ret));
-        }
+        THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value)),
+                "value: " + std::to_string(value));
         float32OperandMap[value] = index;
     }
     return float32OperandMap[value];
@@ -383,10 +400,8 @@ ModelBuilder::Index ModelBuilder::addFloat32AsTensorOperand(float value) {
         auto dims = Shape{1};
         auto type = getFloat32OperandTypeWithDims(dims);
         uint32_t index = addNewOperand(&type);
-        auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value));
-        if (ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Add operand failed, value: " + std::to_string(value) + ", error " + getErrorCause(ret));
-        }
+        THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, &value, sizeof(value)),
+                "value: " + std::to_string(value));
         float32AsTensorOperandMap[value] = index;
     }
     return float32AsTensorOperandMap[value];
@@ -397,10 +412,7 @@ ModelBuilder::Index ModelBuilder::addInt32NullOperand() {
     if (missingInt32OperandIndex == UINT32_MAX) {
         ANeuralNetworksOperandType type = getInt32OperandType();
         missingInt32OperandIndex = addNewOperand(&type);
-        auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, missingInt32OperandIndex, nullptr, 0);
-        if (ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Add operand failed, value: null, error " + getErrorCause(ret));
-        }
+        THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model, missingInt32OperandIndex, nullptr, 0));
     }
     return missingInt32OperandIndex;
 }
@@ -409,30 +421,22 @@ ModelBuilder::Index ModelBuilder::addFloat32NullOperand() {
     if (missingFloat32OperandIndex == UINT32_MAX) {
         ANeuralNetworksOperandType type = getFloat32OperandType();
         missingFloat32OperandIndex = addNewOperand(&type);
-        auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, missingFloat32OperandIndex, nullptr, 0);
-        if (ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Add operand failed, value: null, error " + getErrorCause(ret));
-        }
+        THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model, missingFloat32OperandIndex, nullptr, 0));
     }
     return missingFloat32OperandIndex;
 }
 
 ModelBuilder::Index ModelBuilder::addNewOperand(ANeuralNetworksOperandType *type) {
-    int ret;
-    if ((ret = ANeuralNetworksModel_addOperand(dnn_model_->model, type)) != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("Add new operand failed, error " + getErrorCause(ret));
-    }
+    THROW_ON_ERROR(ANeuralNetworksModel_addOperand(dnn_model_->model, type));
     return nextIndex++;
 }
 
 ModelBuilder::Index ModelBuilder::addTensorFromMemory(const string &name, const unsigned char *addr, Shape dimen) {
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t index = addNewOperand(&type);
-    auto ret = ANeuralNetworksModel_setOperandValueFromMemory(dnn_model_->model, index, dnn_model_->memory, addr - dnn_model_->data,
-                                                   product(dimen) * sizeof(float));
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("addTensorFromBuffer error, ret: " + getErrorCause(ret));
-    }
+    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValueFromMemory(
+                dnn_model_->model, index, dnn_model_->memory, addr - dnn_model_->data,
+                product(dimen) * sizeof(float)));
     shaper.AddShape(name, dimen);
     AppendOperandIndex(name, index);
     return index;
@@ -441,10 +445,7 @@ ModelBuilder::Index ModelBuilder::addTensorFromMemory(const string &name, const 
 ModelBuilder::Index ModelBuilder::addTensorFromBuffer(const string &name, const float *buffer, Shape dimen) {
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t index = addNewOperand(&type);
-    auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, buffer, product(dimen) * sizeof(float));
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("addTensorFromBuffer error, ret: " + getErrorCause(ret));
-    }
+    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, buffer, product(dimen) * sizeof(float)));
     shaper.AddShape(name, dimen);
     AppendOperandIndex(name, index);
     return index;
@@ -454,46 +455,45 @@ ModelBuilder::Index ModelBuilder::addTensorFromBuffer(const string &name, const 
                                                       Shape dimen) {
     ANeuralNetworksOperandType type = getInt32OperandTypeWithDims(dimen);
     uint32_t index = addNewOperand(&type);
-    auto ret = ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, buffer, product(dimen) * sizeof(int32_t));
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("addTensorFromBuffer error, ret: " + getErrorCause(ret));
-    }
+    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model, index, buffer, product(dimen) * sizeof(int32_t)));
     shaper.AddShape(name, dimen);
     AppendOperandIndex(name, index);
     return index;
 }
 
-int ModelBuilder::compile(uint32_t preference) {
-    int ret;
-    if ((ret = ANeuralNetworksModel_identifyInputsAndOutputs(
-            dnn_model_->model,
-            static_cast<uint32_t>(inputIndexVector.size()), &inputIndexVector[0],
-            static_cast<uint32_t>(outputIndexVector.size()), &outputIndexVector[0])) != ANEURALNETWORKS_NO_ERROR) {
+void ModelBuilder::compile(uint32_t preference) {
+    THROW_ON_ERROR_WITH_NOTE(
+            ANeuralNetworksModel_identifyInputsAndOutputs(
+                dnn_model_->model,
+                static_cast<uint32_t>(inputIndexVector.size()), &inputIndexVector[0],
+                static_cast<uint32_t>(outputIndexVector.size()), &outputIndexVector[0]
+                ), 
+            "on identifyInputsAndOutputs");
 
-        return NN_IDENTIFY_IO | ret;
-    }
+    THROW_ON_ERROR_WITH_NOTE(
+            ANeuralNetworksModel_finish(
+                dnn_model_->model
+                ),
+            "on model finish");
 
-    ret = ANeuralNetworksModel_finish(dnn_model_->model);
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return NN_MODEL_FINISH | ret;
-    }
+    ;
+    THROW_ON_ERROR_WITH_NOTE(
+            ANeuralNetworksCompilation_create(
+                dnn_model_->model, &dnn_model_->compilation
+                ),
+            "on create");
 
-    ret = ANeuralNetworksCompilation_create(dnn_model_->model, &dnn_model_->compilation);
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return NN_CREATE | ret;
-    }
+    THROW_ON_ERROR_WITH_NOTE(
+            ANeuralNetworksCompilation_setPreference(
+                dnn_model_->compilation, preference
+                ),
+            "on setPreference");
 
-    ret = ANeuralNetworksCompilation_setPreference(dnn_model_->compilation, preference);
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return NN_PREFERENCE | ret;
-    }
-
-    ret = ANeuralNetworksCompilation_finish(dnn_model_->compilation);
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        return NN_COMP_FINISH | ret;
-    }
-
-    return 0;
+    THROW_ON_ERROR_WITH_NOTE(
+            ANeuralNetworksCompilation_finish(
+                dnn_model_->compilation
+                ),
+            "on compilation finish");
 }
 
 void ModelBuilder::registerBufferPointer(std::unique_ptr<float[]> &&pointer) {
@@ -512,75 +512,8 @@ ModelBuilder::IndexSeq ModelBuilder::getOutputIndexes() {
     return outputIndexVector;
 }
 
-ModelBuilder::Index ModelBuilder::addFC(const string &input_name, int32_t activation,
-                                        const string &weight_name, const std::optional<string> &bias_name,
-                                        const string &output_name) {
-    auto input = operand_indexes[input_name];
-    auto weight = operand_indexes[weight_name];
-    uint32_t biasIndexValue;
-    if (!bias_name.has_value()) {
-        auto weightDimen = shaper[weight_name];
-        Shape bias_dims = Shape{weightDimen[0]};
-        biasIndexValue = addFloat32ZeroOperandWithDims(bias_dims);
-    } else {
-        biasIndexValue = operand_indexes[bias_name.value()];
-    }
-    shaper.FC(input_name, weight_name, output_name);
-    IndexSeq input_indexes{input, weight, biasIndexValue};
-    addOperands(input_indexes, activation);
-    auto output_idx = addOperation(ANEURALNETWORKS_FULLY_CONNECTED, input_indexes, shaper[output_name])[0];
-    AppendOperandIndex(output_name, output_idx);
-    return output_idx;
-}
-
 ModelBuilder::Index ModelBuilder::getBlobIndex(const string &blobName) {
     return operand_indexes.at(blobName);
-}
-
-ModelBuilder::Index ModelBuilder::addAddScalar(const string &input_name, float scalar, string output_name) {
-    auto input = operand_indexes[input_name];
-    uint32_t scalarIndex = addFloat32AsTensorOperand(scalar);
-    IndexSeq inputOperands{input, scalarIndex, addOperand(
-            ModelBuilder::ACTIVATION_NONE)};
-    shaper.Eltwise(input_name, output_name);
-    auto output_index = addOperation(ANEURALNETWORKS_ADD, inputOperands, shaper[output_name])[0];
-    AppendOperandIndex(output_name, output_index);
-    return output_index;
-}
-
-ModelBuilder::Index ModelBuilder::addAddTensor(const string &input1_name, const string &input2_name,
-                                               const string &output_name) {
-    auto input1 = operand_indexes[input1_name];
-    auto input2 = operand_indexes[input2_name];
-    shaper.Eltwise(input1_name, input2_name, output_name);
-    IndexSeq input_indexes{input1, input2};
-    addOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
-    auto output_idx = addOperation(ANEURALNETWORKS_ADD, input_indexes, shaper[output_name])[0];
-    AppendOperandIndex(output_name, output_idx);
-    return output_idx;
-}
-
-ModelBuilder::Index ModelBuilder::addMulScalar(const string &input_name, float scalar, const string &output_name) {
-    auto input = operand_indexes[input_name];
-    Index scalarIndex = addFloat32AsTensorOperand(scalar);
-    IndexSeq inputOperands{input, scalarIndex, addOperand(
-            ModelBuilder::ACTIVATION_NONE)};
-
-    shaper.Eltwise(input_name, output_name);
-    auto output_index = addOperation(ANEURALNETWORKS_MUL, inputOperands, shaper[output_name])[0];
-    AppendOperandIndex(output_name, output_index);
-    return output_index;
-}
-
-ModelBuilder::Index ModelBuilder::addMulTensor(const string &input1_name, const string &input2_name,
-                                               const string &output_name) {
-    auto input1 = operand_indexes[input1_name];
-    auto input2 = operand_indexes[input2_name];
-    IndexSeq input_indexes{input1, input2};
-    addOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
-    auto output_idx = addOperation(ANEURALNETWORKS_MUL, input_indexes, shaper[output_name])[0];
-    AppendOperandIndex(output_name, output_idx);
-    return output_idx;
 }
 
 ModelBuilder::Index ModelBuilder::addFloat32NullOperandWithDims(Shape &dims) {
@@ -614,29 +547,7 @@ ModelBuilder::Shape ModelBuilder::getBlobDim(uint32_t index) {
     throw std::invalid_argument("Wrong index in getBlobDim");
 }
 
-string ModelBuilder::getErrorProcedure(int errorCode) {
-    errorCode &= NN_PROCEDURE_MASK;
-    switch (errorCode) {
-        case NN_COMP_FINISH:
-            return "compilation finish";
-        case NN_PREFERENCE:
-            return "set preference";
-        case NN_CREATE:
-            return "compilation create";
-        case NN_MODEL_FINISH:
-            return "model finish";
-        case NN_IDENTIFY_IO:
-            return "identify input and output";
-        case 0:
-            return "No error";
-        default:
-            return "Unknown error code";
-    }
-}
-
 string ModelBuilder::getErrorCause(int errorCode) {
-    errorCode &= NN_CAUSE_MASK;
-
     switch (errorCode) {
         case ANEURALNETWORKS_OUT_OF_MEMORY:
             return "Out of memory";
@@ -670,11 +581,11 @@ ModelBuilder::IndexSeq ModelBuilder::addOperation(int op, IndexSeq input_indexes
         output_indexes.push_back(index);
     }
 
-    auto ret = ANeuralNetworksModel_addOperation(dnn_model_->model, op, input_indexes.size(), &input_indexes[0],
-                                      output_indexes.size(), &output_indexes[0]);
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("Add operation failed, op = " + std::to_string(op) + ", error " + getErrorCause(ret));
-    }
+    THROW_ON_ERROR_WITH_NOTE(
+            ANeuralNetworksModel_addOperation(
+                dnn_model_->model, op, input_indexes.size(), &input_indexes[0],
+                output_indexes.size(), &output_indexes[0]),
+            "op = " + std::to_string(op));
     
     return output_indexes;
 }
@@ -689,10 +600,7 @@ void ModelBuilder::prepare() {
 
 void ModelBuilder::setMemory(int fd, size_t size, size_t offset) {
     ANeuralNetworksMemory *mem = nullptr;
-    auto ret = ANeuralNetworksMemory_createFromFd(size, PROT_READ, fd, offset, &mem);
-    if (ret != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("Error in setMemory, ret: " + getErrorCause(ret));
-    }
+    THROW_ON_ERROR(ANeuralNetworksMemory_createFromFd(size, PROT_READ, fd, offset, &mem));
     dnn_model_->memory = mem;
 }
 

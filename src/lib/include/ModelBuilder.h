@@ -123,15 +123,6 @@ public:
     static const uint32_t MF_LOCAL_SIZE = 17;
     static const uint32_t MF_GROUP = 18;
 
-    static const int NN_PROCEDURE_MASK = ((1U << 16U) - 1) << 16U;
-    static const int NN_CAUSE_MASK = ((1U << 16U) - 1);
-    static const int NN_IDENTIFY_IO = 1U << 16U;
-    static const int NN_MODEL_FINISH = 1U << 17U;
-    static const int NN_CREATE = 1U << 18U;
-    static const int NN_PREFERENCE = 1U << 19U;
-    static const int NN_COMP_FINISH = 1U << 20U;
-
-    static std::string getErrorProcedure(int errorCode);
     static std::string getErrorCause(int errorCode);
 
     Index getBlobIndex(const std::string &blobName);
@@ -158,10 +149,6 @@ public:
     Index addTensorFromMemory(const std::string &name, const unsigned char *addr, Shape dimen);
     Index addFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
                 const std::optional<std::string> &bias_name, const std::string &output_name);
-    Index addCaffePool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
-                       int32_t paddingRight,
-                       int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
-                       uint32_t poolingType, const std::string &output_name);
     Index
     addPool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
             int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
@@ -182,7 +169,7 @@ public:
                           int32_t shrinkAxisMask, const std::string &output_name);
 #endif
     void addOutput(const std::string &name);
-    int compile(uint32_t preference);
+    void compile(uint32_t preference);
     IndexSeq getInputIndexes();
     IndexSeq getOutputIndexes();
     void registerBufferPointer(std::unique_ptr<char[]> &&pointer);
