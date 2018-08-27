@@ -15,8 +15,6 @@
 #include "android_log_helper.h"
 #include <common/helper.h>
 #include <operand_helper.h>
-#include <ModelBuilder.h>
-#include <src/lib/include/ModelBuilder.h>
 
 #define THROW_ON_ERROR(val) \
     if ((val) != ANEURALNETWORKS_NO_ERROR) {  \
@@ -88,7 +86,6 @@ ModelBuilder::Index ModelBuilder::addDepthWiseConv(const string &input_name, int
                                                    const string &output_name) {
     auto input = operand_indexes[input_name];
     auto weight = operand_indexes[weight_name];
-    if (input >= nextIndex) return WRONG_INPUT;
 
     uint32_t biasIndexValue;
     if (!bias_name.has_value()) {
@@ -114,7 +111,6 @@ ModelBuilder::addConv(const string &input_name, int32_t strideX, int32_t strideY
                       const std::optional<string> &bias_name, const string &output_name) {
     auto input = operand_indexes[input_name];
     auto weight = operand_indexes[weight_name];
-    if (input >= nextIndex) return WRONG_INPUT;
 
     uint32_t biasIndexValue;
     if (!bias_name.has_value()) {
@@ -140,7 +136,6 @@ ModelBuilder::addStridedSlice(const string &input_name, const vector<int32_t> &s
                               int32_t shrinkAxisMask, const string &output_name) {
 
     auto input = operand_indexes[input_name];
-    if (input >= nextIndex) return WRONG_INPUT;
 
     uint32_t startsIndex = addTensorFromBuffer(output_name + "_starts", &starts[0], vector<uint32_t>{static_cast<uint32_t>(starts.size())});
     uint32_t endsIndex = addTensorFromBuffer(output_name + "_ends", &ends[0], vector<uint32_t>{static_cast<uint32_t>(ends.size())});
@@ -164,7 +159,6 @@ ModelBuilder::Index ModelBuilder::addPool(const string &input_name, int32_t stri
                                           int32_t activation,
                                           uint32_t poolingType, const string &output_name) {
     auto input = operand_indexes[input_name];
-    if (input >= nextIndex) return WRONG_INPUT;
 
     if (height == -1 && width == -1) {
         LOG(INFO) << "Global pool, input: " << input_name;
@@ -182,12 +176,10 @@ ModelBuilder::Index ModelBuilder::addPool(const string &input_name, int32_t stri
             strideX, strideY, width, height, activation);
 
     Index output_index;
-    if (poolingType == MAX_POOL) {
+    if (poolingType == MAX_POOL) {  // TODO: use strong typed enum here
         output_index = addOperation(ANEURALNETWORKS_MAX_POOL_2D, input_indexes, shaper[output_name])[0];
     } else if (poolingType == AVE_POOL) {
         output_index = addOperation(ANEURALNETWORKS_AVERAGE_POOL_2D, input_indexes, shaper[output_name])[0];
-    } else {
-        return WRONG_POOLING_TYPE;
     }
     AppendOperandIndex(output_name, output_index);
     return output_index;

@@ -40,10 +40,6 @@ private:
 
     uint32_t nextIndex = 0;
 
-    static const uint32_t WRONG_INPUT = UINT32_MAX -1;
-    static const uint32_t WRONG_POOLING_TYPE = UINT32_MAX -2;
-    static const int WRONG_OPERAND_INDEX = -10;
-
     void AppendOperandIndex(const std::string &name, Index index);
     uint32_t addNewOperand(ANeuralNetworksOperandType *type);
 
@@ -76,52 +72,6 @@ public:
     static const uint32_t PREFERENCE_FAST_SINGLE_ANSWER = ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER;
     static const uint32_t PREFERENCE_SUSTAINED_SPEED = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
     static const uint32_t PREFERENCE_LOW_POWER = ANEURALNETWORKS_PREFER_LOW_POWER;
-
-    static const uint32_t MF_LAYER_END = 0;
-    static const uint32_t MF_CONV = 1;
-    static const uint32_t MF_MAX_POOL = 2;
-    static const uint32_t MF_AVE_POOL = 3;
-    static const uint32_t MF_FC = 4;
-    static const uint32_t MF_SOFTMAX = 5;
-    static const uint32_t MF_INPUT = 6;
-    static const uint32_t MF_MUL = 7;
-    static const uint32_t MF_ADD = 8;
-    static const uint32_t MF_RELU = 9;
-    static const uint32_t MF_CONCAT = 10;
-    static const uint32_t MF_LRN = 11;
-    static const uint32_t MF_DEPTH_CONV = 12;
-#if __ANDROID_API__ >= __ANDROID_API_P__
-    static const uint32_t MF_STRIDED_SLICE = 13;
-#endif
-
-    static const uint32_t MF_ACTIVATION_NONE = 0;
-    static const uint32_t MF_ACTIVATION_RELU = 1;
-
-    static const uint32_t MF_TENSOR_OP = 0;
-    static const uint32_t MF_SCALAR_OP = 1;
-    static const uint32_t MF_ARRAY_OP = 2;
-
-    static const uint32_t MF_STRING_END = 0;
-
-    static const uint32_t MF_PARAM_END = 0;
-    static const uint32_t MF_PADDING_LEFT = 1;
-    static const uint32_t MF_PADDING_RIGHT = 2;
-    static const uint32_t MF_PADDING_TOP = 3;
-    static const uint32_t MF_PADDING_BOTTOM = 4;
-    static const uint32_t MF_STRIDE_X = 5;
-    static const uint32_t MF_STRIDE_Y = 6;
-    static const uint32_t MF_FILTER_HEIGHT = 7;
-    static const uint32_t MF_FILTER_WIDTH = 8;
-    static const uint32_t MF_NUM_OUTPUT = 9;
-    static const uint32_t MF_WEIGHT = 10;
-    static const uint32_t MF_BIAS = 11;
-    static const uint32_t MF_ACTIVATION = 12;
-    static const uint32_t MF_TOP_NAME = 13;
-    static const uint32_t MF_BETA = 14;
-    static const uint32_t MF_LRN_ALPHA = 15;
-    static const uint32_t MF_LRN_BETA = 16;
-    static const uint32_t MF_LOCAL_SIZE = 17;
-    static const uint32_t MF_GROUP = 18;
 
     static std::string getErrorCause(int errorCode);
 
