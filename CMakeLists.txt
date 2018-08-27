@@ -32,6 +32,7 @@ include(cmake/common.cmake)
 configure_glog()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    add_compile_options("-Os")
     add_subdirectory(src)
 else()
     configure_onnx()
