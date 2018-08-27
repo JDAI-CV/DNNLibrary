@@ -10,6 +10,7 @@ set (CMAKE_CXX_STANDARD 17)
 
 option(BUILD_SHARED_LIBS "Build shared dnnlibrary" OFF)
 option(BUILD_BIN "Build binaries" ON)
+option(BUILD_JNI "Build Java Wrapper" OFF)
 
 include(cmake/system.cmake)
 include(cmake/protobuf.cmake)

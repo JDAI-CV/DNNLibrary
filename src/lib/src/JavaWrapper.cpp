@@ -2,15 +2,15 @@
 // Created by daquexian on 2017/11/12.
 //
 
-#include <android/asset_manager_jni.h>
-#include "ModelBuilder.h"
 #include <map>
+#include <vector>
+
+#include <android/asset_manager_jni.h>
+#include <DaqReader.h>
+#include "ModelBuilder.h"
+#include "jni_handle.h"
 
 using std::string; using std::map;
-
-ModelBuilder builder;
-Model model;
-bool isUsing;
 
 jint throwException(JNIEnv *env, std::string message);
 
@@ -18,83 +18,69 @@ jint throwException(JNIEnv *env, std::string message);
 extern "C"
 JNIEXPORT void
 JNICALL
-Java_me_daquexian_dnnlibrary_ModelWrapper_readFile(
+Java_me_daquexian_dnnlibrary_ModelBuilder_readFile(
         JNIEnv *env,
-        jobject /* this */,
+        jobject obj/* this */,
         jobject javaAssetManager, jstring javaFilename) {
-
-    if (isUsing) {
-        throwException(env, "Please compile current model before generate a new model");
-    }
-
-    builder.init();
-
-    isUsing = true;
+    ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
+    DaqReader daq_reader;
 
     string filename = string(env->GetStringUTFChars(javaFilename, nullptr));
     AAssetManager *mgrr = AAssetManager_fromJava(env, javaAssetManager);
 
     AAsset* asset = AAssetManager_open(mgrr, filename.c_str(), AASSET_MODE_UNKNOWN);
-    size_t size = static_cast<size_t>(AAsset_getLength(asset));
-    char* buffer = new char[size];
-    builder.registerBufferPointer(buffer);
-    AAsset_read(asset, buffer, static_cast<size_t>(size));
-
-    builder.readFromBuffer(buffer);
+    off_t start, length;
+    auto fd = AAsset_openFileDescriptor(asset, &start, &length);
+    daq_reader.ReadDaq(fd, *builder);
 }
 
 extern "C"
 JNIEXPORT void
 JNICALL
-Java_me_daquexian_dnnlibrary_ModelWrapper_setOutput(
+Java_me_daquexian_dnnlibrary_ModelBuilder_setOutput(
         JNIEnv *env,
-        jobject /* this */,
+        jobject obj/* this */,
         jstring javaBlobName) {
-    if (!isUsing) {
-        throwException(env, "No model to add output");
-    }
+    ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
     string blobName = string(env->GetStringUTFChars(javaBlobName, nullptr));
-    builder.addIndexIntoOutput(builder.getBlobIndex(blobName));
+    builder->addOutput(blobName);
 }
 
 extern "C"
-JNIEXPORT void
+JNIEXPORT jobject
 JNICALL
-Java_me_daquexian_dnnlibrary_ModelWrapper_compile(
+Java_me_daquexian_dnnlibrary_ModelBuilder_compile(
         JNIEnv *env,
-        jobject /* this */,
+        jobject obj /* this */,
         jint preference) {
-    if (!isUsing) {
-        throwException(env, "No model to compile");
-    }
-
-    builder.compile(preference);
-
-    isUsing = false;
+    ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
+    auto model = builder->finish().release();   // release raw pointer from smart pointer, we have to manage it ourselves
+    jclass cls = env->FindClass("me/daquexian/dnnlibrary/Model");
+    jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
+    jobject model_obj = env->NewObject(cls, ctor);
+    setHandle(env, model_obj, model);
+    return model_obj;
 }
 
 extern "C"
 JNIEXPORT jfloatArray
 JNICALL
-Java_me_daquexian_dnnlibrary_ModelWrapper_predict(
+Java_me_daquexian_dnnlibrary_Model_predict(
         JNIEnv *env,
-        jobject /* this */,
+        jobject obj/* this */,
         jfloatArray dataArrayObject) {
-
-    builder.prepareForExecution(model);
+    Model *model = getHandle<Model>(env, obj);
 
     jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
     jsize dataLen = env->GetArrayLength(dataArrayObject) * sizeof(jfloat);
 
-    builder.setInputBuffer(model, builder.getInputIndexes()[0], data, static_cast<size_t>(dataLen));
-
-    uint32_t outputLen = product(builder.getBlobDim(builder.getOutputIndexes()[0]));
+    uint32_t outputLen = model->getOutputSize(0);
     float output[outputLen];
-    builder.setOutputBuffer(model, builder.getOutputIndexes()[0], output, sizeof(output));
+    model->setOutputBuffer(0, output);
 
-    model.predict();
+    model->predict(std::vector{output});
 
-    jfloatArray result = env->NewFloatArray(product(builder.getBlobDim(builder.getOutputIndexes()[0])));
+    jfloatArray result = env->NewFloatArray(outputLen);
     env->SetFloatArrayRegion(result, 0, outputLen, output);
 
     return result;
@@ -103,10 +89,27 @@ Java_me_daquexian_dnnlibrary_ModelWrapper_predict(
 extern "C"
 JNIEXPORT void
 JNICALL
-Java_me_daquexian_dnnlibrary_ModelWrapper_clear(
+Java_me_daquexian_dnnlibrary_ModelBuilder_dispose(
         JNIEnv *env,
-        jobject /* this */) {
-    builder.clear();
+        jobject obj/* this */) {
+    auto handle = getHandle<ModelBuilder>(env, obj);
+    if (handle != nullptr) {
+        delete handle;
+        setHandle(env, obj, nullptr);
+    }
+}
+
+extern "C"
+JNIEXPORT void
+JNICALL
+Java_me_daquexian_dnnlibrary_Model_dispose(
+        JNIEnv *env,
+        jobject obj/* this */) {
+    auto handle = getHandle<Model>(env, obj);
+    if (handle != nullptr) {
+        delete handle;
+        setHandle(env, obj, nullptr);
+    }
 }
 
 jint throwException(JNIEnv *env, std::string message) {

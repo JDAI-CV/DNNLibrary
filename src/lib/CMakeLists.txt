@@ -13,6 +13,10 @@ set(LIB_SRC
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     )
 
+if (BUILD_JNI)
+    list(APPEND LIB_SRC src/JavaWrapper.cpp)
+endif()
+
 add_library(
     daq
     ${LIB_SRC})
