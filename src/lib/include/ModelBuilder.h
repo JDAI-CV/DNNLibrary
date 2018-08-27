@@ -181,7 +181,7 @@ public:
                           const std::vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
                           int32_t shrinkAxisMask, const std::string &output_name);
 #endif
-    void addIndexIntoOutput(Index index);
+    void addOutput(const std::string &name);
     int compile(uint32_t preference);
     IndexSeq getInputIndexes();
     IndexSeq getOutputIndexes();

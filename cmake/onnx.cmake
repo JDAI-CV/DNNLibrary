@@ -1,5 +1,5 @@
-macro(build_onnx)
-    message(STATUS "Building onnx...")
+macro(configure_onnx)
+    message(STATUS "Configuring onnx...")
     set(DAQ_ONNX_NAMESPACE onnx_daq)
     set(ONNX_NAMESPACE ${DAQ_ONNX_NAMESPACE})
     add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/onnx)

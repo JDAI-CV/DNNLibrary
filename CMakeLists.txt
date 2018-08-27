@@ -9,7 +9,6 @@ project(DNNLibrary)
 set (CMAKE_CXX_STANDARD 17)
 
 option(BUILD_SHARED_LIBS "Build shared dnnlibrary" OFF)
-option(BUILD_JNI "Build JavaWrapper" OFF)
 option(BUILD_BIN "Build binaries" ON)
 
 include(cmake/system.cmake)
@@ -29,11 +28,11 @@ include(cmake/common.cmake)
     # endif()
 # endif()
 
-build_glog()
+configure_glog()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     add_subdirectory(src)
 else()
-    build_onnx()
+    configure_onnx()
     add_subdirectory(tools)
 endif()

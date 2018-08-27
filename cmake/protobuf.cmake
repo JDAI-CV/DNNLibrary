@@ -1,5 +1,5 @@
-macro(build_protobuf)
-    message(STATUS "Building protobuf...")
+macro(configure_protobuf)
+    message(STATUS "Configuring protobuf...")
     option(protobuf_BUILD_TESTS "" OFF)
     option(protobuf_BUILD_EXAMPLES "" OFF)
     option(protobuf_BUILD_SHARED_LIBS "" OFF)

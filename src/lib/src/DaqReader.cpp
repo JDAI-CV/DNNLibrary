@@ -67,18 +67,20 @@ int convert_fuse_code_to_nnapi(DNN::FuseCode fuse_code) {
  * @param builder a ModelBuilder object
  */
 void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
-    builder.prepare();
-    std::ifstream ifs(filepath, std::ifstream::ate | std::ifstream::binary);
-    ifs.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-    auto size = static_cast<size_t>(ifs.tellg());
-    ifs.close();
     auto fd = open(filepath.c_str(), O_RDONLY);
     if (fd == -1) {
         throw std::invalid_argument("Open file error " + std::to_string(errno));
     }
-    auto data = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+
+    ReadDaq(fd, builder);
+}
+
+void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder) {
+    auto fsize = static_cast<size_t>(lseek(fd, 0, SEEK_END));
+    builder.prepare();
+    auto data = mmap(nullptr, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
     builder.setBuffer(static_cast<unsigned char *>(data));
-    builder.setMemory(fd, size, 0);
+    builder.setMemory(fd, fsize, 0);
     close(fd);
     auto model = DNN::GetModel(data);
 
@@ -227,7 +229,7 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
                 for (size_t i = 0; i < block_sizes_fbs->size(); i++) {
                     block_sizes.push_back(block_sizes_fbs->Get(static_cast<flatbuffers::uoffset_t>(i)));
                 }
-                LOG(INFO) << "BatchToSpaceND, input " << input_name 
+                LOG(INFO) << "BatchToSpaceND, input " << input_name
                     << ", block sizes " << block_sizes << ", output: " << output_name;
                 builder.addBatchToSpaceND(input_name, block_sizes, output_name);
                 break;

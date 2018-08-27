@@ -16,6 +16,7 @@
 #include <common/helper.h>
 #include <operand_helper.h>
 #include <ModelBuilder.h>
+#include <src/lib/include/ModelBuilder.h>
 
 
 using std::vector; using std::ifstream; using std::streamsize; using std::string; using std::ios;
@@ -29,7 +30,7 @@ ANeuralNetworksModel_addOperation(dnn_model_->model, ANEURALNETWORKS_##operation
 ModelBuilder &ModelBuilder::simplestModel() {
     auto input = addInput("input", 4, 3, 2);
     auto add = addAddScalar("input", 1.5f, "add");
-    addIndexIntoOutput(add);
+    // addIndexIntoOutput(add);
     return *this;
 }
 
@@ -45,6 +46,7 @@ ModelBuilder::Index ModelBuilder::addInput(string name, uint32_t height, uint32_
 
     shaper.AddShape(name, dimen);
     inputIndexVector.push_back(index);
+    dnn_model_->addInput(name, shaper[name]);
     AppendOperandIndex(name, index);
     return index;
 }
@@ -461,10 +463,6 @@ ModelBuilder::Index ModelBuilder::addTensorFromBuffer(const string &name, const 
     return index;
 }
 
-void ModelBuilder::addIndexIntoOutput(Index index) {
-    outputIndexVector.push_back(index);
-}
-
 int ModelBuilder::compile(uint32_t preference) {
     int ret;
     if ((ret = ANeuralNetworksModel_identifyInputsAndOutputs(
@@ -711,4 +709,9 @@ std::unique_ptr<Model> ModelBuilder::finish() {
     ordered_operands.clear();
     shaper.clear();
     return std::move(dnn_model_);
+}
+
+void ModelBuilder::addOutput(const std::string &name) {
+    outputIndexVector.push_back(getBlobIndex(name));
+    dnn_model_->addOutput(name, shaper[name]);
 }

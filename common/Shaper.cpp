@@ -138,6 +138,10 @@ void Shaper::AddShape(const std::string &name, const Shape &shape) {
     shape_map_[name] = shape;
 }
 
+size_t Shaper::getSize(const std::string &name) {
+    return static_cast<size_t>(product(shape_map_.at(name)));
+}
+
 void Shaper::clear() {
     shape_map_.clear();
 }

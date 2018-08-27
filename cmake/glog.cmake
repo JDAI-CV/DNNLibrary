@@ -1,5 +1,5 @@
-macro(build_glog)
-    message(STATUS "Building glog...")
+macro(configure_glog)
+    message(STATUS "Configureing glog...")
     option(BUILD_TESTING "" OFF)
     add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/glog)
 endmacro()

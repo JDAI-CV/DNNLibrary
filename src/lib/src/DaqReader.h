@@ -14,6 +14,7 @@
 class DaqReader {
 public:
     void ReadDaq(const std::string &filepath, ModelBuilder &builder);
+    void ReadDaq(const int &fd, ModelBuilder &builder);
 };
 
 
