@@ -79,18 +79,14 @@ public:
     Shape getBlobDim(const std::string &blobName);
     Shape getBlobDim(Index index);
     Index addInput(std::string name, uint32_t height, uint32_t width, uint32_t depth);
-    ModelBuilder::Index addSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
-            const std::vector<int32_t> &pads, const std::string &output_name);
-    ModelBuilder::Index addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
-            const std::string &output_name);
-    ModelBuilder::Index addDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
+    Index addDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
                                          int32_t paddingLeft,
                                          int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                                          int32_t activation,
                                          int32_t depthMultiplier, const std::string &weight_name,
                                          const std::optional<std::string> &bias_name,
                                          const std::string &output_name);
-    ModelBuilder::Index addConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+    Index addConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                                 int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
                                 int32_t activation, const std::string &weight_name,
                                 const std::optional<std::string> &bias_name, const std::string &output_name);
@@ -117,6 +113,10 @@ public:
                           const std::vector<int32_t> &ends,
                           const std::vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
                           int32_t shrinkAxisMask, const std::string &output_name);
+    Index addSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+            const std::vector<int32_t> &pads, const std::string &output_name);
+    Index addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+            const std::string &output_name);
 #endif
     void addOutput(const std::string &name);
     void compile(uint32_t preference);
@@ -124,10 +124,6 @@ public:
     IndexSeq getOutputIndexes();
     void registerBufferPointer(std::unique_ptr<char[]> &&pointer);
     void registerBufferPointer(std::unique_ptr<float[]> &&pointer);
-
-    // ModelBuilder &readFromBuffer(const char *buffer);
-    ModelBuilder& readFromFile(const std::string &filename);
-    ModelBuilder& simplestModel();
 
     void prepare();
     void setMemory(int fd, size_t size, size_t offset);
