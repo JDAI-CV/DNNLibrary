@@ -8,10 +8,9 @@ package me.daquexian.dnnlibrary;
 public class Model {
 
     static {
-        System.loadLibrary( "dnnlibrary");
+        System.loadLibrary( "daq-jni");
     }
 
     private long nativeHandle;
-    public static native void setOutput(String blobName);
-    public static native float[] predict(float[] input);
+    public native float[] predict(float[] input);
 }

@@ -13,10 +13,6 @@ set(LIB_SRC
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     )
 
-if (BUILD_JNI)
-    list(APPEND LIB_SRC src/JavaWrapper.cpp)
-endif()
-
 add_library(
     daq
     ${LIB_SRC})
@@ -56,3 +52,12 @@ target_link_libraries(
     )
 
 treat_warnings_as_errors(daq)
+
+if (BUILD_JNI)
+    add_library(
+        daq-jni
+        SHARED
+        src/JavaWrapper.cpp)
+    target_link_libraries(daq-jni
+        daq)
+endif()

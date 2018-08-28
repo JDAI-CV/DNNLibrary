@@ -89,6 +89,16 @@ Java_me_daquexian_dnnlibrary_Model_predict(
 extern "C"
 JNIEXPORT void
 JNICALL
+Java_me_daquexian_dnnlibrary_ModelBuilder_initHandle(
+        JNIEnv *env,
+        jobject obj/* this */) {
+    ModelBuilder *builder = new ModelBuilder();
+    setHandle(env, obj, builder);
+}
+
+extern "C"
+JNIEXPORT void
+JNICALL
 Java_me_daquexian_dnnlibrary_ModelBuilder_dispose(
         JNIEnv *env,
         jobject obj/* this */) {

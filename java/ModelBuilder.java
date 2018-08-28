@@ -10,15 +10,19 @@ import android.content.res.AssetManager;
 public class ModelBuilder {
 
     static {
-        System.loadLibrary( "dnnlibrary");
+        System.loadLibrary( "daq-jni");
     }
 
     public static final int PREFERENCE_LOW_POWER = 0;
     public static final int PREFERENCE_FAST_SINGLE_ANSWER = 1;
     public static final int PREFERENCE_SUSTAINED_SPEED = 2;
     private long nativeHandle;
-    public static native void readFile(AssetManager assetManager, String filename);
-    public static native void setOutput(String blobName);
-    public static native void compile(int preference);
-    public static native void clear();
+    public ModelBuilder() {
+        initHandle();
+    }
+    public native void readFile(AssetManager assetManager, String filename);
+    public native void setOutput(String blobName);
+    public native Model compile(int preference);
+    public native void dispose();
+    public native void initHandle();
 }
