@@ -21,14 +21,14 @@
         throw std::invalid_argument(std::string("Error in ") + __FILE__ + std::string(":") + \
                 std::to_string(__LINE__) + std::string(", function name: ") + \
                 std::string(__func__) + "error, ret: " + getErrorCause(val));   \
-    }   \
+    }
 
 #define THROW_ON_ERROR_WITH_NOTE(val, note) \
     if ((val) != ANEURALNETWORKS_NO_ERROR) {  \
         throw std::invalid_argument(std::string("Error in ") + __FILE__ + std::string(":") + \
                 std::to_string(__LINE__) + std::string(", function name: ") + \
                 std::string(__func__) + "error, ret: " + getErrorCause(val) + std::string(", ") + (note));   \
-    }   \
+    }
 
 using std::vector; using std::ifstream; using std::streamsize; using std::string; using std::ios;
 using std::stringstream; using std::array;
@@ -48,33 +48,6 @@ ModelBuilder::Index ModelBuilder::addInput(string name, uint32_t height, uint32_
     dnn_model_->addInput(name, shaper[name]);
     AppendOperandIndex(name, index);
     return index;
-}
-
-ModelBuilder::Index ModelBuilder::addSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
-        const std::vector<int32_t> &pads, const std::string &output_name) {
-    auto input = operand_indexes[input_name];
-
-    auto block_sizes_idx = addTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
-    auto pads_idx = addTensorFromBuffer(output_name + "_pad", &pads[0], Shape{static_cast<uint32_t>(pads.size()) / 2, 2});
-
-    shaper.SpaceToBatch(input_name, block_sizes, pads, output_name);
-    IndexSeq input_indexes{input, block_sizes_idx, pads_idx};
-    auto output_index = addOperation(ANEURALNETWORKS_SPACE_TO_BATCH_ND, input_indexes, shaper[output_name])[0];
-    AppendOperandIndex(output_name, output_index);
-    return output_index;
-}
-
-ModelBuilder::Index ModelBuilder::addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
-        const std::string &output_name) {
-    auto input = operand_indexes[input_name];
-
-    auto block_sizes_idx = addTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
-
-    shaper.BatchToSpace(input_name, block_sizes, output_name);
-    IndexSeq input_indexes{input, block_sizes_idx};
-    auto output_index = addOperation(ANEURALNETWORKS_BATCH_TO_SPACE_ND, input_indexes, shaper[output_name])[0];
-    AppendOperandIndex(output_name, output_index);
-    return output_index;
 }
 
 ModelBuilder::Index ModelBuilder::addDepthWiseConv(const string &input_name, int32_t strideX, int32_t strideY,
@@ -147,6 +120,33 @@ ModelBuilder::addStridedSlice(const string &input_name, const vector<int32_t> &s
     addOperands(input_indexes, beginMask, endMask, shrinkAxisMask);
 
     auto output_index = addOperation(ANEURALNETWORKS_STRIDED_SLICE, input_indexes, shaper[output_name])[0];
+    AppendOperandIndex(output_name, output_index);
+    return output_index;
+}
+
+ModelBuilder::Index ModelBuilder::addSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+        const std::vector<int32_t> &pads, const std::string &output_name) {
+    auto input = operand_indexes[input_name];
+
+    auto block_sizes_idx = addTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
+    auto pads_idx = addTensorFromBuffer(output_name + "_pad", &pads[0], Shape{static_cast<uint32_t>(pads.size()) / 2, 2});
+
+    shaper.SpaceToBatch(input_name, block_sizes, pads, output_name);
+    IndexSeq input_indexes{input, block_sizes_idx, pads_idx};
+    auto output_index = addOperation(ANEURALNETWORKS_SPACE_TO_BATCH_ND, input_indexes, shaper[output_name])[0];
+    AppendOperandIndex(output_name, output_index);
+    return output_index;
+}
+
+ModelBuilder::Index ModelBuilder::addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+        const std::string &output_name) {
+    auto input = operand_indexes[input_name];
+
+    auto block_sizes_idx = addTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
+
+    shaper.BatchToSpace(input_name, block_sizes, output_name);
+    IndexSeq input_indexes{input, block_sizes_idx};
+    auto output_index = addOperation(ANEURALNETWORKS_BATCH_TO_SPACE_ND, input_indexes, shaper[output_name])[0];
     AppendOperandIndex(output_name, output_index);
     return output_index;
 }

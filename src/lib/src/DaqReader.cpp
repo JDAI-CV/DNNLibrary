@@ -219,6 +219,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 break;
             }
             case DNN::LayerType::BatchToSpace: {
+#if __ANDROID_API__ >= __ANDROID_API_P__
                 auto param = layer->batch_to_space_param();
                 auto input_name = param->input()->str();
                 auto block_sizes_fbs = param->block_sizes();
@@ -231,8 +232,10 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                     << ", block sizes " << block_sizes << ", output: " << output_name;
                 builder.addBatchToSpaceND(input_name, block_sizes, output_name);
                 break;
+#endif
             }
             case DNN::LayerType::SpaceToBatch: {
+#if __ANDROID_API__ >= __ANDROID_API_P__
                 auto param = layer->space_to_batch_param();
                 auto input_name = param->input()->str();
                 auto block_sizes_fbs = param->block_sizes();
@@ -244,8 +247,10 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                     << ", block sizes " << block_sizes << ", pads " << pads << "output: " << output_name;
                 builder.addSpaceToBatchND(input_name, block_sizes, pads, output_name);
                 break;
+#endif
             }
             case DNN::LayerType::StridedSlice: {
+#if __ANDROID_API__ >= __ANDROID_API_P__
                 auto param = layer->strided_slice_param();
                 auto input_name = param->input()->str();
                 auto starts = fbs_to_std_vector(param->starts());
@@ -261,6 +266,9 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                     << ", shrink_axis_mask " << shrink_axis_mask;
                 builder.addStridedSlice(input_name, starts, ends, strides, begin_mask, end_mask, shrink_axis_mask,
                         output_name);
+#else
+                throw std::invalid_argument("Unsupported layer " + layer_type_to_str(layer->type()) + " in API 28");
+#endif
                 break;
             }
             default: {

@@ -7,7 +7,6 @@
 
 #include <android/asset_manager_jni.h>
 #include <DaqReader.h>
-#include <glog/logging.h>
 #include "ModelBuilder.h"
 #include "jni_handle.h"
 
