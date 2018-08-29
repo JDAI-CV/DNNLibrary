@@ -22,7 +22,8 @@ private:
     ANeuralNetworksMemory *memory;
     unsigned char *data;
     size_t data_size;
-    std::vector<std::unique_ptr<char[]>> charBufPointers;
+    std::vector<std::unique_ptr<uint8_t[]>> uint8_buf_pointers;
+    std::vector<std::unique_ptr<int8_t[]>> int8BufPointers;
     std::vector<std::unique_ptr<float[]>> floatBufPointers;
     std::vector<std::unique_ptr<int32_t[]>> int32BufPointers;
     std::vector<std::string> input_names;

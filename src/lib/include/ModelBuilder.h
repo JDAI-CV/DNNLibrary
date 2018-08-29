@@ -92,7 +92,7 @@ public:
                                 const std::optional<std::string> &bias_name, const std::string &output_name);
     Index addTensorFromBuffer(const std::string &name, const float *buffer, Shape dimen);
     Index addTensorFromBuffer(const std::string &name, const int32_t *buffer, Shape dimen);
-    Index addTensorFromMemory(const std::string &name, const unsigned char *addr, Shape dimen);
+    Index addTensorFromMemory(const std::string &name, const uint8_t *addr, Shape dimen);
     Index addFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
                 const std::optional<std::string> &bias_name, const std::string &output_name);
     Index
@@ -119,16 +119,16 @@ public:
             const std::string &output_name);
 #endif
     void addOutput(const std::string &name);
-    void compile(uint32_t preference);
+    std::unique_ptr<Model> compile(uint32_t preference);
     IndexSeq getInputIndexes();
     IndexSeq getOutputIndexes();
-    void registerBufferPointer(std::unique_ptr<char[]> &&pointer);
+    void registerBufferPointer(std::unique_ptr<int8_t[]> &&pointer);
     void registerBufferPointer(std::unique_ptr<float[]> &&pointer);
+    void registerBufferPointer(std::unique_ptr<uint8_t[]> &&pointer);
 
     void prepare();
     void setMemory(int fd, size_t size, size_t offset);
-    void setBuffer(unsigned char *data);
-    std::unique_ptr<Model> finish();
+    void setBasePtr(uint8_t *data);
     template <typename... Args>
     void addOperands(IndexSeq &indexes, Args... args) {
         (indexes.push_back(addOperand(args)), ...);

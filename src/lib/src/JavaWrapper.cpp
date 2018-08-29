@@ -7,6 +7,7 @@
 
 #include <android/asset_manager_jni.h>
 #include <DaqReader.h>
+#include <glog/logging.h>
 #include "ModelBuilder.h"
 #include "jni_handle.h"
 
@@ -29,9 +30,8 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_readFile(
     AAssetManager *mgrr = AAssetManager_fromJava(env, javaAssetManager);
 
     AAsset* asset = AAssetManager_open(mgrr, filename.c_str(), AASSET_MODE_UNKNOWN);
-    off_t start, length;
-    auto fd = AAsset_openFileDescriptor(asset, &start, &length);
-    daq_reader.ReadDaq(fd, *builder);
+    const uint8_t *buf = static_cast<const uint8_t *>(AAsset_getBuffer(asset));
+    daq_reader.ReadDaq(buf, *builder);
 }
 
 extern "C"
@@ -54,7 +54,7 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_compile(
         jobject obj /* this */,
         jint preference) {
     ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
-    auto model = builder->finish().release();   // release raw pointer from smart pointer, we have to manage it ourselves
+    auto model = builder->compile(preference).release();   // release raw pointer from smart pointer, we have to manage it ourselves
     jclass cls = env->FindClass("me/daquexian/dnnlibrary/Model");
     jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
     jobject model_obj = env->NewObject(cls, ctor);
@@ -78,7 +78,7 @@ Java_me_daquexian_dnnlibrary_Model_predict(
     float output[outputLen];
     model->setOutputBuffer(0, output);
 
-    model->predict(std::vector{output});
+    model->predict(std::vector{static_cast<float *>(data)});
 
     jfloatArray result = env->NewFloatArray(outputLen);
     env->SetFloatArrayRegion(result, 0, outputLen, output);

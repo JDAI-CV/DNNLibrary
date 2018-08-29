@@ -14,6 +14,8 @@
 #include <android_log_helper.h>
 #include <flatbuffers_helper.h>
 
+void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder);
+
 std::string layer_type_to_str(DNN::LayerType type) {
     switch (type) {
         case DNN::LayerType::FC:
@@ -57,49 +59,45 @@ int convert_fuse_code_to_nnapi(DNN::FuseCode fuse_code) {
     throw std::invalid_argument("Invalid fuse_code");
 }
 
-/**
- * It is designed to read a regular file. For reading file in assets folder of Android app,
- * read the content into a char array and call readFromBuffer
- *
- * It will throw an exception when opening file failed
- *
- * @param filepath , like "/data/local/tmp/squeezenet.daq"
- * @param builder a ModelBuilder object
- */
-void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder) {
-    auto fd = open(filepath.c_str(), O_RDONLY);
-    if (fd == -1) {
-        throw std::invalid_argument("Open file error " + std::to_string(errno));
+void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
+    for (const auto &tensor : *model.initializers()) {
+        LOGI("hhhaddadhi");
+        LOGI("init name: %s", tensor->name()->c_str());
+        LOGI("hhhaddadhi");
+        if (tensor->data_type() == DNN::DataType::Float32) {
+            ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
+            builder.addTensorFromBuffer(tensor->name()->str(),
+                                        tensor->float32_data()->data(),
+                                        shape);
+            LOGI("init name: %s", tensor->name()->c_str());
+        }
     }
-
-    ReadDaq(fd, builder);
 }
 
-void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder) {
-    auto fsize = static_cast<size_t>(lseek(fd, 0, SEEK_END));
-    builder.prepare();
-    auto data = mmap(nullptr, fsize, PROT_READ, MAP_PRIVATE, fd, 0);
-    builder.setMemory(fd, fsize, 0);
-    // builder.setBuffer(static_cast<unsigned char*>(data));
-    close(fd);
-    auto model = DNN::GetModel(data);
-
-    for (const auto &tensor : *model->initializers()) {
+void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
+    for (const auto &tensor : *model.initializers()) {
+        LOGI("hhhaddadhi");
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
             builder.addTensorFromMemory(tensor->name()->str(),
                                         tensor->float32_data()->Data(),
                                         shape);
+            LOGI("init name: %s", tensor->name()->c_str());
         }
     }
+}
 
-    for (const auto &input : *model->inputs()) {
+void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
+    for (const auto &input : *model.inputs()) {
         ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
         builder.addInput(input->name()->str(), shape[1], shape[2], shape[3]);
+        LOGI("input name: %s", input->name()->c_str());
     }
 
+}
 
-    for (auto layer : *model->layers()) {
+void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
+    for (auto layer : *model.layers()) {
         switch (layer->type()) {
             case DNN::LayerType::Conv2D: {
                 LOG(INFO) << "Conv";
@@ -270,4 +268,68 @@ void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder) {
             }
         }
     }
+}
+
+/**
+ * It is designed to read a regular file. For reading file in assets folder of Android app,
+ * read the content into a char array and call readFromBuffer
+ *
+ * It will throw an exception when opening file failed
+ *
+ * @param filepath , like "/data/local/tmp/squeezenet.daq"
+ * @param builder a ModelBuilder object
+ */
+void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder, bool use_mmap) {
+    if (use_mmap) {
+        auto fd = open(filepath.c_str(), O_RDONLY);
+        ReadDaq(fd, builder);
+    } else {
+        std::ifstream file(filepath, std::ios::binary | std::ios::ate);
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
+        std::unique_ptr<uint8_t []> buf(new uint8_t[size]);
+        if (!file.read(reinterpret_cast<char *>(buf.get()), size)) {
+            throw std::invalid_argument("Read file error");
+        }
+        ReadDaq(std::move(buf), builder);
+    }
+}
+
+void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder, off_t offset, size_t fsize) {
+    if (fd == -1) {
+        throw std::invalid_argument("Open file error " + std::to_string(errno));
+    }
+    if (fsize == 0) {
+        fsize = static_cast<size_t>(lseek(fd, offset, SEEK_END));
+    }
+    auto data = mmap(nullptr, fsize, PROT_READ, MAP_PRIVATE, fd, offset);
+    if (data == MAP_FAILED) {
+        throw std::invalid_argument("mmap failed, errno = " + std::to_string(errno));
+    }
+    builder.setMemory(fd, fsize, offset);
+    builder.setBasePtr(static_cast<unsigned char*>(data));
+    auto ret = close(fd);
+    if (ret == -1) {
+        throw std::runtime_error("close file error, errno = " + std::to_string(errno));
+    }
+    LOG(INFO) << "Read daq from mmap";
+    ReadDaqImpl(static_cast<const uint8_t *>(data), builder);
+}
+
+void DaqReader::ReadDaq(std::unique_ptr<uint8_t []> buf, ModelBuilder &builder) {
+    ReadDaq(buf.get(), builder);
+    builder.registerBufferPointer(std::move(buf));
+}
+
+void DaqReader::ReadDaq(const uint8_t *buf, ModelBuilder &builder) {
+    LOG(INFO) << "Read daq from buffer";
+    ReadDaqImpl(buf, builder);
+}
+
+void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder) {
+    builder.prepare();  // a daq file should be a full model, so prepare here
+    auto model = DNN::GetModel(buf);
+    AddInitializersFromBuffer(*model, builder);
+    AddInputs(*model, builder);
+    AddLayers(*model, builder);
 }

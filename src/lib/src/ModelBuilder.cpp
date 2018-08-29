@@ -423,7 +423,7 @@ ModelBuilder::Index ModelBuilder::addNewOperand(ANeuralNetworksOperandType *type
     return nextIndex++;
 }
 
-ModelBuilder::Index ModelBuilder::addTensorFromMemory(const string &name, const unsigned char *addr, Shape dimen) {
+ModelBuilder::Index ModelBuilder::addTensorFromMemory(const string &name, const uint8_t *addr, Shape dimen) {
     ANeuralNetworksOperandType type = getFloat32OperandTypeWithDims(dimen);
     uint32_t index = addNewOperand(&type);
     THROW_ON_ERROR(ANeuralNetworksModel_setOperandValueFromMemory(
@@ -453,7 +453,7 @@ ModelBuilder::Index ModelBuilder::addTensorFromBuffer(const string &name, const 
     return index;
 }
 
-void ModelBuilder::compile(uint32_t preference) {
+std::unique_ptr<Model> ModelBuilder::compile(uint32_t preference) {
     THROW_ON_ERROR_WITH_NOTE(
             ANeuralNetworksModel_identifyInputsAndOutputs(
                 dnn_model_->model,
@@ -486,14 +486,27 @@ void ModelBuilder::compile(uint32_t preference) {
                 dnn_model_->compilation
                 ),
             "on compilation finish");
+
+    LOG(INFO) << "Finishing.. Here are operands in the model:";
+    for (const auto &name : ordered_operands) {
+        LOG(INFO) << name << ": " << shaper[name];
+    }
+    operand_indexes.clear();
+    ordered_operands.clear();
+    shaper.clear();
+    return std::move(dnn_model_);
+}
+
+void ModelBuilder::registerBufferPointer(std::unique_ptr<uint8_t[]> &&pointer) {
+    dnn_model_->uint8_buf_pointers.push_back(std::move(pointer));
 }
 
 void ModelBuilder::registerBufferPointer(std::unique_ptr<float[]> &&pointer) {
     dnn_model_->floatBufPointers.push_back(std::move(pointer));
 }
 
-void ModelBuilder::registerBufferPointer(std::unique_ptr<char[]> &&pointer) {
-    dnn_model_->charBufPointers.push_back(std::move(pointer));
+void ModelBuilder::registerBufferPointer(std::unique_ptr<int8_t[]> &&pointer) {
+    dnn_model_->int8BufPointers.push_back(std::move(pointer));
 }
 
 ModelBuilder::IndexSeq ModelBuilder::getInputIndexes() {
@@ -596,19 +609,8 @@ void ModelBuilder::setMemory(int fd, size_t size, size_t offset) {
     dnn_model_->memory = mem;
 }
 
-void ModelBuilder::setBuffer(unsigned char *data) {
+void ModelBuilder::setBasePtr(uint8_t *data) {
     dnn_model_->data = data;
-}
-
-std::unique_ptr<Model> ModelBuilder::finish() {
-    LOG(INFO) << "Finishing.. Here are operands in the model:";
-    for (const auto &name : ordered_operands) {
-        LOG(INFO) << name << ": " << shaper[name];
-    }
-    operand_indexes.clear();
-    ordered_operands.clear();
-    shaper.clear();
-    return std::move(dnn_model_);
 }
 
 void ModelBuilder::addOutput(const std::string &name) {
