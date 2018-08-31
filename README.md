@@ -1,4 +1,4 @@
-# Daq
+# DNNLibrary
 
 [![Download](https://api.bintray.com/packages/daquexian566/maven/dnnlibrary/images/download.svg) ](https://bintray.com/daquexian566/maven/dnnlibrary/_latestVersion)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
@@ -7,7 +7,7 @@
 
 Android 8.1 introduces Neural Networks API (NNAPI). It's very exciting to run a model in the "native" way supported by Android System. :)
 
-Daq (formerly DNNLibrary) is a wrapper of NNAPI. It lets you easily make the use of the new NNAPI introduced in Android 8.1. You can convert your onnx model into `daq` and run the model directly. 
+DNNLibrary is a wrapper of NNAPI ("DNNLibrary" is for "**d**aquexian's **NN**API library). It lets you easily make the use of the new NNAPI introduced in Android 8.1. You can convert your onnx model into `daq` and run the model directly. 
 
 For the Android app example, please check out [daq-example](https://github.com/daquexian/daq-example).
 
@@ -33,13 +33,9 @@ Please make sure the Android System on your phone is 8.1+, or you may want to us
 
 ## Introduction
 
-Android 8.1 introduces NNAPI. From my experient it is very efficient on my Pixel. For example, it takes [caffe-android-lib](https://github.com/sh1r0/caffe-android-lib) an average time of 43.42ms to do a convolution with 20 5\*5 filters on 224\*224 image, but it only takes 15.45ms for NNAPI -- about 1/3 of caffe-android-lib.
+Android 8.1 introduces NNAPI. However, NNAPI is not friendly to normal Android developers. It is not designed to be used by normal developers directly. So I wrapped it into a library.
 
-What's more, [depthwise convolution](https://arxiv.org/abs/1704.04861), which is useful on mobile devices, is optimized in NNAPI. It takes caffe-android-lib and NNAPI 82.32ms and 16.93ms respectively to do 5 * 5 depthwise conv on 224 \* 224 \* 20 input.
-
-However, NNAPI is not friendly to normal Android developers. It is not designed to be used by normal developers directly. So I wrapped it into a library.
-
-With Daq, it's extremely easy to deploy your caffe model on Android 8.1+ phone. Here is my code to deploy the MobileNet v2 on phone:
+With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ phone. Here is my code to deploy the MobileNet v2 on phone:
 
 ```
 ModelBuilder modelBuilder = new ModelBuilder();
@@ -115,7 +111,7 @@ Yes, but its support for NNAPI is far from perfect. Dilated convolution (which i
 
 What's more, only the models got from TensorFlow can easily convert to TFLite model. Since NNAPI is independent of any framework, we support ONNX, which is also a framework-independent model format.
 
-_ | TF Lite | Daq
+_ | TF Lite | DNNLibrary
 --- |:---:|:---:
 Supported Model Format | TensorFlow | ONNX
 Dilated Convolution | ❌ | ✔️
