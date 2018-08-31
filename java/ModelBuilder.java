@@ -20,9 +20,12 @@ public class ModelBuilder {
     public ModelBuilder() {
         initHandle();
     }
-    public native void readFile(AssetManager assetManager, String filename);
-    public native void setOutput(String blobName);
+    public native ModelBuilder readFile(AssetManager assetManager, String filename);
+    public native ModelBuilder setOutput(String blobName);
     public native Model compile(int preference);
     public native void dispose();
-    public native void initHandle();
+    private native void initHandle();
+    public void finalize() {
+        dispose();
+    }
 }

@@ -13,4 +13,8 @@ public class Model {
 
     private long nativeHandle;
     public native float[] predict(float[] input);
+    public native void dispose();
+    public void finalize() {
+        dispose();
+    }
 }

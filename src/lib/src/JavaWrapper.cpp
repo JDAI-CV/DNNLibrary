@@ -16,7 +16,7 @@ jint throwException(JNIEnv *env, std::string message);
 
 
 extern "C"
-JNIEXPORT void
+JNIEXPORT jobject
 JNICALL
 Java_me_daquexian_dnnlibrary_ModelBuilder_readFile(
         JNIEnv *env,
@@ -31,10 +31,11 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_readFile(
     AAsset* asset = AAssetManager_open(mgrr, filename.c_str(), AASSET_MODE_UNKNOWN);
     const uint8_t *buf = static_cast<const uint8_t *>(AAsset_getBuffer(asset));
     daq_reader.ReadDaq(buf, *builder);
+    return obj;
 }
 
 extern "C"
-JNIEXPORT void
+JNIEXPORT jobject
 JNICALL
 Java_me_daquexian_dnnlibrary_ModelBuilder_setOutput(
         JNIEnv *env,
@@ -43,6 +44,7 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_setOutput(
     ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
     string blobName = string(env->GetStringUTFChars(javaBlobName, nullptr));
     builder->addOutput(blobName);
+    return obj;
 }
 
 extern "C"
