@@ -13,28 +13,16 @@ option(BUILD_BIN "Build binaries" ON)
 option(BUILD_JNI "Build Java Wrapper" OFF)
 
 include(cmake/system.cmake)
-include(cmake/protobuf.cmake)
 include(cmake/glog.cmake)
-include(cmake/onnx.cmake)
 include(cmake/common.cmake)
-
-# build_protobuf()
-
-# if(NOT EXISTS "${PROTOC_EXECUTABLE}")
-    # if (EXISTS "${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc")
-        # set(PROTOC_EXECUTABLE ${PROJECT_SOURCE_DIR}/build_host_protoc/bin/protoc)
-    # else()
-        # message(FATAL_ERROR
-                # "No available protoc, please run build_host_protoc.sh first")
-    # endif()
-# endif()
 
 configure_glog()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-    add_compile_options(-Os -s -fno-rtti)
+    add_compile_options(-Os -fno-rtti)
     add_subdirectory(src)
 else()
+    include(cmake/onnx.cmake)
     configure_onnx()
     add_subdirectory(tools)
 endif()

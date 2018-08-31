@@ -118,7 +118,7 @@ public:
     Index addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
             const std::string &output_name);
 #endif
-    void addOutput(const std::string &name);
+    ModelBuilder &addOutput(const std::string &name);
     std::unique_ptr<Model> compile(uint32_t preference);
     IndexSeq getInputIndexes();
     IndexSeq getOutputIndexes();

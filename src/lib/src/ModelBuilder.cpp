@@ -613,7 +613,8 @@ void ModelBuilder::setBasePtr(uint8_t *data) {
     dnn_model_->data = data;
 }
 
-void ModelBuilder::addOutput(const std::string &name) {
+ModelBuilder &ModelBuilder::addOutput(const std::string &name) {
     outputIndexVector.push_back(getBlobIndex(name));
     dnn_model_->addOutput(name, shaper[name]);
+    return *this;
 }

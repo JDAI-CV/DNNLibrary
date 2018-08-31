@@ -14,11 +14,11 @@ set(LIB_SRC
     )
 
 add_library(
-    daq
+    dnnlibrary
     ${LIB_SRC})
 
 target_include_directories(
-    daq
+    dnnlibrary
     PUBLIC
     $<INSTALL_INTERFACE:include>
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -43,7 +43,7 @@ find_library(
     )
 
 target_link_libraries(
-    daq
+    dnnlibrary
     # protobuf::libprotobuf-lite
     glog::glog
     ${android-lib}
@@ -51,13 +51,13 @@ target_link_libraries(
     ${neural-networks-lib}
     )
 
-treat_warnings_as_errors(daq)
+treat_warnings_as_errors(dnnlibrary)
 
 if (BUILD_JNI)
     add_library(
-        daq-jni
+        dnn-jni
         SHARED
         src/JavaWrapper.cpp)
-    target_link_libraries(daq-jni
-        daq)
+    target_link_libraries(dnn-jni
+        dnnlibrary)
 endif()
