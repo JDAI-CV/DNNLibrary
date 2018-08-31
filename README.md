@@ -35,18 +35,18 @@ Please make sure the Android System on your phone is 8.1+, or you may want to us
 
 Android 8.1 introduces NNAPI. However, NNAPI is not friendly to normal Android developers. It is not designed to be used by normal developers directly. So I wrapped it into a library.
 
-With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ phone. Here is my code to deploy the MobileNet v2 on phone:
+With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ phone. Here is my code to deploy the MobileNet v2 on phone (please check out [daq-example](https://github.com/daquexian/daq-example) for detail):
 
-```
+```Java
 ModelBuilder modelBuilder = new ModelBuilder();
-modelBuilder.readFile(getAssets(), "mobilenetv2.daq");
-modelBuilder.setOutput("mobilenetv20_output_pred_fwd"); // The output name is from the onnx model
-Model model = modelBuilder.compile(ModelBuilder.PREFERENCE_FAST_SINGLE_ANSWER);
+Model model = modelBuilder.readFile(getAssets(), "mobilenetv2.daq");
+                        .setOutput("mobilenetv20_output_pred_fwd"); // The output name is from the onnx model
+                        .compile(ModelBuilder.PREFERENCE_FAST_SINGLE_ANSWER);
 
-float[] result = ModelWrapper.predict(inputData);
+float[] result = model.predict(inputData);
 ```
 
-Only five lines! And the model file is got from the pretrained onnx model by the onnx2daq.
+Only five lines! And the `daq` model file is got from the pretrained onnx model using `onnx2daq`.
 
 ## Convert the model
 
@@ -58,7 +58,7 @@ cmake ..
 cmake --build .
 ```
 
-Now `onnx2daq` is in `tools` directory.
+Now `onnx2daq` is in `tools` directory. The following command is to convert onnx model to daq model.
 
 ```bash
 ./tools/onnx2daq <onnx model> <output filename>
@@ -78,7 +78,7 @@ Welcome! It has been published on jcenter.
 Add
 
 ```
-implementation 'me.daquexian:dnnlibrary:0.2.5'
+implementation 'me.daquexian:dnnlibrary:0.5.3'
 ```
 
 (for Gradle 3.0+),
@@ -86,7 +86,7 @@ implementation 'me.daquexian:dnnlibrary:0.2.5'
 or
 
 ```
-compile 'me.daquexian:dnnlibrary:0.2.5'
+compile 'me.daquexian:dnnlibrary:0.5.3'
 ```
 
 (for Gradle lower than 3.0)
@@ -107,15 +107,14 @@ then you will get binary files.
 
 ## But TensorFlow Lite also supports NNAPI...
 
-Yes, but its support for NNAPI is far from perfect. Dilated convolution (which is widely used in segmentation) and group convolution are not supported. 
+Yes, but its support for NNAPI is far from perfect. For example, dilated convolution (which is widely used in segmentation) are not supported (https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/lite/nnapi_delegate.cc#L458). 
 
-What's more, only the models got from TensorFlow can easily convert to TFLite model. Since NNAPI is independent of any framework, we support ONNX, which is also a framework-independent model format.
+What's more, only the models got from TensorFlow can easily get converted to TF Lite model. Since NNAPI is independent of any frameworks, we support ONNX, a framework-independent model format.
 
 _ | TF Lite | DNNLibrary
 --- |:---:|:---:
 Supported Model Format | TensorFlow | ONNX
 Dilated Convolution | ❌ | ✔️
-Group Convolution | ❌ | ✔️
 Ease of Use | ❌ <br/>(Bazel build system,<br/>not friendly to Android developers) | ✔️ 
 Quantization | ✔️ | ❌<br/>(WIP, plan to base on [this](https://github.com/BUG1989/caffe-int8-convert-tools))
 
