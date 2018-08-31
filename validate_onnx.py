@@ -5,7 +5,7 @@ import glob
 import numpy as np
 import tempfile
 
-def run(input_arr, onnx, onnx2daq, output_name):
+def run(input_arr, onnx, onnx2daq, dnn_infer, output_name):
     daq = "temp.daq"
     os.system("{} {} {}".format(onnx2daq, onnx, daq))
     print("Converted to daq")
@@ -18,7 +18,10 @@ def run(input_arr, onnx, onnx2daq, output_name):
     txt = os.path.join(tempfile._get_default_tempdir(), next(tempfile._get_candidate_names()))
     os.system("adb push {} /data/local/tmp/".format(daq))
     os.system("adb push input.txt /data/local/tmp/")
-    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_infer_simple /data/local/tmp/{} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name))
+    os.system("adb push {} /data/local/tmp/dnn_infer".format(dnn_infer))
+    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_infer /data/local/tmp/{} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name))
+    os.system("adb shell rm /data/local/tmp/input.txt")
+    os.system("adb shell rm /data/local/tmp/dnn_infer")
     os.system("adb pull /data/local/tmp/result {}".format(txt))
     os.system("adb shell rm /data/local/tmp/result")
     os.system("adb shell rm /data/local/tmp/{}".format(os.path.basename(daq)))
@@ -36,6 +39,7 @@ if __name__ == '__main__':
     parser.add_argument('onnx', type=str, help='onnx model file')
     parser.add_argument('onnx_dir', type=str, help='directory of onnx model and sample data')
     parser.add_argument('onnx2daq', type=str, help='onnx2daq binary file')
+    parser.add_argument('dnn_infer', type=str, help='dnn_infer binary file')
     parser.add_argument('output', type=str, help='Output name of the model')
     parser.add_argument('test_data_dir', type=str, help='e.g. test_data_set_0')
 
@@ -63,7 +67,7 @@ if __name__ == '__main__':
 
     assert inputs_num == ref_outputs_num
     for i in range(inputs_num):
-        actual = run(inputs[i], args.onnx, args.onnx2daq, args.output)
+        actual = run(inputs[i], args.onnx, args.onnx2daq, args.dnn_infer, args.output)
         expected = ref_outputs[i].flatten()
 
         print('====================')
