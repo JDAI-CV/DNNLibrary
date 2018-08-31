@@ -35,11 +35,11 @@ Please make sure the Android System on your phone is 8.1+, or you may want to us
 
 Android 8.1 introduces NNAPI. However, NNAPI is not friendly to normal Android developers. It is not designed to be used by normal developers directly. So I wrapped it into a library.
 
-With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ phone. Here is my code to deploy the MobileNet v2 on phone (please check out [daq-example](https://github.com/daquexian/daq-example) for detail):
+With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ phone. For example, following is the Java code to deploy the MobileNet v2 in your app (please check out [daq-example](https://github.com/daquexian/daq-example) for detail):
 
 ```Java
 ModelBuilder modelBuilder = new ModelBuilder();
-Model model = modelBuilder.readFile(getAssets(), "mobilenetv2.daq");
+Model model = modelBuilder.readFile(getAssets(), "mobilenetv2.daq")
                         .setOutput("mobilenetv20_output_pred_fwd"); // The output name is from the onnx model
                         .compile(ModelBuilder.PREFERENCE_FAST_SINGLE_ANSWER);
 
