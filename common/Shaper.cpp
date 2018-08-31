@@ -122,14 +122,14 @@ void Shaper::Eltwise(const std::string &input1_name, const std::string &output_n
 
 void Shaper::BatchToSpace(const std::string &input_name, const std::vector<int32_t> &block_sizes, const std::string &output_name) {
     auto input_dimen = shape_map_.at(input_name);
-    auto output_dimen = {input_dimen[0] / product(block_sizes), input_dimen[1] * block_sizes[0], 
+    auto output_dimen = {input_dimen[0] / Product(block_sizes), input_dimen[1] * block_sizes[0], 
         input_dimen[2] * block_sizes[1], input_dimen[3]};
     shape_map_[output_name] = output_dimen;
 }
 
 void Shaper::SpaceToBatch(const std::string &input_name, const std::vector<int32_t> &block_sizes, const std::vector<int32_t> &pads, const std::string &output_name) {
     auto input_dimen = shape_map_.at(input_name);
-    auto output_dimen = {input_dimen[0] * product(block_sizes), (input_dimen[1] + pads[0] + pads[1]) / block_sizes[0], 
+    auto output_dimen = {input_dimen[0] * Product(block_sizes), (input_dimen[1] + pads[0] + pads[1]) / block_sizes[0], 
         (input_dimen[2] + pads[2] + pads[3]) / block_sizes[1], input_dimen[3]};
     shape_map_[output_name] = output_dimen;
 }
@@ -138,11 +138,11 @@ void Shaper::AddShape(const std::string &name, const Shape &shape) {
     shape_map_[name] = shape;
 }
 
-size_t Shaper::getSize(const std::string &name) {
-    return static_cast<size_t>(product(shape_map_.at(name)));
+size_t Shaper::GetSize(const std::string &name) {
+    return static_cast<size_t>(Product(shape_map_.at(name)));
 }
 
-void Shaper::clear() {
+void Shaper::Clear() {
     shape_map_.clear();
 }
 

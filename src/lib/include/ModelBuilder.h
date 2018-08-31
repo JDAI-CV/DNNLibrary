@@ -25,42 +25,42 @@ public:
 
 private:
     std::unique_ptr<Model> dnn_model_;
-    std::vector<std::string> ordered_operands;  // operands in insertion order, for printing in finish()
-    StrKeyMap<Index> operand_indexes;
-    Shaper shaper;
-    IndexSeq inputIndexVector;
-    IndexSeq outputIndexVector;
-    std::map<uint32_t , Index> uint32OperandMap;
-    std::map<int32_t , Index> int32OperandMap;
-    std::map<float, Index> float32OperandMap;
-    std::map<float, Index> float32AsTensorOperandMap;
+    std::vector<std::string> ordered_operands_;  // operands in insertion order, for printing in finish()
+    StrKeyMap<Index> operand_indexes_;
+    Shaper shaper_;
+    IndexSeq input_index_vec_;
+    IndexSeq output_index_vec_;
+    std::map<uint32_t , Index> uint32_operand_map_;
+    std::map<int32_t , Index> int32_operand_map_;
+    std::map<float, Index> float32_operand_map_;
+    std::map<float, Index> float32_as_tensor_operand_map_;
 
-    uint32_t missingInt32OperandIndex = UINT32_MAX;
-    uint32_t missingFloat32OperandIndex = UINT32_MAX;
+    uint32_t int32_missing_index = UINT32_MAX;
+    uint32_t float32_missing_index = UINT32_MAX;
 
-    uint32_t nextIndex = 0;
+    uint32_t next_index_ = 0;
 
     void AppendOperandIndex(const std::string &name, Index index);
-    uint32_t addNewOperand(ANeuralNetworksOperandType *type);
+    uint32_t AddNewOperand(ANeuralNetworksOperandType *type);
 
     // IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);
     template <typename... Shapes>
-    IndexSeq addOperation(int op, IndexSeq input_indexes, Shapes... shapes);
+    IndexSeq AddOperation(int op, IndexSeq input_indexes, Shapes... shapes);
 
-    Index addOperand(int32_t value);
-    Index addOperand(float value);
-    Index addOperand(uint32_t value);
-    Index addFloat32AsTensorOperand(float value);
-    Index addInt32NullOperand();
-    Index addFloat32NullOperand();
-    Index addFloat32NullOperandWithDims(Shape &dims);
-    Index addFloat32ZeroOperandWithDims(Shape &dims);
+    Index AddOperand(int32_t value);
+    Index AddOperand(float value);
+    Index AddOperand(uint32_t value);
+    Index AddFloat32AsTensorOperand(float value);
+    Index AddInt32NullOperand();
+    Index AddFloat32NullOperand();
+    Index AddFloat32NullOperandWithDims(Shape &dims);
+    Index AddFloat32ZeroOperandWithDims(Shape &dims);
 
-    ANeuralNetworksOperandType getFloat32OperandTypeWithDims(Shape &dims);
-    ANeuralNetworksOperandType getInt32OperandTypeWithDims(Shape &dims);
+    ANeuralNetworksOperandType GetFloat32OperandTypeWithDims(Shape &dims);
+    ANeuralNetworksOperandType GetInt32OperandTypeWithDims(Shape &dims);
 
-    ANeuralNetworksOperandType getInt32OperandType();
-    ANeuralNetworksOperandType getFloat32OperandType();
+    ANeuralNetworksOperandType GetInt32OperandType();
+    ANeuralNetworksOperandType GetFloat32OperandType();
 
 public:
     static const int MAX_POOL = 0;
@@ -73,65 +73,65 @@ public:
     static const uint32_t PREFERENCE_SUSTAINED_SPEED = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
     static const uint32_t PREFERENCE_LOW_POWER = ANEURALNETWORKS_PREFER_LOW_POWER;
 
-    static std::string getErrorCause(int errorCode);
+    static std::string GetErrorCause(int errorCode);
 
-    Index getBlobIndex(const std::string &blobName);
-    Shape getBlobDim(const std::string &blobName);
-    Shape getBlobDim(Index index);
-    Index addInput(std::string name, uint32_t height, uint32_t width, uint32_t depth);
-    Index addDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
+    Index GetBlobIndex(const std::string &blobName);
+    Shape GetBlobDim(const std::string &blobName);
+    Shape GetBlobDim(Index index);
+    Index AddInput(std::string name, uint32_t height, uint32_t width, uint32_t depth);
+    Index AddDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
                                          int32_t paddingLeft,
                                          int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                                          int32_t activation,
                                          int32_t depthMultiplier, const std::string &weight_name,
                                          const std::optional<std::string> &bias_name,
                                          const std::string &output_name);
-    Index addConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
+    Index AddConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                                 int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
                                 int32_t activation, const std::string &weight_name,
                                 const std::optional<std::string> &bias_name, const std::string &output_name);
-    Index addTensorFromBuffer(const std::string &name, const float *buffer, Shape dimen);
-    Index addTensorFromBuffer(const std::string &name, const int32_t *buffer, Shape dimen);
-    Index addTensorFromMemory(const std::string &name, const uint8_t *addr, Shape dimen);
-    Index addFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
+    Index AddTensorFromBuffer(const std::string &name, const float *buffer, Shape dimen);
+    Index AddTensorFromBuffer(const std::string &name, const int32_t *buffer, Shape dimen);
+    Index AddTensorFromMemory(const std::string &name, const uint8_t *addr, Shape dimen);
+    Index AddFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
                 const std::optional<std::string> &bias_name, const std::string &output_name);
     Index
-    addPool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
+    AddPool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
             int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
             uint32_t poolingType, const std::string &output_name);
-    Index addSoftMax(const std::string &input_name, float beta, const std::string &output_name);
-    Index addAddScalar(const std::string &input_name, float scalar, std::string output_name);
-    Index addAddTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
-    Index addMulScalar(const std::string &input_name, float scalar, const std::string &output_name);
-    Index addMulTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
-    Index addReLU(const std::string &input_name, const std::string &output_name);
-    Index addConcat(const std::vector<std::string> &input_names, uint32_t axis, const std::string &output_name);
-    Index addLRN(const std::string &input_name, uint32_t local_size, float bias, float alpha, float beta,
+    Index AddSoftMax(const std::string &input_name, float beta, const std::string &output_name);
+    Index AddAddScalar(const std::string &input_name, float scalar, std::string output_name);
+    Index AddAddTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index AddMulScalar(const std::string &input_name, float scalar, const std::string &output_name);
+    Index AddMulTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index AddReLU(const std::string &input_name, const std::string &output_name);
+    Index AddConcat(const std::vector<std::string> &input_names, uint32_t axis, const std::string &output_name);
+    Index AddLRN(const std::string &input_name, uint32_t local_size, float bias, float alpha, float beta,
                  const std::string &output_name);
 #if __ANDROID_API__ >= __ANDROID_API_P__
-    Index addStridedSlice(const std::string &input_name, const std::vector<int32_t> &starts,
+    Index AddStridedSlice(const std::string &input_name, const std::vector<int32_t> &starts,
                           const std::vector<int32_t> &ends,
                           const std::vector<int32_t> &strides, int32_t beginMask, int32_t endMask,
                           int32_t shrinkAxisMask, const std::string &output_name);
-    Index addSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+    Index AddSpaceToBatchND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
             const std::vector<int32_t> &pads, const std::string &output_name);
-    Index addBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
+    Index AddBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
             const std::string &output_name);
 #endif
-    ModelBuilder &addOutput(const std::string &name);
-    std::unique_ptr<Model> compile(uint32_t preference);
-    IndexSeq getInputIndexes();
-    IndexSeq getOutputIndexes();
-    void registerBufferPointer(std::unique_ptr<int8_t[]> &&pointer);
-    void registerBufferPointer(std::unique_ptr<float[]> &&pointer);
-    void registerBufferPointer(std::unique_ptr<uint8_t[]> &&pointer);
+    ModelBuilder &AddOutput(const std::string &name);
+    std::unique_ptr<Model> Compile(uint32_t preference);
+    IndexSeq GetInputIndexes();
+    IndexSeq GetOutputIndexes();
+    void RegisterBufferPointer(std::unique_ptr<int8_t[]> &&pointer);
+    void RegisterBufferPointer(std::unique_ptr<float[]> &&pointer);
+    void RegisterBufferPointer(std::unique_ptr<uint8_t[]> &&pointer);
 
-    void prepare();
-    void setMemory(int fd, size_t size, size_t offset);
-    void setBasePtr(uint8_t *data);
+    void Prepare();
+    void SetMemory(int fd, size_t size, size_t offset);
+    void SetBasePtr(uint8_t *data);
     template <typename... Args>
-    void addOperands(IndexSeq &indexes, Args... args) {
-        (indexes.push_back(addOperand(args)), ...);
+    void AddOperands(IndexSeq &indexes, Args... args) {
+        (indexes.push_back(AddOperand(args)), ...);
     }
 };
 #endif //NNAPIEXAMPLE_MODELBUILDER_H

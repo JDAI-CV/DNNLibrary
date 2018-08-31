@@ -1,12 +1,13 @@
 #include <onnx/onnx.pb.h>
 #include <glog/logging.h>
+#include <common/helper.h>
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
 #include <daq_generated.h>
 
 class OnnxConverter {
 private:
-    Shaper shaper;
+    Shaper shaper_;
 
     template <typename T>
     struct Tensor {
@@ -23,39 +24,35 @@ private:
         FUSED_RELU6
     };
 
-    std::map<std::string, std::string> name_map;
+    std::map<std::string, std::string> name_map_;
 
     std::string m(const std::string &str);
 
-    flatbuffers::FlatBufferBuilder builder;
+    flatbuffers::FlatBufferBuilder builder_;
 
-    std::vector<std::string> operands;
-    StrKeyMap<FTensor> nnapi_tensors;
-    StrKeyMap<FTensor> onnx_tensors;
-    std::vector<flatbuffers::Offset<DNN::Layer>> layers;
+    std::vector<std::string> operands_;
+    StrKeyMap<FTensor> nnapi_tensors_;
+    StrKeyMap<FTensor> onnx_tensors_;
+    std::vector<flatbuffers::Offset<DNN::Layer>> layers_;
 
-    std::vector<flatbuffers::Offset<DNN::Tensor>> tensors;
+    std::vector<flatbuffers::Offset<DNN::Tensor>> tensors_;
 
-    DNN::FuseCode convert_fuse_code_type(FuseCode fuse_code);
-    std::pair<std::optional<std::string>, FuseCode> find_activation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node);
+    DNN::FuseCode ConvertFuseCodeType(FuseCode fuse_code);
+    std::pair<std::optional<std::string>, FuseCode> FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node);
 
-    void add_conv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
+    void AddConv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
             const std::vector<int> &dilations, int group, 
             const std::pair<std::optional<std::string>, FuseCode>& activation,
             const std::string &ori_weight_name, const std::optional<std::string> &bias_name, const std::string &output_name);
 
-    template <typename T>
-    uint32_t product(const std::vector<T> &v) {
-        return static_cast<uint32_t> (accumulate(v.begin(), v.end(), 1, std::multiplies<T>()));
-    }
     /**
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
      * nnapi: [1, height, width, depth_out]
      */
     template <typename T>
-    Tensor<T> onnx2nnapi_dw(const Tensor<T> &src) {
+    Tensor<T> OnnxToNnapiDw(const Tensor<T> &src) {
         Tensor<T> dest;
-        dest.data.resize(product(src.shape));
+        dest.data.resize(Product(src.shape));
         // t for total
         auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
         CHECK_EQ(in_t, 1u);
@@ -79,9 +76,9 @@ private:
      * nnapi: [depth_out, height, width, depth_in]
      */
     template <typename T>
-    Tensor<T> onnx2nnapi_vanilla(const Tensor<T> &src) {
+    Tensor<T> OnnxToNnapiVanilla(const Tensor<T> &src) {
         Tensor<T> dest;
-        dest.data.resize(product(src.shape));
+        dest.data.resize(Product(src.shape));
         // t for total
         auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
         for (uint32_t out = 0; out < out_t; out++) {
@@ -100,5 +97,5 @@ private:
     }
 
 public:
-    void convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath);
+    void Convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath);
 };

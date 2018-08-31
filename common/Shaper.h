@@ -38,8 +38,8 @@ public:
     void SpaceToBatch(const std::string &input_name, const std::vector<int32_t> &block_sizes,
         const std::vector<int32_t> &pads, const std::string &output_name);
     void AddShape(const std::string &name, const Shape &shape);
-    size_t getSize(const std::string &name);
-    void clear();
+    size_t GetSize(const std::string &name);
+    void Clear();
 
     inline const Shape& operator[](const std::string &key) {
         return shape_map_.at(key);

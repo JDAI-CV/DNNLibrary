@@ -66,7 +66,7 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
         LOGI("hhhaddadhi");
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
-            builder.addTensorFromBuffer(tensor->name()->str(),
+            builder.AddTensorFromBuffer(tensor->name()->str(),
                                         tensor->float32_data()->data(),
                                         shape);
             LOGI("init name: %s", tensor->name()->c_str());
@@ -79,7 +79,7 @@ void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
         LOGI("hhhaddadhi");
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
-            builder.addTensorFromMemory(tensor->name()->str(),
+            builder.AddTensorFromMemory(tensor->name()->str(),
                                         tensor->float32_data()->Data(),
                                         shape);
             LOGI("init name: %s", tensor->name()->c_str());
@@ -90,7 +90,7 @@ void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
 void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
     for (const auto &input : *model.inputs()) {
         ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
-        builder.addInput(input->name()->str(), shape[1], shape[2], shape[3]);
+        builder.AddInput(input->name()->str(), shape[1], shape[2], shape[3]);
         LOGI("input name: %s", input->name()->c_str());
     }
 
@@ -110,7 +110,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto bias = param->bias();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Conv, input: " << input_name << ", weight: " << weight_name << ", output: " << output_name;
-                builder.addConv(input_name, strides->Get(1), strides->Get(0),
+                builder.AddConv(input_name, strides->Get(1), strides->Get(0),
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 convert_fuse_code_to_nnapi(fuse), weight_name,
                                 (bias ? std::make_optional(bias->str()) : std::nullopt),
@@ -128,7 +128,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto bias = param->bias();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Depthwise Conv, input: " << input_name << ", weight: " << weight_name << ", output: " << output_name;
-                builder.addDepthWiseConv(input_name, strides->Get(1), strides->Get(0),
+                builder.AddDepthWiseConv(input_name, strides->Get(1), strides->Get(0),
                                          pads->Get(2), pads->Get(3), pads->Get(1), pads->Get(0),
                                          convert_fuse_code_to_nnapi(fuse), multiplier,
                                          weight_name,
@@ -145,7 +145,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Average pool, input: " << input_name << ", output: " << output_name;
-                builder.addPool(input_name, strides->Get(1), strides->Get(0),
+                builder.AddPool(input_name, strides->Get(1), strides->Get(0),
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1),
                                 convert_fuse_code_to_nnapi(fuse),
@@ -161,7 +161,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Max pool, input: " << input_name << ", output: " << output_name;
-                builder.addPool(input_name, strides->Get(1), strides->Get(0),
+                builder.AddPool(input_name, strides->Get(1), strides->Get(0),
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1),
                                 convert_fuse_code_to_nnapi(fuse),
@@ -173,7 +173,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Relu, input " << input_name << ", output: " << output_name;
-                builder.addReLU(input_name, output_name);
+                builder.AddReLU(input_name, output_name);
                 break;
             }
             case DNN::LayerType::Add: {
@@ -182,7 +182,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input2_name = param->input2()->str();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Add, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
-                builder.addAddTensor(input1_name, input2_name, output_name);
+                builder.AddAddTensor(input1_name, input2_name, output_name);
                 break;
             }
             case DNN::LayerType::FC: {
@@ -193,7 +193,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "FC, input " << input_name << ", output: " << output_name;
-                builder.addFC(input_name, convert_fuse_code_to_nnapi(fuse),
+                builder.AddFC(input_name, convert_fuse_code_to_nnapi(fuse),
                               weight_name, bias_name, output_name);
                 break;
             }
@@ -202,7 +202,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Softmax, input " << input_name << ", output: " << output_name;
-                builder.addSoftMax(input_name, 1.f, output_name);
+                builder.AddSoftMax(input_name, 1.f, output_name);
                 break;
             }
             case DNN::LayerType::Concat: {
@@ -215,7 +215,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                     input_names.push_back(inputs->Get(static_cast<flatbuffers::uoffset_t>(i))->str());
                 }
                 LOG(INFO) << "Concat, input " << input_names << ", output: " << output_name;
-                builder.addConcat(input_names, axis, output_name);
+                builder.AddConcat(input_names, axis, output_name);
                 break;
             }
             case DNN::LayerType::BatchToSpace: {
@@ -230,7 +230,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 }
                 LOG(INFO) << "BatchToSpaceND, input " << input_name
                     << ", block sizes " << block_sizes << ", output: " << output_name;
-                builder.addBatchToSpaceND(input_name, block_sizes, output_name);
+                builder.AddBatchToSpaceND(input_name, block_sizes, output_name);
                 break;
 #endif
             }
@@ -245,7 +245,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 std::vector<int> pads = fbs_to_std_vector(pads_fbs);
                 LOG(INFO) << "SpaceToBatchND, input " << input_name
                     << ", block sizes " << block_sizes << ", pads " << pads << "output: " << output_name;
-                builder.addSpaceToBatchND(input_name, block_sizes, pads, output_name);
+                builder.AddSpaceToBatchND(input_name, block_sizes, pads, output_name);
                 break;
 #endif
             }
@@ -264,7 +264,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                     << ", starts " << starts << ", ends " << ends << ", strides " << strides
                     << ", begin_mask " << begin_mask << ", end_mask " << end_mask
                     << ", shrink_axis_mask " << shrink_axis_mask;
-                builder.addStridedSlice(input_name, starts, ends, strides, begin_mask, end_mask, shrink_axis_mask,
+                builder.AddStridedSlice(input_name, starts, ends, strides, begin_mask, end_mask, shrink_axis_mask,
                         output_name);
 #else
                 throw std::invalid_argument("Unsupported layer " + layer_type_to_str(layer->type()) + " in API 28");
@@ -314,8 +314,8 @@ void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder, off_t offset, size
     if (data == MAP_FAILED) {
         throw std::invalid_argument("mmap failed, errno = " + std::to_string(errno));
     }
-    builder.setMemory(fd, fsize, offset);
-    builder.setBasePtr(static_cast<unsigned char*>(data));
+    builder.SetMemory(fd, fsize, offset);
+    builder.SetBasePtr(static_cast<unsigned char*>(data));
     auto ret = close(fd);
     if (ret == -1) {
         throw std::runtime_error("close file error, errno = " + std::to_string(errno));
@@ -326,7 +326,7 @@ void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder, off_t offset, size
 
 void DaqReader::ReadDaq(std::unique_ptr<uint8_t []> buf, ModelBuilder &builder) {
     ReadDaq(buf.get(), builder);
-    builder.registerBufferPointer(std::move(buf));
+    builder.RegisterBufferPointer(std::move(buf));
 }
 
 void DaqReader::ReadDaq(const uint8_t *buf, ModelBuilder &builder) {
@@ -335,7 +335,7 @@ void DaqReader::ReadDaq(const uint8_t *buf, ModelBuilder &builder) {
 }
 
 void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder) {
-    builder.prepare();  // a daq file should be a full model, so prepare here
+    builder.Prepare();  // a daq file should be a full model, so prepare here
     auto model = DNN::GetModel(buf);
     AddInitializersFromBuffer(*model, builder);
     AddInputs(*model, builder);

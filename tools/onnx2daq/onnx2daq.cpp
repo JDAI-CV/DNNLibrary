@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     }
 
     OnnxConverter converter;
-    converter.convert(model_proto, argv[2]);
+    converter.Convert(model_proto, argv[2]);
 
     google::protobuf::ShutdownProtobufLibrary();
     return 0;

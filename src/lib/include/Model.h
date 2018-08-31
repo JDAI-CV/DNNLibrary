@@ -16,32 +16,32 @@
 class Model {
     friend class ModelBuilder;
 private:
-    ANeuralNetworksModel* model;
-    ANeuralNetworksCompilation* compilation;
-    ANeuralNetworksExecution *execution;
-    ANeuralNetworksMemory *memory;
-    unsigned char *data;
-    size_t data_size;
-    std::vector<std::unique_ptr<uint8_t[]>> uint8_buf_pointers;
-    std::vector<std::unique_ptr<int8_t[]>> int8BufPointers;
-    std::vector<std::unique_ptr<float[]>> floatBufPointers;
-    std::vector<std::unique_ptr<int32_t[]>> int32BufPointers;
-    std::vector<std::string> input_names;
-    std::vector<std::string> output_names;
-    Shaper shaper;
-    void addInput(const std::string &name, const Shaper::Shape &shape);
-    void addOutput(const std::string &name, const Shaper::Shape &shape);
-    void setInputBuffer(int32_t index, float *buffer);
-    void prepareForExecution();
-    bool prepared_for_exe;
+    ANeuralNetworksModel* model_;
+    ANeuralNetworksCompilation* compilation_;
+    ANeuralNetworksExecution *execution_;
+    ANeuralNetworksMemory *memory_;
+    unsigned char *data_;
+    size_t data_size_;
+    std::vector<std::unique_ptr<uint8_t[]>> uint8_buf_pointers_;
+    std::vector<std::unique_ptr<int8_t[]>> int8_buf_pointers_;
+    std::vector<std::unique_ptr<float[]>> float_buf_pointers_;
+    std::vector<std::unique_ptr<int32_t[]>> int32_buf_pointers_;
+    std::vector<std::string> input_names_;
+    std::vector<std::string> output_names_;
+    Shaper shaper_;
+    void AddInput(const std::string &name, const Shaper::Shape &shape);
+    void AddOutput(const std::string &name, const Shaper::Shape &shape);
+    void SetInputBuffer(int32_t index, float *buffer);
+    void PrepareForExecution();
+    bool prepared_for_exe_;
 public:
-    // int predict();
-    void predict(std::vector<float *> inputs);
+    // int Predict();
+    void Predict(std::vector<float *> inputs);
     ~Model();
-    void setOutputBuffer(int32_t index, float *buffer);
-    size_t getSize(const std::string &name);
-    size_t getInputSize(const int &index);
-    size_t getOutputSize(const int &index);
+    void SetOutputBuffer(int32_t index, float *buffer);
+    size_t GetSize(const std::string &name);
+    size_t GetInputSize(const int &index);
+    size_t GetOutputSize(const int &index);
 };
 
 

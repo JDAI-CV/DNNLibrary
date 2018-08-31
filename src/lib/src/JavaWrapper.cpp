@@ -43,7 +43,7 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_setOutput(
         jstring javaBlobName) {
     ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
     string blobName = string(env->GetStringUTFChars(javaBlobName, nullptr));
-    builder->addOutput(blobName);
+    builder->AddOutput(blobName);
     return obj;
 }
 
@@ -55,7 +55,7 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_compile(
         jobject obj /* this */,
         jint preference) {
     ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
-    auto model = builder->compile(preference).release();   // release raw pointer from smart pointer, we have to manage it ourselves
+    auto model = builder->Compile(preference).release();   // release raw pointer from smart pointer, we have to manage it ourselves
     jclass cls = env->FindClass("me/daquexian/dnnlibrary/Model");
     jmethodID ctor = env->GetMethodID(cls, "<init>", "()V");
     jobject model_obj = env->NewObject(cls, ctor);
@@ -75,11 +75,11 @@ Java_me_daquexian_dnnlibrary_Model_predict(
     jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
     jsize dataLen = env->GetArrayLength(dataArrayObject) * sizeof(jfloat);
 
-    uint32_t outputLen = model->getOutputSize(0);
+    uint32_t outputLen = model->GetOutputSize(0);
     float output[outputLen];
-    model->setOutputBuffer(0, output);
+    model->SetOutputBuffer(0, output);
 
-    model->predict(std::vector{static_cast<float *>(data)});
+    model->Predict(std::vector{static_cast<float *>(data)});
 
     jfloatArray result = env->NewFloatArray(outputLen);
     env->SetFloatArrayRegion(result, 0, outputLen, output);
