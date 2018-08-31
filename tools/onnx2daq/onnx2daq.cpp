@@ -5,7 +5,6 @@
 
 #include <glog/logging.h>
 #include <common/StrKeyMap.h>
-#include <daq_generated.h>
 #include "OnnxConverter.h"
 #include "NodeAttrHelper.h"
 #include "log_helper.h"

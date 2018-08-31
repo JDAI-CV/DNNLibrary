@@ -8,8 +8,8 @@
 #include <string>
 #include <memory>
 
+#include <common/daq_generated.h>
 #include <flatbuffers/flatbuffers.h>
-#include <daq_generated.h>
 #include <ModelBuilder.h>
 
 class DaqReader {

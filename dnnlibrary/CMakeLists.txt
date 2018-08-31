@@ -1,21 +1,19 @@
 # dnn_protobuf_generate_cpp(ONNX_SRCS ONNX_HDRS onnx.proto3)
 
-set(LIB_SRC
+add_library(dnnlibrary
     include/ModelBuilder.h
     include/Model.h
+    include/DaqReader.h
     include/android_log_helper.h
+    include/operand_helper.h
+    include/flatbuffers_helper.h
     src/ModelBuilder.cpp
     src/Model.cpp
-    include/operand_helper.h
-    src/DaqReader.cpp src/DaqReader.h
-    include/daq_generated.h ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h include/flatbuffers_helper.h
+    src/DaqReader.cpp 
     ${PROJECT_SOURCE_DIR}/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
+    ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h 
     )
-
-add_library(
-    dnnlibrary
-    ${LIB_SRC})
 
 target_include_directories(
     dnnlibrary
@@ -44,7 +42,6 @@ find_library(
 
 target_link_libraries(
     dnnlibrary
-    # protobuf::libprotobuf-lite
     glog::glog
     ${android-lib}
     ${log-lib}

@@ -10,7 +10,6 @@
 #include <onnx/optimizer/optimize.h>
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
-#include <daq_generated.h>
 #include "NodeAttrHelper.h"
 
 using std::string; using std::vector;

@@ -1,9 +1,9 @@
 #include <onnx/onnx.pb.h>
 #include <glog/logging.h>
+#include <common/daq_generated.h>
 #include <common/helper.h>
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
-#include <daq_generated.h>
 
 class OnnxConverter {
 private:

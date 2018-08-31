@@ -25,7 +25,5 @@ target_link_libraries(onnx2daq
 target_include_directories(onnx2daq
     PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../src/lib/include
-    ${CMAKE_BINARY_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     )
