@@ -118,7 +118,7 @@ Dilated Convolution | ❌ | ✔️
 Ease of Use | ❌ <br/>(Bazel build system,<br/>not friendly to Android developers) | ✔️ 
 Quantization | ✔️ | ❌<br/>(WIP, plan to base on [this](https://github.com/BUG1989/caffe-int8-convert-tools))
 
-However we are also far from maturity comparing to TF Lite. At least we are another choice if you want to enjoy the power of NNAPI :)
+However we are also far from maturity comparing to TF Lite. At least we are an another choice if you want to enjoy the power of NNAPI :)
 
 ## Benchmark
 
