@@ -7,7 +7,7 @@
 #include <common/StrKeyMap.h>
 #include "OnnxConverter.h"
 #include "NodeAttrHelper.h"
-#include "log_helper.h"
+#include "common/log_helper.h"
 
 using std::string; using std::vector;
 
