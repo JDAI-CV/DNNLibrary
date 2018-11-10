@@ -95,7 +95,7 @@ in your app's `build.gradle`'s `dependencies` section.
 
 ### If you don't care about Android app
 
-We use CMake as the build system. So you can build it as most C++ project, the only difference is that you need Android NDK, **the latest version(r17b) of NDK is necessary** :
+We use CMake as the build system. So you can build it as most C++ projects, the only difference is that you need Android NDK, ** r17b or higher NDK is necessary** :
 
 ```bash
 mkdir build && cd build
