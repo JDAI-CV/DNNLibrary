@@ -11,6 +11,8 @@ DNNLibrary is a wrapper of NNAPI ("DNNLibrary" is for "**d**aquexian's **NN**API
 
 For the Android app example, please check out [dnnlibrary-example](https://github.com/daquexian/dnnlibrary-example).
 
+Telegram Group: [link](https://t.me/joinchat/DjMsYRBe0UtG6OZsYes5KQ), QQ Group (Chinese): 948989771, answer: 哈哈哈哈
+
 ## Screenshot
 
 This screenshot is ResNet-18
