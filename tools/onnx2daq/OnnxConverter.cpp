@@ -40,7 +40,7 @@ DNN::FuseCode OnnxConverter::ConvertFuseCodeType(FuseCode fuse_code) {
 std::pair<std::optional<std::string>, OnnxConverter::FuseCode> OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node) {
     std::pair<std::optional<string>, FuseCode> activation{{}, FuseCode::FUSED_NONE};
     for (const auto &_node : model_proto.graph().node()) {
-        if (node.output(0) == _node.input(0) && _node.op_type() == "Relu") {
+        if (!node.output().empty() && !_node.input().empty() && node.output(0) == _node.input(0) && _node.op_type() == "Relu") {
             // If there are two branches after a conv/pool and both branches has a relu on the top, we have to add two normal relu layers
             if (activation.second != FuseCode::FUSED_NONE) {
                 return {{}, FuseCode::FUSED_NONE};
