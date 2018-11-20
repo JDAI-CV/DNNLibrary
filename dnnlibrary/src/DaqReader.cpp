@@ -61,9 +61,7 @@ int convert_fuse_code_to_nnapi(DNN::FuseCode fuse_code) {
 
 void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
     for (const auto &tensor : *model.initializers()) {
-        LOGI("hhhaddadhi");
         LOGI("init name: %s", tensor->name()->c_str());
-        LOGI("hhhaddadhi");
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
             builder.AddTensorFromBuffer(tensor->name()->str(),
@@ -76,7 +74,6 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
 
 void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
     for (const auto &tensor : *model.initializers()) {
-        LOGI("hhhaddadhi");
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
             builder.AddTensorFromMemory(tensor->name()->str(),
