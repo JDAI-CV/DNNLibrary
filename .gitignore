@@ -1,5 +1,6 @@
 cmake-build-*/
 build/
+build_x86/
 build_host_protoc/
 compile_commands.json
 .idea/
