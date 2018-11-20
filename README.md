@@ -60,15 +60,15 @@ cmake ..
 cmake --build .
 ```
 
-Now `onnx2daq` is in `tools` directory. The following command is to convert onnx model to daq model.
+Now `onnx2daq` is in `tools/onnx2daq` directory. The following command is to convert onnx model to daq model.
 
 ```bash
-./tools/onnx2daq <onnx model> <output filename>
+./tools/onnx2daq/onnx2daq <onnx model> <output filename>
 ```
 
 For example, if you have a model named "mobilenetv2.onnx" in your current directory,
 ```bash
-./tools/onnx2daq mobilenetv2.onnx mobilenetv2.daq
+./tools/onnx2daq/onnx2daq mobilenetv2.onnx mobilenetv2.daq
 ```
 
 ## Usage
