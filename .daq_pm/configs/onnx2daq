@@ -1,0 +1,6 @@
+# It is configuration file for [project_manager.vim](https://github.com/daquexian/project_manager.vim)
+name DNNLibrary
+type cpp
+target onnx2daq
+build_dir build_onnx2daq
+

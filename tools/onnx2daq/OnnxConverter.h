@@ -4,6 +4,7 @@
 #include <common/helper.h>
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
+#include "optional.h"
 
 class OnnxConverter {
 private:
@@ -38,12 +39,12 @@ private:
     std::vector<flatbuffers::Offset<DNN::Tensor>> tensors_;
 
     DNN::FuseCode ConvertFuseCodeType(FuseCode fuse_code);
-    std::pair<std::optional<std::string>, FuseCode> FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node);
+    std::pair<nonstd::optional<std::string>, FuseCode> FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node);
 
     void AddConv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
             const std::vector<int> &dilations, int group, 
-            const std::pair<std::optional<std::string>, FuseCode>& activation,
-            const std::string &ori_weight_name, const std::optional<std::string> &bias_name, const std::string &output_name);
+            const std::pair<nonstd::optional<std::string>, FuseCode>& activation,
+            const std::string &ori_weight_name, const nonstd::optional<std::string> &bias_name, const std::string &output_name);
 
     /**
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]

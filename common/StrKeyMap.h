@@ -15,7 +15,8 @@
 template <typename V>
 class StrKeyMap {
 private:
-    std::map<std::string, V> map_;
+    using map_t = std::map<std::string, V>;
+    map_t map_;
 public:
     inline V& operator[](const std::string &key) {
         return map_[key];
@@ -27,14 +28,15 @@ public:
             throw std::out_of_range("Key " + key + " not found.");
         }
     }
-    const auto begin() const {
+    // This is "const decltype(as_const(map_).begin()) begin() const"
+    const typename map_t::const_iterator begin() const {
         return map_.begin();
     }
-    const auto end() const {
+    const typename map_t::const_iterator end() const {
         return map_.end();
     }
-    auto clear() {
-        return map_.clear();
+    void clear() {
+        map_.clear();
     }
 };
 

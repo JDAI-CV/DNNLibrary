@@ -37,15 +37,15 @@ DNN::FuseCode OnnxConverter::ConvertFuseCodeType(FuseCode fuse_code) {
     throw std::invalid_argument("Invalid FuseCode");
 }
 
-std::pair<std::optional<std::string>, OnnxConverter::FuseCode> OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node) {
-    std::pair<std::optional<string>, FuseCode> activation{{}, FuseCode::FUSED_NONE};
+std::pair<nonstd::optional<std::string>, OnnxConverter::FuseCode> OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, const ONNX_NAMESPACE::NodeProto &node) {
+    std::pair<nonstd::optional<string>, FuseCode> activation{{}, FuseCode::FUSED_NONE};
     for (const auto &_node : model_proto.graph().node()) {
         if (!node.output().empty() && !_node.input().empty() && node.output(0) == _node.input(0) && _node.op_type() == "Relu") {
             // If there are two branches after a conv/pool and both branches has a relu on the top, we have to add two normal relu layers
             if (activation.second != FuseCode::FUSED_NONE) {
                 return {{}, FuseCode::FUSED_NONE};
             }
-            activation = std::make_pair(std::make_optional(_node.name()), FuseCode::FUSED_RELU);
+            activation = std::make_pair(nonstd::make_optional(_node.name()), FuseCode::FUSED_RELU);
         }
     }
     return activation;
@@ -53,8 +53,8 @@ std::pair<std::optional<std::string>, OnnxConverter::FuseCode> OnnxConverter::Fi
 
 void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
         const std::vector<int> &dilations, int group, 
-        const std::pair<std::optional<std::string>, FuseCode>& activation,
-        const string &ori_weight_name, const std::optional<std::string> &bias_name, const string &output_name) {
+        const std::pair<nonstd::optional<std::string>, FuseCode>& activation,
+        const string &ori_weight_name, const nonstd::optional<std::string> &bias_name, const string &output_name) {
     flatbuffers::Offset<DNN::Layer> layer;
     if (dilations != vector<int>{1, 1}) {
         if (strides != vector<int>{1, 1}) {
@@ -204,7 +204,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
             if (activation.first.has_value()) {
                 skipped_act.push_back(activation.first.value());
             }
-            std::optional<string> bias_name;
+            nonstd::optional<string> bias_name;
             if (node.input_size() >= 3) {
                 auto ori_bias_name = m(node.input(2));
                 bias_name = ori_bias_name + "_conv_b";
