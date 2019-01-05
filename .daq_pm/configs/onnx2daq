@@ -2,5 +2,6 @@
 name DNNLibrary
 type cpp
 target onnx2daq
+cmake_options -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 build_dir build_onnx2daq
 
