@@ -5,6 +5,16 @@
 
 using std::vector; using std::string;
 
+namespace bnn {
+void Shaper::Conv(const std::string &input_name, const std::vector<int32_t> strides, const std::vector<int32_t> dilations,
+        const std::vector<int32_t> paddings, const std::string &weight_name, const std::string &output_name) {
+    Shaper::Conv(input_name, strides[1], strides[0], dilations[1], dilations[0], paddings[3], paddings[1], paddings[0], paddings[2], weight_name, output_name);
+}
+
+void Shaper::Conv(const std::string &input_name, const std::vector<int32_t> strides, const std::vector<int32_t> dilations, const std::vector<int32_t> paddings, const std::string &weight_name, const std::string &bias_name, const std::string &output_name) {
+    (void) bias_name;
+    Shaper::Conv(input_name, strides, dilations, paddings, weight_name, output_name);
+}
 
 void Shaper::Conv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t dilationX, int32_t dilationY, int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom, const std::string &weight_name, const std::string &output_name) {
     Shape weightDimen = shape_map_.at(weight_name);     // num_output, height, width, num_input
@@ -15,6 +25,11 @@ void Shaper::Conv(const std::string &input_name, int32_t strideX, int32_t stride
                                  (inputDimen[2] - ((weightDimen[2] - 1) * dilationX + 1) + paddingLeft + paddingRight) / strideX + 1,
                                  weightDimen[0]};
     shape_map_[output_name] = outputDimen;
+}
+
+void Shaper::DepthwiseConv(const std::string &input_name, const std::vector<int32_t> strides, const std::vector<int32_t> dilations,
+        const std::vector<int32_t> paddings, const std::string &weight_name, const std::string &output_name) {
+    Shaper::DepthwiseConv(input_name, strides[1], strides[0], dilations[1], dilations[0], paddings[3], paddings[1], paddings[0], paddings[2], weight_name, output_name);
 }
 
 void Shaper::DepthwiseConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t dilationX, int32_t dilationY, int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom, const std::string &weight_name, const std::string &output_name) {
@@ -47,6 +62,11 @@ void Shaper::StridedSlice(const std::string &input_name, const std::vector<int32
         outputDimen.emplace_back((end - start) / stride);
     }
     shape_map_[output_name] = outputDimen;
+}
+
+void Shaper::Pool(const std::string &input_name, const std::vector<int32_t> strides, const std::vector<int32_t> paddings,
+                const std::vector<int32_t> kernel_shape, const std::string &output_name) {
+    Shaper::Pool(input_name, strides[1], strides[0], paddings[3], paddings[1], paddings[0], paddings[2], kernel_shape[0], kernel_shape[1], output_name);
 }
 
 void Shaper::Pool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, const std::string &output_name) {
@@ -134,6 +154,15 @@ void Shaper::SpaceToBatch(const std::string &input_name, const std::vector<int32
     shape_map_[output_name] = output_dimen;
 }
 
+void Shaper::Affine(const std::string &input_name, const std::string &output_name) {
+    shape_map_[output_name] = shape_map_.at(input_name);
+}
+void Shaper::Affine(const std::string &input_name, const std::string &a, const std::string &b, const std::string &output_name) {
+    (void) a;
+    (void) b;
+    Shaper::Affine(input_name, output_name);
+}
+
 void Shaper::AddShape(const std::string &name, const Shape &shape) {
     shape_map_[name] = shape;
 }
@@ -146,3 +175,4 @@ void Shaper::Clear() {
     shape_map_.clear();
 }
 
+}
