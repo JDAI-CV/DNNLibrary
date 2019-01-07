@@ -9,7 +9,6 @@
 #include "helper.h"
 #include "StrKeyMap.h"
 
-namespace bnn {
 class Shaper {
 public:
     using len_t = uint32_t;
@@ -60,7 +59,7 @@ public:
     size_t GetSize(const std::string &name);
     void Clear();
 
-    inline const Shape& operator[](const std::string &key) const {
+    inline const Shape& operator[](const std::string &key) {
         return shape_map_.at(key);
     }
     inline friend std::ostream &operator<<(std::ostream &os, const Shaper &shaper) {
@@ -72,6 +71,5 @@ public:
 private:
     StrKeyMap<Shape> shape_map_;
 };
-}
 
 #endif

@@ -238,8 +238,8 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto block_sizes_fbs = param->block_sizes();
                 auto pads_fbs = param->pads();
                 auto output_name = param->output()->str();
-                std::vector<int> block_sizes = fbs_to_std_vector(block_sizes_fbs);
-                std::vector<int> pads = fbs_to_std_vector(pads_fbs);
+                std::vector<int> block_sizes = unpack_fbs(block_sizes_fbs);
+                std::vector<int> pads = unpack_fbs(pads_fbs);
                 LOG(INFO) << "SpaceToBatchND, input " << input_name
                     << ", block sizes " << block_sizes << ", pads " << pads << "output: " << output_name;
                 builder.AddSpaceToBatchND(input_name, block_sizes, pads, output_name);
@@ -250,9 +250,9 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
 #if __ANDROID_API__ >= __ANDROID_API_P__
                 auto param = layer->strided_slice_param();
                 auto input_name = param->input()->str();
-                auto starts = fbs_to_std_vector(param->starts());
-                auto ends = fbs_to_std_vector(param->ends());
-                auto strides = fbs_to_std_vector(param->strides());
+                auto starts = unpack_fbs(param->starts());
+                auto ends = unpack_fbs(param->ends());
+                auto strides = unpack_fbs(param->strides());
                 int32_t begin_mask = param->begin_mask();
                 int32_t end_mask = param->end_mask();
                 int32_t shrink_axis_mask = param->shrink_axis_mask();

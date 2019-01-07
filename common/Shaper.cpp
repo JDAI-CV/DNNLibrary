@@ -5,7 +5,6 @@
 
 using std::vector; using std::string;
 
-namespace bnn {
 void Shaper::Conv(const std::string &input_name, const std::vector<int32_t> strides, const std::vector<int32_t> dilations,
         const std::vector<int32_t> paddings, const std::string &weight_name, const std::string &output_name) {
     Shaper::Conv(input_name, strides[1], strides[0], dilations[1], dilations[0], paddings[3], paddings[1], paddings[0], paddings[2], weight_name, output_name);
@@ -175,4 +174,3 @@ void Shaper::Clear() {
     shape_map_.clear();
 }
 
-}
