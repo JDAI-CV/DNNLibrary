@@ -25,8 +25,8 @@ def run(input_arr, onnx, onnx2daq, dnn_infer, output_name):
     os.system("adb pull /data/local/tmp/result {}".format(txt))
     os.system("adb shell rm /data/local/tmp/result")
     os.system("adb shell rm /data/local/tmp/{}".format(os.path.basename(daq)))
-    os.system("adb pull /data/local/tmp/log .")
     os.system("rm {}".format(daq))
+    os.system("rm input.txt")
     actual = np.loadtxt(txt)
     assert not np.any(np.isnan(actual))
     os.system("rm {}".format(txt))
@@ -37,7 +37,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Test onnx model on nnapi')
     parser.add_argument('onnx', type=str, help='onnx model file')
-    parser.add_argument('onnx_dir', type=str, help='directory of onnx model and sample data')
     parser.add_argument('onnx2daq', type=str, help='onnx2daq binary file')
     parser.add_argument('dnn_infer', type=str, help='dnn_infer binary file')
     parser.add_argument('output', type=str, help='Output name of the model')
