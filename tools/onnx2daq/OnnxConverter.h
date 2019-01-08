@@ -1,4 +1,4 @@
-#include <onnx/onnx.pb.h>
+#include <onnx/onnx_pb.h>
 #include <glog/logging.h>
 #include <common/daq_generated.h>
 #include <common/helper.h>

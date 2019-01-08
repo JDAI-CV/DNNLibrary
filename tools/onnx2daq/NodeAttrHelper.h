@@ -6,7 +6,7 @@
 #define PROJECT_NODE_H
 
 #include <string>
-#include <onnx/onnx.pb.h>
+#include <onnx/onnx_pb.h>
 
 /**
  * Wrapping onnx::NodeProto for retrieving attribute values
