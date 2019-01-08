@@ -2,6 +2,16 @@ language: android
 sudo: true
 git:
   depth: 3
+compiler:
+  - gcc
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+    packages:
+      - gcc-6
+      - g++-6
+      - cmake
 android:
   components:
     - tools
@@ -17,21 +27,29 @@ android:
 
     # Specify at least one system image,
     # if you need to run emulator(s) during your tests
-    - sys-img-x86-android-28
+    # - sys-img-x86-android-28
 install:
   - echo y | sdkmanager "ndk-bundle"
   - echo y | sdkmanager "platforms;android-28"
 
 before_script:
-  - wget https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz && tar xf squeezenet.tar.gz
+    # - wget https://s3.amazonaws.com/download.onnx/models/opset_9/squeezenet.tar.gz && tar xf squeezenet.tar.gz
   - export ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle
-  - android list targets
-  - echo no | android create avd --force -n test -t android-28 --abi x86
-  - emulator -avd test -no-skin -no-audio -no-window &
-  - android-wait-for-emulator
-  - adb shell input keyevent 82 &
+    # - android list targets
+    # - echo no | android create avd --force -n test -t android-28 --abi x86
+    # - emulator -avd test -no-skin -no-audio -no-window &
+    # - android-wait-for-emulator
+    # - adb shell input keyevent 82 &
 
 script:
+  # Link gcc-6 and g++-6 to their standard commands
+  - ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
+  - ln -s /usr/bin/g++-6 /usr/local/bin/g++
+  # Export CC and CXX to tell cmake which compiler to use
+  - export CC=/usr/bin/gcc-6
+  - export CXX=/usr/bin/g++-6
+  # Check versions of gcc, g++ and cmake
+  - gcc -v && g++ -v && cmake --version
   - mkdir build_android && cd build_android
   - cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_HOME -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_static -DCMAKE_SYSTEM_VERSION=28 ..
   - cmake --build . -- "-j$(nproc)"
@@ -40,4 +58,4 @@ script:
   - cmake ..
   - cmake --build . -- "-j$(nproc)"
   - cd ..
-  - python3 validate_onnx.py squeezenet/model.onnx build_onnx2daq/tools/onnx2daq/onnx2daq build_android/binaries/dnn_infer softmaxout_1 squeezenet/test_data_set_0/
+    # - python3 validate_onnx.py squeezenet/model.onnx build_onnx2daq/tools/onnx2daq/onnx2daq build_android/binaries/dnn_infer softmaxout_1 squeezenet/test_data_set_0/
