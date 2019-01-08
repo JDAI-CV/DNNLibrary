@@ -40,8 +40,8 @@ before_script:
   - sudo sh cmake-3.13.2-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
   - wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz -O protobuf.tar.gz && tar xf protobuf.tar.gz && cd protobuf-3.6.1
   - ./configure && make -j$(nproc) && sudo make install && sudo ldconfig
-  - ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
-  - ln -s /usr/bin/g++-6 /usr/local/bin/g++
+  - sudo ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
+  - sudo ln -s /usr/bin/g++-6 /usr/local/bin/g++
   - export CC=/usr/bin/gcc-6
   - export CXX=/usr/bin/g++-6
   - gcc -v && g++ -v && cmake --version
