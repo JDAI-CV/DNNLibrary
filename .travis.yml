@@ -11,6 +11,10 @@ addons:
     packages:
       - gcc-6
       - g++-6
+      - ccache
+cache:
+  directories:
+    - protobuf-3.6.1
 android:
   components:
     # Uncomment them when android 27 or 28 emulator works
@@ -38,8 +42,7 @@ before_script:
   - export ANDROID_NDK_HOME=$ANDROID_HOME/ndk-bundle
   - wget https://github.com/Kitware/CMake/releases/download/v3.13.2/cmake-3.13.2-Linux-x86_64.sh
   - sudo sh cmake-3.13.2-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
-  - wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz -O protobuf.tar.gz && tar xf protobuf.tar.gz && cd protobuf-3.6.1
-  - ./configure && make -j$(nproc) && sudo make install && sudo ldconfig
+  - [[ -d protobuf-3.6.1 ]] || wget https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz -O protobuf.tar.gz && tar xf protobuf.tar.gz && cd protobuf-3.6.1 && ./configure && make -j$(nproc) && sudo make install && sudo ldconfig && cd ..
   - sudo ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
   - sudo ln -s /usr/bin/g++-6 /usr/local/bin/g++
   - export CC=/usr/bin/gcc-6
