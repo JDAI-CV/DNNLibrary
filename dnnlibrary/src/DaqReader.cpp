@@ -61,13 +61,12 @@ int convert_fuse_code_to_nnapi(DNN::FuseCode fuse_code) {
 
 void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
     for (const auto &tensor : *model.initializers()) {
-        LOGI("init name: %s", tensor->name()->c_str());
+        LOGD("init name: %s", tensor->name()->c_str());
         if (tensor->data_type() == DNN::DataType::Float32) {
             ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
             builder.AddTensorFromBuffer(tensor->name()->str(),
                                         tensor->float32_data()->data(),
                                         shape);
-            LOGI("init name: %s", tensor->name()->c_str());
         }
     }
 }
@@ -79,7 +78,7 @@ void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
             builder.AddTensorFromMemory(tensor->name()->str(),
                                         tensor->float32_data()->Data(),
                                         shape);
-            LOGI("init name: %s", tensor->name()->c_str());
+            LOGD("init name: %s", tensor->name()->c_str());
         }
     }
 }
@@ -88,7 +87,7 @@ void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
     for (const auto &input : *model.inputs()) {
         ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
         builder.AddInput(input->name()->str(), shape[1], shape[2], shape[3]);
-        LOGI("input name: %s", input->name()->c_str());
+        LOGD("input name: %s", input->name()->c_str());
     }
 
 }
