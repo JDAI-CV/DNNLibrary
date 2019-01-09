@@ -50,7 +50,7 @@ target_link_libraries(
 
 treat_warnings_as_errors(dnnlibrary)
 
-if (BUILD_JNI)
+if (DNN_BUILD_JNI)
     add_library(
         dnn-jni
         SHARED
