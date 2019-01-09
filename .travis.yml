@@ -65,5 +65,7 @@ script:
   - cmake ..
   - cmake --build . -- "-j$(nproc)"
   - cd ..
+  # Build aar
+  - ./build_aar.sh
   # Uncomment when android 27 or 28 emulator works
   # - python3 validate_onnx.py squeezenet/model.onnx build_onnx2daq/tools/onnx2daq/onnx2daq build_android/binaries/dnn_infer softmaxout_1 squeezenet/test_data_set_0/
