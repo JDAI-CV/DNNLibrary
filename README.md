@@ -38,7 +38,7 @@ Please make sure the Android System on your phone is 8.1+, or you may want to us
 
 Android 8.1 introduces NNAPI. However, NNAPI is not friendly to normal Android developers. It is not designed to be used by normal developers directly. So I wrapped it into a library.
 
-With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ phone. For example, following is the Java code to deploy the MobileNet v2 in your app (please check out [daq-example](https://github.com/daquexian/daq-example) for detail):
+With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ phone. For example, following is the Java code to deploy the MobileNet v2 in your app (please check out [dnnlibrary-example](https://github.com/daquexian/dnnlibrary-example) for detail):
 
 ```Java
 ModelBuilder modelBuilder = new ModelBuilder();
@@ -64,7 +64,7 @@ cmake --build .
 Now `onnx2daq` is in `tools/onnx2daq` directory. The following command is to convert onnx model to daq model.
 
 ```bash
-./tools/onnx2daq/onnx2daq <onnx model> <output filename>
+./tools/onnx2daq/onnx2daq onnx_model output_filename
 ```
 
 For example, if you have a model named "mobilenetv2.onnx" in your current directory,
@@ -102,7 +102,7 @@ We use CMake as the build system. So you can build it as most C++ projects, the 
 
 ```bash
 mkdir build && cd build
-cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=<path of android ndk> -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_static -DCMAKE_SYSTEM_VERSION=<Android API level, 27 or 28> ..
+cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=path_of_android_ndk -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_static -DCMAKE_SYSTEM_VERSION=Android_API_level(27_or_28) ..
 cmake --build .
 ```
 
@@ -110,7 +110,7 @@ then you will get binary files.
 
 ## But TensorFlow Lite also supports NNAPI...
 
-Yes, but its support for NNAPI is far from perfect. For example, dilated convolution (which is widely used in segmentation) are not supported (https://github.com/tensorflow/tensorflow/blob/master/tensorflow/contrib/lite/nnapi_delegate.cc#L458). 
+Yes, but its support for NNAPI is far from perfect. For example, dilated convolution (which is widely used in segmentation) are not supported (https://github.com/tensorflow/tensorflow/blob/da7b71f67147ff4795c5c0168d1f225ba2b4b522/tensorflow/lite/delegates/nnapi/nnapi_delegate.cc#L463), prelu is also not supported. 
 
 What's more, only the models got from TensorFlow can easily get converted to TF Lite model. Since NNAPI is independent of any frameworks, we support ONNX, a framework-independent model format.
 
