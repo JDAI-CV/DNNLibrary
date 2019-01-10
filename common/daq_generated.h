@@ -36,6 +36,12 @@ struct Add;
 
 struct Concat;
 
+struct Mul;
+
+struct AddScalar;
+
+struct MulScalar;
+
 struct Layer;
 
 struct Model;
@@ -117,11 +123,14 @@ enum class LayerType : int8_t {
   BatchToSpace = 9,
   SpaceToBatch = 10,
   StridedSlice = 11,
+  Mul = 12,
+  AddScalar = 13,
+  MulScalar = 14,
   MIN = Conv2D,
-  MAX = StridedSlice
+  MAX = MulScalar
 };
 
-inline const LayerType (&EnumValuesLayerType())[12] {
+inline const LayerType (&EnumValuesLayerType())[15] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -134,7 +143,10 @@ inline const LayerType (&EnumValuesLayerType())[12] {
     LayerType::DepthwiseConv2D,
     LayerType::BatchToSpace,
     LayerType::SpaceToBatch,
-    LayerType::StridedSlice
+    LayerType::StridedSlice,
+    LayerType::Mul,
+    LayerType::AddScalar,
+    LayerType::MulScalar
   };
   return values;
 }
@@ -153,6 +165,9 @@ inline const char * const *EnumNamesLayerType() {
     "BatchToSpace",
     "SpaceToBatch",
     "StridedSlice",
+    "Mul",
+    "AddScalar",
+    "MulScalar",
     nullptr
   };
   return names;
@@ -1501,6 +1516,265 @@ inline flatbuffers::Offset<Concat> CreateConcatDirect(
       output ? _fbb.CreateString(output) : 0);
 }
 
+struct Mul FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT1 = 4,
+    VT_INPUT2 = 6,
+    VT_FUSE = 8,
+    VT_OUTPUT = 10
+  };
+  const flatbuffers::String *input1() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT1);
+  }
+  const flatbuffers::String *input2() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT2);
+  }
+  FuseCode fuse() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT1) &&
+           verifier.VerifyString(input1()) &&
+           VerifyOffset(verifier, VT_INPUT2) &&
+           verifier.VerifyString(input2()) &&
+           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct MulBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input1(flatbuffers::Offset<flatbuffers::String> input1) {
+    fbb_.AddOffset(Mul::VT_INPUT1, input1);
+  }
+  void add_input2(flatbuffers::Offset<flatbuffers::String> input2) {
+    fbb_.AddOffset(Mul::VT_INPUT2, input2);
+  }
+  void add_fuse(FuseCode fuse) {
+    fbb_.AddElement<int8_t>(Mul::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(Mul::VT_OUTPUT, output);
+  }
+  explicit MulBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MulBuilder &operator=(const MulBuilder &);
+  flatbuffers::Offset<Mul> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Mul>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Mul> CreateMul(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input1 = 0,
+    flatbuffers::Offset<flatbuffers::String> input2 = 0,
+    FuseCode fuse = FuseCode::None,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  MulBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input2(input2);
+  builder_.add_input1(input1);
+  builder_.add_fuse(fuse);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Mul> CreateMulDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input1 = nullptr,
+    const char *input2 = nullptr,
+    FuseCode fuse = FuseCode::None,
+    const char *output = nullptr) {
+  return DNN::CreateMul(
+      _fbb,
+      input1 ? _fbb.CreateString(input1) : 0,
+      input2 ? _fbb.CreateString(input2) : 0,
+      fuse,
+      output ? _fbb.CreateString(output) : 0);
+}
+
+struct AddScalar FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT1 = 4,
+    VT_INPUT2 = 6,
+    VT_FUSE = 8,
+    VT_OUTPUT = 10
+  };
+  const flatbuffers::String *input1() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT1);
+  }
+  float input2() const {
+    return GetField<float>(VT_INPUT2, 0.0f);
+  }
+  FuseCode fuse() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT1) &&
+           verifier.VerifyString(input1()) &&
+           VerifyField<float>(verifier, VT_INPUT2) &&
+           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct AddScalarBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input1(flatbuffers::Offset<flatbuffers::String> input1) {
+    fbb_.AddOffset(AddScalar::VT_INPUT1, input1);
+  }
+  void add_input2(float input2) {
+    fbb_.AddElement<float>(AddScalar::VT_INPUT2, input2, 0.0f);
+  }
+  void add_fuse(FuseCode fuse) {
+    fbb_.AddElement<int8_t>(AddScalar::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(AddScalar::VT_OUTPUT, output);
+  }
+  explicit AddScalarBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  AddScalarBuilder &operator=(const AddScalarBuilder &);
+  flatbuffers::Offset<AddScalar> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<AddScalar>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<AddScalar> CreateAddScalar(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input1 = 0,
+    float input2 = 0.0f,
+    FuseCode fuse = FuseCode::None,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  AddScalarBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input2(input2);
+  builder_.add_input1(input1);
+  builder_.add_fuse(fuse);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<AddScalar> CreateAddScalarDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input1 = nullptr,
+    float input2 = 0.0f,
+    FuseCode fuse = FuseCode::None,
+    const char *output = nullptr) {
+  return DNN::CreateAddScalar(
+      _fbb,
+      input1 ? _fbb.CreateString(input1) : 0,
+      input2,
+      fuse,
+      output ? _fbb.CreateString(output) : 0);
+}
+
+struct MulScalar FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT1 = 4,
+    VT_INPUT2 = 6,
+    VT_FUSE = 8,
+    VT_OUTPUT = 10
+  };
+  const flatbuffers::String *input1() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT1);
+  }
+  float input2() const {
+    return GetField<float>(VT_INPUT2, 0.0f);
+  }
+  FuseCode fuse() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT1) &&
+           verifier.VerifyString(input1()) &&
+           VerifyField<float>(verifier, VT_INPUT2) &&
+           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct MulScalarBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input1(flatbuffers::Offset<flatbuffers::String> input1) {
+    fbb_.AddOffset(MulScalar::VT_INPUT1, input1);
+  }
+  void add_input2(float input2) {
+    fbb_.AddElement<float>(MulScalar::VT_INPUT2, input2, 0.0f);
+  }
+  void add_fuse(FuseCode fuse) {
+    fbb_.AddElement<int8_t>(MulScalar::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(MulScalar::VT_OUTPUT, output);
+  }
+  explicit MulScalarBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  MulScalarBuilder &operator=(const MulScalarBuilder &);
+  flatbuffers::Offset<MulScalar> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<MulScalar>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<MulScalar> CreateMulScalar(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input1 = 0,
+    float input2 = 0.0f,
+    FuseCode fuse = FuseCode::None,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  MulScalarBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input2(input2);
+  builder_.add_input1(input1);
+  builder_.add_fuse(fuse);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<MulScalar> CreateMulScalarDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input1 = nullptr,
+    float input2 = 0.0f,
+    FuseCode fuse = FuseCode::None,
+    const char *output = nullptr) {
+  return DNN::CreateMulScalar(
+      _fbb,
+      input1 ? _fbb.CreateString(input1) : 0,
+      input2,
+      fuse,
+      output ? _fbb.CreateString(output) : 0);
+}
+
 struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_TYPE = 4,
@@ -1515,7 +1789,10 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_DEPTHWISE_CONV2D_PARAM = 22,
     VT_BATCH_TO_SPACE_PARAM = 24,
     VT_SPACE_TO_BATCH_PARAM = 26,
-    VT_STRIDED_SLICE_PARAM = 28
+    VT_STRIDED_SLICE_PARAM = 28,
+    VT_MUL_PARAM = 30,
+    VT_ADD_SCALAR_PARAM = 32,
+    VT_MUL_SCALAR_PARAM = 34
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -1556,6 +1833,15 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const StridedSlice *strided_slice_param() const {
     return GetPointer<const StridedSlice *>(VT_STRIDED_SLICE_PARAM);
   }
+  const Mul *mul_param() const {
+    return GetPointer<const Mul *>(VT_MUL_PARAM);
+  }
+  const AddScalar *add_scalar_param() const {
+    return GetPointer<const AddScalar *>(VT_ADD_SCALAR_PARAM);
+  }
+  const MulScalar *mul_scalar_param() const {
+    return GetPointer<const MulScalar *>(VT_MUL_SCALAR_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -1583,6 +1869,12 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(space_to_batch_param()) &&
            VerifyOffset(verifier, VT_STRIDED_SLICE_PARAM) &&
            verifier.VerifyTable(strided_slice_param()) &&
+           VerifyOffset(verifier, VT_MUL_PARAM) &&
+           verifier.VerifyTable(mul_param()) &&
+           VerifyOffset(verifier, VT_ADD_SCALAR_PARAM) &&
+           verifier.VerifyTable(add_scalar_param()) &&
+           VerifyOffset(verifier, VT_MUL_SCALAR_PARAM) &&
+           verifier.VerifyTable(mul_scalar_param()) &&
            verifier.EndTable();
   }
 };
@@ -1629,6 +1921,15 @@ struct LayerBuilder {
   void add_strided_slice_param(flatbuffers::Offset<StridedSlice> strided_slice_param) {
     fbb_.AddOffset(Layer::VT_STRIDED_SLICE_PARAM, strided_slice_param);
   }
+  void add_mul_param(flatbuffers::Offset<Mul> mul_param) {
+    fbb_.AddOffset(Layer::VT_MUL_PARAM, mul_param);
+  }
+  void add_add_scalar_param(flatbuffers::Offset<AddScalar> add_scalar_param) {
+    fbb_.AddOffset(Layer::VT_ADD_SCALAR_PARAM, add_scalar_param);
+  }
+  void add_mul_scalar_param(flatbuffers::Offset<MulScalar> mul_scalar_param) {
+    fbb_.AddOffset(Layer::VT_MUL_SCALAR_PARAM, mul_scalar_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1655,8 +1956,14 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<DepthwiseConv2D> depthwise_conv2d_param = 0,
     flatbuffers::Offset<BatchToSpace> batch_to_space_param = 0,
     flatbuffers::Offset<SpaceToBatch> space_to_batch_param = 0,
-    flatbuffers::Offset<StridedSlice> strided_slice_param = 0) {
+    flatbuffers::Offset<StridedSlice> strided_slice_param = 0,
+    flatbuffers::Offset<Mul> mul_param = 0,
+    flatbuffers::Offset<AddScalar> add_scalar_param = 0,
+    flatbuffers::Offset<MulScalar> mul_scalar_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_mul_scalar_param(mul_scalar_param);
+  builder_.add_add_scalar_param(add_scalar_param);
+  builder_.add_mul_param(mul_param);
   builder_.add_strided_slice_param(strided_slice_param);
   builder_.add_space_to_batch_param(space_to_batch_param);
   builder_.add_batch_to_space_param(batch_to_space_param);

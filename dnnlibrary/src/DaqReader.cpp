@@ -42,6 +42,12 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "space2batch";
         case DNN::LayerType::StridedSlice:
             return "stridedslice";
+        case DNN::LayerType::Mul:
+            return "mul";
+        case DNN::LayerType::MulScalar:
+            return "mulscalar";
+        case DNN::LayerType::AddScalar:
+            return "addscalar";
     }
 }
 
@@ -179,6 +185,33 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto output_name = param->output()->str();
                 LOG(INFO) << "Add, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
                 builder.AddAddTensor(input1_name, input2_name, output_name);
+                break;
+            }
+            case DNN::LayerType::AddScalar: {
+                auto param = layer->add_scalar_param();
+                auto input1_name = param->input1()->str();
+                auto input2 = param->input2();
+                auto output_name = param->output()->str();
+                LOG(INFO) << "Add, input1 " << input1_name << ", input2 " << input2 << ", output: " << output_name;
+                builder.AddAddScalar(input1_name, input2, output_name);
+                break;
+            }
+            case DNN::LayerType::Mul: {
+                auto param = layer->add_param();
+                auto input1_name = param->input1()->str();
+                auto input2_name = param->input2()->str();
+                auto output_name = param->output()->str();
+                LOG(INFO) << "Mul, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
+                builder.AddMulTensor(input1_name, input2_name, output_name);
+                break;
+            }
+            case DNN::LayerType::MulScalar: {
+                auto param = layer->add_scalar_param();
+                auto input1_name = param->input1()->str();
+                auto input2 = param->input2();
+                auto output_name = param->output()->str();
+                LOG(INFO) << "Mul, input1 " << input1_name << ", input2 " << input2 << ", output: " << output_name;
+                builder.AddMulScalar(input1_name, input2, output_name);
                 break;
             }
             case DNN::LayerType::FC: {
