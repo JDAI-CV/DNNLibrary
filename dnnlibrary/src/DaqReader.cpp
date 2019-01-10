@@ -197,7 +197,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 break;
             }
             case DNN::LayerType::Mul: {
-                auto param = layer->add_param();
+                auto param = layer->mul_param();
                 auto input1_name = param->input1()->str();
                 auto input2_name = param->input2()->str();
                 auto output_name = param->output()->str();
@@ -206,7 +206,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 break;
             }
             case DNN::LayerType::MulScalar: {
-                auto param = layer->add_scalar_param();
+                auto param = layer->mul_scalar_param();
                 auto input1_name = param->input1()->str();
                 auto input2 = param->input2();
                 auto output_name = param->output()->str();

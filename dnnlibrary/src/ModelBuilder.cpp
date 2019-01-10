@@ -298,6 +298,7 @@ ModelBuilder::Index ModelBuilder::AddMulTensor(const string &input1_name, const 
     auto input1 = operand_indexes_[input1_name];
     auto input2 = operand_indexes_[input2_name];
     IndexSeq input_indexes{input1, input2};
+    shaper_.Eltwise(input1_name, output_name);
     AddOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
     auto output_idx = AddOperation(ANEURALNETWORKS_MUL, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_idx);
