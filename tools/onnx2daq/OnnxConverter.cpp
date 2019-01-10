@@ -354,4 +354,13 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
     std::ofstream ofs(filepath);
     ofs.write(reinterpret_cast<char *>(builder_.GetBufferPointer()), builder_.GetSize());
     ofs.close();
+
+    skipped_act_.clear();
+    layers_.clear();
+    operands_.clear();
+    tensors_.clear();
+    name_map_.clear();
+    nnapi_tensors_.clear();
+    onnx_tensors_.clear();
+    shaper_.Clear();
 }
