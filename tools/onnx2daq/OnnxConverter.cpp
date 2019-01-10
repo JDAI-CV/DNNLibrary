@@ -145,7 +145,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
 void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const std::string &filepath) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    model_proto_ = ONNX_NAMESPACE::optimization::Optimize(model_proto, vector<string>{"fuse_bn_into_conv"});
+    model_proto_ = ONNX_NAMESPACE::optimization::Optimize(model_proto, vector<string>{"extract_constant_to_initializer", "eliminate_identity", "eliminate_nop_transpose", "eliminate_nop_pad", "fuse_bn_into_conv"});
 
     for (const auto &tensor : model_proto_.graph().initializer()) {
         if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
