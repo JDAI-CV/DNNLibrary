@@ -271,8 +271,12 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
             const auto imm4_name = output_name + "_imm4";
             const auto imm5_name = output_name + "_imm5";
             const auto imm6_name = output_name + "_imm6";
+            if (onnx_tensors_[slope_name].shape != Shape{1}) {
+                // TODO: support it
+                throw std::invalid_argument("Only support one element slope.");
+            }
             addLayerRelu(input_name, imm1_name);
-            addLayerMul(input_name, slope_name, imm2_name);
+            addLayerMul(input_name, onnx_tensors_[slope_name].data[0], imm2_name);
             addLayerMul(imm2_name, -1.f, imm3_name);
             addLayerRelu(imm3_name, imm4_name);
             addLayerMul(imm4_name, -1.f, imm5_name);

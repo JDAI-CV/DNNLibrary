@@ -72,7 +72,7 @@ private:
         layers_.push_back(layer);
     }
     inline void addLayerAdd(css &input1_name, css &input2_name, css &output_name) {
-        shaper_.Eltwise(input1_name, input2_name, output_name);
+        shaper_.Eltwise(input1_name, output_name);
         auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
             skipped_act_.push_back(activation.first.value());
@@ -82,8 +82,19 @@ private:
         auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Add, 0, 0, 0, 0, 0, 0, param);
         layers_.push_back(layer);
     }
+    inline void addLayerAdd(css &input1_name, float input2, css &output_name) {
+        shaper_.Eltwise(input1_name, output_name);
+        const auto activation = FindActivation(model_proto_, output_name);
+        if (activation.first.has_value()) {
+            skipped_act_.push_back(activation.first.value());
+        }
+        const auto param = DNN::CreateAddScalarDirect(builder_, input1_name.c_str(), input2,
+                ConvertFuseCodeType(activation.second), output_name.c_str());
+        const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::AddScalar, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param, 0);
+        layers_.push_back(layer);
+    }
     inline void addLayerMul(css &input1_name, css &input2_name, css &output_name) {
-        shaper_.Eltwise(input1_name, input2_name, output_name);
+        shaper_.Eltwise(input1_name, output_name);
         const auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
             skipped_act_.push_back(activation.first.value());
@@ -101,7 +112,7 @@ private:
         }
         const auto param = DNN::CreateMulScalarDirect(builder_, input1_name.c_str(), input2,
                 ConvertFuseCodeType(activation.second), output_name.c_str());
-        const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Mul, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+        const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::MulScalar, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
         layers_.push_back(layer);
     }
     inline void addLayerGemm(css &input_name, css &weight_name, nonstd::optional<std::string> bias_name, const int transA, const int transB, const float alpha, const float beta, css &output_name) {

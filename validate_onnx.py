@@ -41,8 +41,13 @@ if __name__ == '__main__':
     parser.add_argument('dnn_infer', type=str, help='dnn_infer binary file')
     parser.add_argument('output', type=str, help='Output name of the model')
     parser.add_argument('test_data_dir', type=str, help='e.g. test_data_set_0')
+    parser.add_argument('--res_shape', type=str, help='The shape of result in nhwc, such as [1000] or [1,224,224,3]', default='-1')
 
     args = parser.parse_args()
+    import ast
+    args.res_shape = ast.literal_eval(args.res_shape)
+    if type(args.res_shape) == int:
+        args.res_shape = [args.res_shape]
 
     # Load inputs
     inputs = []
@@ -67,6 +72,8 @@ if __name__ == '__main__':
     assert inputs_num == ref_outputs_num
     for i in range(inputs_num):
         actual = run(inputs[i], args.onnx, args.onnx2daq, args.dnn_infer, args.output)
+        if len(args.res_shape) == 4:
+            actual = np.transpose(actual.reshape(args.res_shape), [0, 3, 1, 2]).flatten()
         expected = ref_outputs[i].flatten()
 
         print('====================')

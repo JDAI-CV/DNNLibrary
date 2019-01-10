@@ -19,8 +19,8 @@
 using std::string; using std::cout; using std::endl;
 using Clock = std::chrono::high_resolution_clock;
 
-#define WARM_UP 5
-#define RUNS 20
+#define WARM_UP 0
+#define RUNS 1
 
 // ./dnn_save_result daqName outputBlob [input]
 int main(int argc, char **argv) {
