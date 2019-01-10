@@ -3,7 +3,7 @@ namespace DNN;
 enum DataType:byte { Float32 = 0, Int8 }
 enum FuseCode:byte { None = 0, Relu, Relu1, Relu6 }
 enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat,
-    DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice }
+    DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar }
 
 table Tensor {
     data_type:DataType;
@@ -112,6 +112,27 @@ table Concat {
     output:string;
 }
 
+table Mul {
+    input1:string;
+    input2:string;
+    fuse:FuseCode;
+    output:string;
+}
+
+table AddScalar {
+    input1:string;
+    input2:float;
+    fuse:FuseCode;
+    output:string;
+}
+
+table MulScalar {
+    input1:string;
+    input2:float;
+    fuse:FuseCode;
+    output:string;
+}
+
 table Layer {
     type:LayerType;
     conv2d_param:Conv2D;
@@ -126,6 +147,9 @@ table Layer {
     batch_to_space_param:BatchToSpace;
     space_to_batch_param:SpaceToBatch;
     strided_slice_param:StridedSlice;
+    mul_param:Mul;
+    add_scalar_param:AddScalar;
+    mul_scalar_param:MulScalar;
 }
 
 table Model {
