@@ -2,11 +2,12 @@
 
 MY_ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 MY_ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$MY_ANDROID_HOME/ndk-bundle}"
-mkdir -p build_jni && pushd build_jni
-cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$MY_ANDROID_NDK_HOME -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_static -DCMAKE_SYSTEM_VERSION=28 -DDNN_BUILD_JNI=ON -DDNN_BUILD_SHARED_LIBS=ON -DDNN_BUILD_BIN=OFF ..
+JNI_BUILD_DIR=build_jni_tmp
+rm -rf ${JNI_BUILD_DIR} && mkdir ${JNI_BUILD_DIR} && pushd ${JNI_BUILD_DIR}
+cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=android-28 -DANDROID_ABI=arm64-v8a -DDNN_BUILD_JNI=ON -DDNN_BUILD_SHARED_LIBS=ON -DDNN_BUILD_BIN=OFF ..
 cmake --build . -- "-j$(nproc)"
 popd
-cp build_jni/dnnlibrary/libdnn-jni.so ./android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/libdaq-jni.so
+cp ${JNI_BUILD_DIR}/dnnlibrary/libdnn-jni.so ./android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/libdaq-jni.so
 
 # Increase version code and update version name
 if (( $# >= 1 )); then
