@@ -78,6 +78,7 @@ if __name__ == '__main__':
 
         print('====================')
         try:
+            print("Max relative diff: {}".format(np.max(np.abs(expected - actual) / expected)))
             np.testing.assert_array_almost_equal(expected, actual, decimal=3)
             print('No.{} in {} passed'.format(i, args.test_data_dir))
         except AssertionError as e:

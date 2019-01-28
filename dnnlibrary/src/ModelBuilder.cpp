@@ -619,3 +619,10 @@ ModelBuilder &ModelBuilder::AddOutput(const std::string &name) {
     dnn_model_->AddOutput(name, shaper_[name]);
     return *this;
 }
+
+#if __ANDROID_API__ >= __ANDROID_API_P__
+ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
+    ANeuralNetworksModel_relaxComputationFloat32toFloat16(dnn_model_->model_, allowed);
+    return *this;
+}
+#endif

@@ -22,6 +22,7 @@ public class ModelBuilder {
     }
     public native ModelBuilder readFile(AssetManager assetManager, String filename);
     public native ModelBuilder setOutput(String blobName);
+    public native ModelBuilder allowFp16(boolean allowed);
     public native Model compile(int preference);
     public native void dispose();
     private native void initHandle();

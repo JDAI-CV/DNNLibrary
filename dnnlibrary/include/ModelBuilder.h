@@ -117,6 +117,7 @@ public:
             const std::vector<int32_t> &pads, const std::string &output_name);
     Index AddBatchToSpaceND(const std::string &input_name, const std::vector<int32_t> &block_sizes,
             const std::string &output_name);
+    ModelBuilder &AllowFp16(const bool allowed);
 #endif
     ModelBuilder &AddOutput(const std::string &name);
     std::unique_ptr<Model> Compile(uint32_t preference);

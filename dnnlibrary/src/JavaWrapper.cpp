@@ -50,6 +50,19 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_setOutput(
 extern "C"
 JNIEXPORT jobject
 JNICALL
+Java_me_daquexian_dnnlibrary_ModelBuilder_allowFp16(
+        JNIEnv *env,
+        jobject obj/* this */,
+        jboolean allowed) {
+    ModelBuilder *builder = getHandle<ModelBuilder>(env, obj);
+    builder->AllowFp16(allowed);
+    return obj;
+}
+
+
+extern "C"
+JNIEXPORT jobject
+JNICALL
 Java_me_daquexian_dnnlibrary_ModelBuilder_compile(
         JNIEnv *env,
         jobject obj /* this */,
