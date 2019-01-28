@@ -43,7 +43,7 @@ With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ ph
 ```Java
 ModelBuilder modelBuilder = new ModelBuilder();
 Model model = modelBuilder.readFile(getAssets(), "mobilenetv2.daq")
-                        // the following line to enable fp16, only available on Android P, see https://www.anandtech.com/show/13503/the-mate-20-mate-20-pro-review/4 for a detailed benchmark
+                        // the following line will allow fp16 on supported devices, bringing speed boost. It is only available on Android P, see https://www.anandtech.com/show/13503/the-mate-20-mate-20-pro-review/4 for a detailed benchmark
                         // .allowFp16(true)
                         .setOutput("mobilenetv20_output_pred_fwd"); // The output name is from the onnx model
                         .compile(ModelBuilder.PREFERENCE_FAST_SINGLE_ANSWER);
