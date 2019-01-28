@@ -43,6 +43,8 @@ With DNNLibrary it's extremely easy to deploy your ONNX model on Android 8.1+ ph
 ```Java
 ModelBuilder modelBuilder = new ModelBuilder();
 Model model = modelBuilder.readFile(getAssets(), "mobilenetv2.daq")
+                        // the following line to enable fp16, only available on Android P, see https://www.anandtech.com/show/13503/the-mate-20-mate-20-pro-review/4 for a detailed benchmark
+                        // .allowFp16(true)
                         .setOutput("mobilenetv20_output_pred_fwd"); // The output name is from the onnx model
                         .compile(ModelBuilder.PREFERENCE_FAST_SINGLE_ANSWER);
 
@@ -81,7 +83,7 @@ Welcome! It has been published on jcenter.
 Add
 
 ```
-implementation 'me.daquexian:dnnlibrary:0.6.0'
+implementation 'me.daquexian:dnnlibrary:0.6.2'
 ```
 
 (for Gradle 3.0+),
@@ -89,7 +91,7 @@ implementation 'me.daquexian:dnnlibrary:0.6.0'
 or
 
 ```
-compile 'me.daquexian:dnnlibrary:0.6.0'
+compile 'me.daquexian:dnnlibrary:0.6.2'
 ```
 
 (for Gradle lower than 3.0)
@@ -125,12 +127,12 @@ However we are also far from maturity comparing to TF Lite. At least we are an a
 
 ## Benchmark
 
-Google Pixel, Android 9.0
-
-model | time
-:---:|:---:
-MobileNet v2 | 132.95ms
-SqueezeNet v1.1 | 80.80ms
+device | model | time
+:---:|:---:|:---:
+Google Pixel, API 28 | MobileNet v2 | 132.95ms
+Google Pixel, API 28 | SqueezeNet v1.1 | 80.80ms
+[RK3399](http://en.t-firefly.com/news/info/index/id/516.html), API 27 | MobileNet v2 | 59.90ms
+RK3399, API 27 | SqueezeNet v1.1 | 51.10ms
 
 More benchmark is welcome!
 
