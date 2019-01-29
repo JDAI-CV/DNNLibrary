@@ -70,7 +70,7 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(const string &input_name, int
     }
     shaper_.DepthwiseConv(input_name, strideX, strideY, 1, 1, paddingLeft, paddingRight, paddingTop, paddingBottom, weight_name, output_name);
     IndexSeq input_indexes{input, weight, biasIndexValue};
-    AddOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom,
+    AddScalarOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom,
                 strideX, strideY, depthMultiplier, activation);
     auto output_index = AddOperation(ANEURALNETWORKS_DEPTHWISE_CONV_2D, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_index);
@@ -95,7 +95,7 @@ ModelBuilder::AddConv(const string &input_name, int32_t strideX, int32_t strideY
     }
     shaper_.Conv(input_name, strideX, strideY, 1, 1, paddingLeft, paddingRight, paddingTop, paddingBottom, weight_name, output_name);
     IndexSeq input_indexes{input, weight, biasIndexValue};
-    AddOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom, strideX, strideY, activation);
+    AddScalarOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom, strideX, strideY, activation);
     auto output_index = AddOperation(ANEURALNETWORKS_CONV_2D, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_index);
     return output_index;
@@ -117,7 +117,7 @@ ModelBuilder::AddStridedSlice(const string &input_name, const vector<int32_t> &s
 
     shaper_.StridedSlice(input_name, starts, ends, strides, beginMask, endMask, shrinkAxisMask, output_name);
     IndexSeq input_indexes{input, startsIndex, endsIndex, stridesIndex};
-    AddOperands(input_indexes, beginMask, endMask, shrinkAxisMask);
+    AddScalarOperands(input_indexes, beginMask, endMask, shrinkAxisMask);
 
     auto output_index = AddOperation(ANEURALNETWORKS_STRIDED_SLICE, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_index);
@@ -171,7 +171,7 @@ ModelBuilder::Index ModelBuilder::AddPool(const string &input_name, int32_t stri
     shaper_.Pool(input_name, strideX, strideY, paddingLeft, paddingRight, paddingTop, paddingBottom,
             height, width, output_name);
     IndexSeq input_indexes{input};
-    AddOperands(input_indexes, 
+    AddScalarOperands(input_indexes, 
             paddingLeft, paddingRight, paddingTop, paddingBottom, 
             strideX, strideY, width, height, activation);
 
@@ -190,7 +190,7 @@ ModelBuilder::Index ModelBuilder::AddSoftMax(const string &input_name, float bet
 
     shaper_.Softmax(input_name, output_name);
     IndexSeq input_indexes{input};
-    AddOperands(input_indexes, beta);
+    AddScalarOperands(input_indexes, beta);
 
     auto output_index = AddOperation(ANEURALNETWORKS_SOFTMAX, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_index);
@@ -216,7 +216,7 @@ ModelBuilder::Index ModelBuilder::AddConcat(const vector<string> &input_names, u
 
     shaper_.Concat(input_names, axis, output_name);
     IndexSeq input_indexes(inputs);
-    AddOperands(input_indexes, axis);
+    AddScalarOperands(input_indexes, axis);
 
     auto output_index = AddOperation(ANEURALNETWORKS_CONCATENATION, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_index);
@@ -230,7 +230,7 @@ ModelBuilder::Index ModelBuilder::AddLRN(const string &input_name, uint32_t loca
 
     shaper_.LRN(input_name, output_name);
     IndexSeq input_indexes{input};
-    AddOperands(input_indexes, local_size, bias, alpha, beta);
+    AddScalarOperands(input_indexes, local_size, bias, alpha, beta);
 
     auto output_idx = AddOperation(ANEURALNETWORKS_LOCAL_RESPONSE_NORMALIZATION, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_idx);
@@ -252,7 +252,7 @@ ModelBuilder::Index ModelBuilder::AddFC(const string &input_name, int32_t activa
     }
     shaper_.FC(input_name, weight_name, output_name);
     IndexSeq input_indexes{input, weight, biasIndexValue};
-    AddOperands(input_indexes, activation);
+    AddScalarOperands(input_indexes, activation);
     auto output_idx = AddOperation(ANEURALNETWORKS_FULLY_CONNECTED, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_idx);
     return output_idx;
@@ -275,7 +275,7 @@ ModelBuilder::Index ModelBuilder::AddAddTensor(const string &input1_name, const 
     auto input2 = operand_indexes_[input2_name];
     shaper_.Eltwise(input1_name, input2_name, output_name);
     IndexSeq input_indexes{input1, input2};
-    AddOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
+    AddScalarOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
     auto output_idx = AddOperation(ANEURALNETWORKS_ADD, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_idx);
     return output_idx;
@@ -299,7 +299,7 @@ ModelBuilder::Index ModelBuilder::AddMulTensor(const string &input1_name, const 
     auto input2 = operand_indexes_[input2_name];
     IndexSeq input_indexes{input1, input2};
     shaper_.Eltwise(input1_name, output_name);
-    AddOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
+    AddScalarOperands(input_indexes, ModelBuilder::ACTIVATION_NONE);
     auto output_idx = AddOperation(ANEURALNETWORKS_MUL, input_indexes, shaper_[output_name])[0];
     AppendOperandIndex(output_name, output_idx);
     return output_idx;

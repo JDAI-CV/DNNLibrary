@@ -130,8 +130,9 @@ public:
     void Prepare();
     void SetMemory(int fd, size_t size, size_t offset);
     void SetBasePtr(uint8_t *data);
+    // Add scalar operands, aka ANEURALNETWORKS_FLOAT32, ANEURALNETWORKS_INT32, ANEURALNETWORKS_UINT32. It should not be used to append tensor operand indexes to a IndexSeq
     template <typename... Args>
-    void AddOperands(IndexSeq &indexes, Args... args) {
+    void AddScalarOperands(IndexSeq &indexes, Args... args) {
         (indexes.push_back(AddOperand(args)), ...);
     }
 };
