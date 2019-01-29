@@ -25,7 +25,11 @@ auto get_model(css &daqName, css &outputBlob, const bool allowFp16, const Prefer
     DaqReader daq_reader;
     // Set the last argument to true to use mmap. It may be more efficient than memory buffer.
     daq_reader.ReadDaq(daqName, builder, false);
+#if __ANDROID_API__ >= __ANDROID_API_P__
     model = builder.AllowFp16(allowFp16).AddOutput(outputBlob).Compile(compilePreference);
+#else
+    model = builder.AddOutput(outputBlob).Compile(compilePreference);
+#endif
     return std::move(model);
 }
 
@@ -66,7 +70,20 @@ int main(int argc, char **argv) {
     }
     float output[outputLen];
 
+    // warm up
+    {
+        auto model = get_model(daqName, outputBlob, false, ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
+        for (int i = 0; i < 10; i++) {
+            model->SetOutputBuffer(0, output);
+            model->Predict(std::vector{data});
+        }
+    }
+
+#if __ANDROID_API__ >= __ANDROID_API_P__
     for (const auto allowFp16 : {false, true}) {
+#else
+    for (const auto allowFp16 : {false}) {
+#endif
         for (const auto compilePreference : 
                 {ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER, 
                 ANEURALNETWORKS_PREFER_SUSTAINED_SPEED, 
@@ -85,4 +102,5 @@ int main(int argc, char **argv) {
         }
     }
 }
+
 

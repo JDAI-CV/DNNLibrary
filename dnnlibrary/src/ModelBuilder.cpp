@@ -161,7 +161,7 @@ ModelBuilder::Index ModelBuilder::AddPool(const string &input_name, int32_t stri
     auto input = operand_indexes_[input_name];
 
     if (height == -1 && width == -1) {
-        LOG(INFO) << "Global pool, input: " << input_name;
+        VLOG(5) << "Global pool, input: " << input_name;
         auto inputDimen = shaper_[input_name];
         height = inputDimen[1];
         width = inputDimen[2];
@@ -545,7 +545,7 @@ ModelBuilder::Shape ModelBuilder::GetBlobDim(const string &blobName) {
 
 ModelBuilder::Shape ModelBuilder::GetBlobDim(uint32_t index) {
     for (const auto &p : operand_indexes_) {
-        LOG(INFO) << p.second;
+        VLOG(5) << p.second;
         if (p.second == index) {
             return shaper_[p.first];
         }
