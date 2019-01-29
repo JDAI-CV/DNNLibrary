@@ -19,10 +19,7 @@
 using std::string; using std::cout; using std::endl;
 using Clock = std::chrono::high_resolution_clock;
 
-#define WARM_UP 0
-#define RUNS 1
-
-// ./dnn_save_result daqName outputBlob [input]
+// ./dnn_retrieve_result daqName outputBlob [input]
 int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_log_dir = "/data/local/tmp/log";
@@ -61,17 +58,10 @@ int main(int argc, char **argv) {
 
     float output[outputLen];
 
-    for (int i = 0; i < WARM_UP; i++) {
-        model->SetOutputBuffer(0, output);
-        model->Predict(std::vector{data});
-    }
     auto t1 = Clock::now();
-    for (int i = 0; i < RUNS; i++) {
-        model->SetOutputBuffer(0, output);
-        model->Predict(std::vector{data});
-    }
+    model->SetOutputBuffer(0, output);
+    model->Predict(std::vector{data});
     auto t2 = Clock::now();
-    LOG(INFO) << RUNS << " times, " << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count() << "ms";
     std::ofstream ofs("/data/local/tmp/result");
     for (int i = 0; i < outputLen; i++) {
         ofs << output[i] << endl;

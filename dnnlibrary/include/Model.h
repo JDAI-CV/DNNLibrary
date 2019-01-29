@@ -34,6 +34,7 @@ private:
     void SetInputBuffer(int32_t index, float *buffer);
     void PrepareForExecution();
     bool prepared_for_exe_;
+    Model() = default;
 public:
     // int Predict();
     void Predict(std::vector<float *> inputs);

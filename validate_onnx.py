@@ -5,7 +5,7 @@ import glob
 import numpy as np
 import tempfile
 
-def run(input_arr, onnx, onnx2daq, dnn_infer, output_name):
+def run(input_arr, onnx, onnx2daq, dnn_retrieve_result, output_name):
     daq = "temp.daq"
     os.system("{} {} {}".format(onnx2daq, onnx, daq))
     print("Converted to daq")
@@ -18,10 +18,10 @@ def run(input_arr, onnx, onnx2daq, dnn_infer, output_name):
     txt = os.path.join(tempfile._get_default_tempdir(), next(tempfile._get_candidate_names()))
     os.system("adb push {} /data/local/tmp/".format(daq))
     os.system("adb push input.txt /data/local/tmp/")
-    os.system("adb push {} /data/local/tmp/dnn_infer".format(dnn_infer))
-    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_infer /data/local/tmp/{} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name))
+    os.system("adb push {} /data/local/tmp/dnn_retrieve_result".format(dnn_retrieve_result))
+    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_retrieve_result /data/local/tmp/{} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name))
     os.system("adb shell rm /data/local/tmp/input.txt")
-    os.system("adb shell rm /data/local/tmp/dnn_infer")
+    os.system("adb shell rm /data/local/tmp/dnn_retrieve_result")
     os.system("adb pull /data/local/tmp/result {}".format(txt))
     os.system("adb shell rm /data/local/tmp/result")
     os.system("adb shell rm /data/local/tmp/{}".format(os.path.basename(daq)))
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test onnx model on nnapi')
     parser.add_argument('onnx', type=str, help='onnx model file')
     parser.add_argument('onnx2daq', type=str, help='onnx2daq binary file')
-    parser.add_argument('dnn_infer', type=str, help='dnn_infer binary file')
+    parser.add_argument('dnn_retrieve_result', type=str, help='dnn_retrieve_result binary file')
     parser.add_argument('output', type=str, help='Output name of the model')
     parser.add_argument('test_data_dir', type=str, help='e.g. test_data_set_0')
     parser.add_argument('--res_shape', type=str, help='The shape of result in nhwc, such as [1000] or [1,224,224,3]', default='-1')
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     assert inputs_num == ref_outputs_num
     for i in range(inputs_num):
-        actual = run(inputs[i], args.onnx, args.onnx2daq, args.dnn_infer, args.output)
+        actual = run(inputs[i], args.onnx, args.onnx2daq, args.dnn_retrieve_result, args.output)
         if len(args.res_shape) == 4:
             actual = np.transpose(actual.reshape(args.res_shape), [0, 3, 1, 2]).flatten()
         expected = ref_outputs[i].flatten()

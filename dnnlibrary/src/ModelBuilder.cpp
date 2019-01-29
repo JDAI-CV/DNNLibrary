@@ -488,9 +488,9 @@ std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
                 ),
             "on compilation finish");
 
-    LOG(INFO) << "Finishing.. Here are operands in the model:";
+    VLOG(5) << "Finishing.. Here are operands in the model:";
     for (const auto &name : ordered_operands_) {
-        LOG(INFO) << name << ": " << shaper_[name];
+        VLOG(5) << name << ": " << shaper_[name];
     }
     operand_indexes_.clear();
     ordered_operands_.clear();
@@ -597,7 +597,7 @@ ModelBuilder::IndexSeq ModelBuilder::AddOperation(int op, IndexSeq input_indexes
 }
 
 void ModelBuilder::Prepare() {
-    dnn_model_ = std::make_unique<Model>();
+    dnn_model_ = std::unique_ptr<Model>(new Model());
     auto ret = ANeuralNetworksModel_create(&dnn_model_->model_);
     if (ret == ANEURALNETWORKS_OUT_OF_MEMORY) {
         throw std::bad_alloc();
