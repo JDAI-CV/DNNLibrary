@@ -46,17 +46,36 @@ struct Layer;
 
 struct Model;
 
+/// Int8 is deprecated
 enum class DataType : int8_t {
   Float32 = 0,
   Int8 = 1,
+  Int32 = 2,
+  Float16 = 3,
+  Bool8 = 4,
+  QUANT8_ASYMM = 5,
+  QUANT8_ASYMM_PER_CHANNEL = 6,
+  QUANT8_SYMM = 7,
+  QUANT8_SYMM_PER_CHANNEL = 8,
+  QUANT16_ASYMM = 9,
+  QUANT16_SYMM = 10,
   MIN = Float32,
-  MAX = Int8
+  MAX = QUANT16_SYMM
 };
 
-inline const DataType (&EnumValuesDataType())[2] {
+inline const DataType (&EnumValuesDataType())[11] {
   static const DataType values[] = {
     DataType::Float32,
-    DataType::Int8
+    DataType::Int8,
+    DataType::Int32,
+    DataType::Float16,
+    DataType::Bool8,
+    DataType::QUANT8_ASYMM,
+    DataType::QUANT8_ASYMM_PER_CHANNEL,
+    DataType::QUANT8_SYMM,
+    DataType::QUANT8_SYMM_PER_CHANNEL,
+    DataType::QUANT16_ASYMM,
+    DataType::QUANT16_SYMM
   };
   return values;
 }
@@ -65,6 +84,15 @@ inline const char * const *EnumNamesDataType() {
   static const char * const names[] = {
     "Float32",
     "Int8",
+    "Int32",
+    "Float16",
+    "Bool8",
+    "QUANT8_ASYMM",
+    "QUANT8_ASYMM_PER_CHANNEL",
+    "QUANT8_SYMM",
+    "QUANT8_SYMM_PER_CHANNEL",
+    "QUANT16_ASYMM",
+    "QUANT16_SYMM",
     nullptr
   };
   return names;
@@ -184,7 +212,11 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_INT8_DATA = 6,
     VT_FLOAT32_DATA = 8,
     VT_SHAPE = 10,
-    VT_NAME = 12
+    VT_NAME = 12,
+    VT_FLOAT16_DATA = 14,
+    VT_BOOL8_DATA = 16,
+    VT_SCALES = 18,
+    VT_ZERO_POINT = 20
   };
   DataType data_type() const {
     return static_cast<DataType>(GetField<int8_t>(VT_DATA_TYPE, 0));
@@ -201,6 +233,20 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  /// since flatbuffers doesn't have float16 data type, use uint16 instead
+  const flatbuffers::Vector<uint16_t> *float16_data() const {
+    return GetPointer<const flatbuffers::Vector<uint16_t> *>(VT_FLOAT16_DATA);
+  }
+  const flatbuffers::Vector<uint8_t> *bool8_data() const {
+    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_BOOL8_DATA);
+  }
+  /// a float32 array of scales, the length will be 1 for non per-channel quantization, and be channelDim for per-channel quantization
+  const flatbuffers::Vector<float> *scales() const {
+    return GetPointer<const flatbuffers::Vector<float> *>(VT_SCALES);
+  }
+  uint32_t zero_point() const {
+    return GetField<uint32_t>(VT_ZERO_POINT, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_DATA_TYPE) &&
@@ -212,6 +258,13 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(shape()) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
+           VerifyOffset(verifier, VT_FLOAT16_DATA) &&
+           verifier.VerifyVector(float16_data()) &&
+           VerifyOffset(verifier, VT_BOOL8_DATA) &&
+           verifier.VerifyVector(bool8_data()) &&
+           VerifyOffset(verifier, VT_SCALES) &&
+           verifier.VerifyVector(scales()) &&
+           VerifyField<uint32_t>(verifier, VT_ZERO_POINT) &&
            verifier.EndTable();
   }
 };
@@ -234,6 +287,18 @@ struct TensorBuilder {
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(Tensor::VT_NAME, name);
   }
+  void add_float16_data(flatbuffers::Offset<flatbuffers::Vector<uint16_t>> float16_data) {
+    fbb_.AddOffset(Tensor::VT_FLOAT16_DATA, float16_data);
+  }
+  void add_bool8_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data) {
+    fbb_.AddOffset(Tensor::VT_BOOL8_DATA, bool8_data);
+  }
+  void add_scales(flatbuffers::Offset<flatbuffers::Vector<float>> scales) {
+    fbb_.AddOffset(Tensor::VT_SCALES, scales);
+  }
+  void add_zero_point(uint32_t zero_point) {
+    fbb_.AddElement<uint32_t>(Tensor::VT_ZERO_POINT, zero_point, 0);
+  }
   explicit TensorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -252,8 +317,16 @@ inline flatbuffers::Offset<Tensor> CreateTensor(
     flatbuffers::Offset<flatbuffers::Vector<uint8_t>> int8_data = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> float32_data = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> shape = 0,
-    flatbuffers::Offset<flatbuffers::String> name = 0) {
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint16_t>> float16_data = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data = 0,
+    flatbuffers::Offset<flatbuffers::Vector<float>> scales = 0,
+    uint32_t zero_point = 0) {
   TensorBuilder builder_(_fbb);
+  builder_.add_zero_point(zero_point);
+  builder_.add_scales(scales);
+  builder_.add_bool8_data(bool8_data);
+  builder_.add_float16_data(float16_data);
   builder_.add_name(name);
   builder_.add_shape(shape);
   builder_.add_float32_data(float32_data);
@@ -268,14 +341,22 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
     const std::vector<uint8_t> *int8_data = nullptr,
     const std::vector<float> *float32_data = nullptr,
     const std::vector<uint32_t> *shape = nullptr,
-    const char *name = nullptr) {
+    const char *name = nullptr,
+    const std::vector<uint16_t> *float16_data = nullptr,
+    const std::vector<uint8_t> *bool8_data = nullptr,
+    const std::vector<float> *scales = nullptr,
+    uint32_t zero_point = 0) {
   return DNN::CreateTensor(
       _fbb,
       data_type,
       int8_data ? _fbb.CreateVector<uint8_t>(*int8_data) : 0,
       float32_data ? _fbb.CreateVector<float>(*float32_data) : 0,
       shape ? _fbb.CreateVector<uint32_t>(*shape) : 0,
-      name ? _fbb.CreateString(name) : 0);
+      name ? _fbb.CreateString(name) : 0,
+      float16_data ? _fbb.CreateVector<uint16_t>(*float16_data) : 0,
+      bool8_data ? _fbb.CreateVector<uint8_t>(*bool8_data) : 0,
+      scales ? _fbb.CreateVector<float>(*scales) : 0,
+      zero_point);
 }
 
 struct Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

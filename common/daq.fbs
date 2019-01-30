@@ -1,6 +1,9 @@
 namespace DNN;
 
-enum DataType:byte { Float32 = 0, Int8 }
+/// Int8 is deprecated
+enum DataType:byte { Float32 = 0, Int8, Int32, Float16, Bool8,
+    QUANT8_ASYMM, QUANT8_SYMM, QUANT8_SYMM_PER_CHANNEL, 
+    QUANT16_ASYMM, QUANT16_SYMM}
 enum FuseCode:byte { None = 0, Relu, Relu1, Relu6 }
 enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat,
     DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar }
@@ -11,6 +14,12 @@ table Tensor {
     float32_data: [float32];
     shape: [uint32];
     name: string;
+    /// since flatbuffers doesn't have float16 data type, use uint16 instead
+    float16_data: [uint16];
+    bool8_data: [uint8];
+    /// a float32 array of scales, the length will be 1 for non per-channel quantization, and be channelDim for per-channel quantization
+    scales: [float32];
+    zero_point: uint32;
 }
 
 table Input {

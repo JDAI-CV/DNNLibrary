@@ -56,7 +56,6 @@ private:
 
     android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type);
     android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type, const Shape &dims);
-
 public:
     enum class PoolingType {
         MAX_POOL,

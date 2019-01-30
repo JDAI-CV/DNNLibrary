@@ -72,6 +72,8 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
             builder.AddTensorFromBuffer(tensor->name()->str(),
                                         tensor->float32_data()->data(),
                                         shape);
+        } else if (tensor->data_type() == DNN::DataType::QUANT8_ASYMM) {
+
         }
     }
 }
