@@ -180,7 +180,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input2_name = param->input2()->str();
                 auto output_name = param->output()->str();
                 VLOG(5) << "Add, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
-                builder.AddAddTensor(input1_name, input2_name, output_name);
+                builder.AddOperationAdd(input1_name, input2_name, output_name);
                 break;
             }
             case DNN::LayerType::AddScalar: {
@@ -189,7 +189,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input2 = param->input2();
                 auto output_name = param->output()->str();
                 VLOG(5) << "Add, input1 " << input1_name << ", input2 " << input2 << ", output: " << output_name;
-                builder.AddAddScalar(input1_name, input2, output_name);
+                builder.AddOperationAdd(input1_name, input2, output_name);
                 break;
             }
             case DNN::LayerType::Mul: {
@@ -198,7 +198,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input2_name = param->input2()->str();
                 auto output_name = param->output()->str();
                 VLOG(5) << "Mul, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
-                builder.AddMulTensor(input1_name, input2_name, output_name);
+                builder.AddMul(input1_name, input2_name, output_name);
                 break;
             }
             case DNN::LayerType::MulScalar: {
@@ -207,7 +207,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input2 = param->input2();
                 auto output_name = param->output()->str();
                 VLOG(5) << "Mul, input1 " << input1_name << ", input2 " << input2 << ", output: " << output_name;
-                builder.AddMulScalar(input1_name, input2, output_name);
+                builder.AddMul(input1_name, input2, output_name);
                 break;
             }
             case DNN::LayerType::FC: {

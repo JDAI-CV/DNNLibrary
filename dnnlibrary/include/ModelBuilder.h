@@ -43,18 +43,16 @@ private:
     void AppendOperandIndex(const std::string &name, Index index);
     uint32_t AddNewOperand(const android::nn::wrapper::OperandType &type);
 
-    // IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);
     template <typename... Shapes>
     IndexSeq AddOperation(int op, IndexSeq input_indexes, Shapes... shapes);
 
-    Index AddOperand(int32_t value);
-    Index AddOperand(float value);
-    Index AddOperand(uint32_t value);
-    Index AddFloat32AsTensorOperand(float value);
-    Index AddInt32NullOperand();
-    Index AddFloat32NullOperand();
-    Index AddFloat32NullOperandWithDims(Shape &dims);
-    Index AddFloat32ZeroOperandWithDims(Shape &dims);
+    Index OperandFromScalar(int32_t value);
+    Index OperandFromScalar(float value);
+    Index OperandFromScalar(uint32_t value);
+    Index AddMissingOperand(const android::nn::wrapper::OperandType &operand_type);
+    Index FillOperand(css &name, const android::nn::wrapper::OperandType &operand_type, const float val);
+    Index FillOperand(css &name, const android::nn::wrapper::OperandType &operand_type, const int32_t val);
+    Index FillOperand(css &name, const android::nn::wrapper::OperandType &operand_type, const uint32_t val);
 
     android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type);
     android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type, const Shape &dims);
@@ -97,13 +95,13 @@ public:
             int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
             uint32_t poolingType, const std::string &output_name);
     Index AddSoftMax(const std::string &input_name, float beta, const std::string &output_name);
-    Index AddAddScalar(const std::string &input_name, float scalar, std::string output_name);
-    Index AddAddTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
-    Index AddMulScalar(const std::string &input_name, float scalar, const std::string &output_name);
-    Index AddMulTensor(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index AddOperationAdd(const std::string &input_name, float scalar, std::string output_name);
+    Index AddOperationAdd(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index AddMul(const std::string &input_name, float scalar, const std::string &output_name);
+    Index AddMul(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
     Index AddReLU(const std::string &input_name, const std::string &output_name);
-    Index AddConcat(const std::vector<std::string> &input_names, uint32_t axis, const std::string &output_name);
-    Index AddLRN(const std::string &input_name, uint32_t local_size, float bias, float alpha, float beta,
+    Index AddConcat(const std::vector<std::string> &input_names, int32_t axis, const std::string &output_name);
+    Index AddLRN(const std::string &input_name, int32_t local_size, float bias, float alpha, float beta,
                  const std::string &output_name);
 #if __ANDROID_API__ >= __ANDROID_API_P__
     Index AddStridedSlice(const std::string &input_name, const std::vector<int32_t> &starts,
@@ -130,7 +128,7 @@ public:
     // Add scalar operands, aka ANEURALNETWORKS_FLOAT32, ANEURALNETWORKS_INT32, ANEURALNETWORKS_UINT32. It should not be used to append tensor operand indexes to a IndexSeq
     template <typename... Args>
     void AddScalarOperands(IndexSeq &indexes, Args... args) {
-        (indexes.push_back(AddOperand(args)), ...);
+        (indexes.push_back(OperandFromScalar(args)), ...);
     }
 };
 #endif //NNAPIEXAMPLE_MODELBUILDER_H

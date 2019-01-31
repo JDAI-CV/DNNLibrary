@@ -112,10 +112,11 @@ inline std::string typeToStr(const Type &type) {
 
 struct OperandType {
     ANeuralNetworksOperandType operandType;
+    Type type;
     std::vector<uint32_t> dimensions;
     std::optional<SymmPerChannelQuantParams> channelQuant;
     OperandType(Type type, std::vector<uint32_t> d = {}, float scale = 0.0f, int32_t zeroPoint = 0)
-        : dimensions(std::move(d)), channelQuant(std::nullopt) {
+        : type(type), dimensions(std::move(d)), channelQuant(std::nullopt) {
         if (dimensions.empty()) {
             DNN_ASSERT(isScalarType(type), typeToStr(type));
         } else {
@@ -131,7 +132,7 @@ struct OperandType {
     }
     OperandType(Type type, std::vector<uint32_t> data, float scale, int32_t zeroPoint,
                 SymmPerChannelQuantParams&& channelQuant)
-        : dimensions(std::move(data)), channelQuant(std::move(channelQuant)) {
+        : type(type), dimensions(std::move(data)), channelQuant(std::move(channelQuant)) {
         if (dimensions.empty()) {
             DNN_ASSERT(isScalarType(type), "");
         } else {
