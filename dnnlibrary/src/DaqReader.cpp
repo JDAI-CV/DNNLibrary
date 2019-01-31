@@ -51,7 +51,7 @@ std::string layer_type_to_str(DNN::LayerType type) {
     }
 }
 
-int convert_fuse_code_to_nnapi(DNN::FuseCode fuse_code) {
+int convert_fuse_code_to_nnapi(const DNN::FuseCode fuse_code) {
     switch (fuse_code) {
         case DNN::FuseCode::None:
             return FuseCode::ANEURALNETWORKS_FUSED_NONE;
@@ -321,9 +321,9 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
  * @param filepath , like "/data/local/tmp/squeezenet.daq"
  * @param builder a ModelBuilder object
  */
-void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder, bool use_mmap) {
+void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder, const bool use_mmap) {
     if (use_mmap) {
-        auto fd = open(filepath.c_str(), O_RDONLY);
+        const auto fd = open(filepath.c_str(), O_RDONLY);
         ReadDaq(fd, builder);
     } else {
         std::ifstream file(filepath, std::ios::binary | std::ios::ate);
@@ -337,7 +337,7 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder, bool
     }
 }
 
-void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder, off_t offset, size_t fsize) {
+void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder, const off_t offset, size_t fsize) {
     if (fd == -1) {
         throw std::invalid_argument("Open file error " + std::to_string(errno));
     }
