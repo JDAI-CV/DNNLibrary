@@ -18,7 +18,7 @@ configure_glog()
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     set (CMAKE_CXX_STANDARD 17)
 
-    # add_compile_options(-Os -fno-rtti)
+    add_compile_options(-Os -fno-rtti)
     add_subdirectory(dnnlibrary)
     add_subdirectory(binaries)
 else()
