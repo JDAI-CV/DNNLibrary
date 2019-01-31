@@ -66,18 +66,25 @@ int convert_fuse_code_to_nnapi(DNN::FuseCode fuse_code) {
 }
 
 void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
+    using namespace android::nn::wrapper;
+
     for (const auto &tensor : *model.initializers()) {
+        ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
         if (tensor->data_type() == DNN::DataType::Float32) {
-            ModelBuilder::Shape shape(tensor->shape()->begin(), tensor->shape()->end());
             builder.AddTensorFromBuffer(tensor->name()->str(),
                                         tensor->float32_data()->data(),
-                                        shape);
+                                        {Type::TENSOR_FLOAT32, shape});
         } else if (tensor->data_type() == DNN::DataType::QUANT8_ASYMM) {
-
+            const auto scale = tensor->scales()->Get(0);
+            const auto zero_point = tensor->zero_point();
+            builder.AddTensorFromBuffer(tensor->name()->str(),
+                                        tensor->int8_data()->data(),
+                                        {Type::TENSOR_QUANT8_ASYMM, shape, scale, zero_point});
         }
     }
 }
 
+// TODO: combine it and AddInitializersFromBuffer
 void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
     for (const auto &tensor : *model.initializers()) {
         if (tensor->data_type() == DNN::DataType::Float32) {

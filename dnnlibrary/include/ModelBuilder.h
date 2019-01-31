@@ -74,7 +74,8 @@ public:
     Index GetBlobIndex(const std::string &blobName);
     Shape GetBlobDim(const std::string &blobName);
     Shape GetBlobDim(Index index);
-    Index AddInput(std::string name, uint32_t height, uint32_t width, uint32_t depth);
+    Index AddInput(std::string name, const uint32_t height, const uint32_t width, const uint32_t depth);
+    Index AddInput(std::string name, const android::nn::wrapper::OperandType &operand_type);
     Index AddDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
                                          int32_t paddingLeft,
                                          int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
@@ -86,8 +87,7 @@ public:
                                 int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
                                 int32_t activation, const std::string &weight_name,
                                 const std::optional<std::string> &bias_name, const std::string &output_name);
-    Index AddTensorFromBuffer(const std::string &name, const float *buffer, Shape dimen);
-    Index AddTensorFromBuffer(const std::string &name, const int32_t *buffer, Shape dimen);
+    Index AddTensorFromBuffer(const std::string &name, const void *buffer, const android::nn::wrapper::OperandType &operand_type);
     Index AddTensorFromMemory(const std::string &name, const uint8_t *addr, Shape dimen);
     Index AddFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
                 const std::optional<std::string> &bias_name, const std::string &output_name);

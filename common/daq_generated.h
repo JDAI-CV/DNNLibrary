@@ -54,16 +54,15 @@ enum class DataType : int8_t {
   Float16 = 3,
   Bool8 = 4,
   QUANT8_ASYMM = 5,
-  QUANT8_ASYMM_PER_CHANNEL = 6,
-  QUANT8_SYMM = 7,
-  QUANT8_SYMM_PER_CHANNEL = 8,
-  QUANT16_ASYMM = 9,
-  QUANT16_SYMM = 10,
+  QUANT8_SYMM = 6,
+  QUANT8_SYMM_PER_CHANNEL = 7,
+  QUANT16_ASYMM = 8,
+  QUANT16_SYMM = 9,
   MIN = Float32,
   MAX = QUANT16_SYMM
 };
 
-inline const DataType (&EnumValuesDataType())[11] {
+inline const DataType (&EnumValuesDataType())[10] {
   static const DataType values[] = {
     DataType::Float32,
     DataType::Int8,
@@ -71,7 +70,6 @@ inline const DataType (&EnumValuesDataType())[11] {
     DataType::Float16,
     DataType::Bool8,
     DataType::QUANT8_ASYMM,
-    DataType::QUANT8_ASYMM_PER_CHANNEL,
     DataType::QUANT8_SYMM,
     DataType::QUANT8_SYMM_PER_CHANNEL,
     DataType::QUANT16_ASYMM,
@@ -88,7 +86,6 @@ inline const char * const *EnumNamesDataType() {
     "Float16",
     "Bool8",
     "QUANT8_ASYMM",
-    "QUANT8_ASYMM_PER_CHANNEL",
     "QUANT8_SYMM",
     "QUANT8_SYMM_PER_CHANNEL",
     "QUANT16_ASYMM",
@@ -244,8 +241,8 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<float> *scales() const {
     return GetPointer<const flatbuffers::Vector<float> *>(VT_SCALES);
   }
-  uint32_t zero_point() const {
-    return GetField<uint32_t>(VT_ZERO_POINT, 0);
+  int32_t zero_point() const {
+    return GetField<int32_t>(VT_ZERO_POINT, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -264,7 +261,7 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(bool8_data()) &&
            VerifyOffset(verifier, VT_SCALES) &&
            verifier.VerifyVector(scales()) &&
-           VerifyField<uint32_t>(verifier, VT_ZERO_POINT) &&
+           VerifyField<int32_t>(verifier, VT_ZERO_POINT) &&
            verifier.EndTable();
   }
 };
@@ -296,8 +293,8 @@ struct TensorBuilder {
   void add_scales(flatbuffers::Offset<flatbuffers::Vector<float>> scales) {
     fbb_.AddOffset(Tensor::VT_SCALES, scales);
   }
-  void add_zero_point(uint32_t zero_point) {
-    fbb_.AddElement<uint32_t>(Tensor::VT_ZERO_POINT, zero_point, 0);
+  void add_zero_point(int32_t zero_point) {
+    fbb_.AddElement<int32_t>(Tensor::VT_ZERO_POINT, zero_point, 0);
   }
   explicit TensorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -321,7 +318,7 @@ inline flatbuffers::Offset<Tensor> CreateTensor(
     flatbuffers::Offset<flatbuffers::Vector<uint16_t>> float16_data = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> scales = 0,
-    uint32_t zero_point = 0) {
+    int32_t zero_point = 0) {
   TensorBuilder builder_(_fbb);
   builder_.add_zero_point(zero_point);
   builder_.add_scales(scales);
@@ -345,7 +342,7 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
     const std::vector<uint16_t> *float16_data = nullptr,
     const std::vector<uint8_t> *bool8_data = nullptr,
     const std::vector<float> *scales = nullptr,
-    uint32_t zero_point = 0) {
+    int32_t zero_point = 0) {
   return DNN::CreateTensor(
       _fbb,
       data_type,

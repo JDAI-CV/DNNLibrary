@@ -19,7 +19,7 @@ table Tensor {
     bool8_data: [uint8];
     /// a float32 array of scales, the length will be 1 for non per-channel quantization, and be channelDim for per-channel quantization
     scales: [float32];
-    zero_point: uint32;
+    zero_point: int32;
 }
 
 table Input {

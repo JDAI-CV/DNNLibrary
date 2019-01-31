@@ -39,11 +39,15 @@ void ModelBuilder::AppendOperandIndex(const std::string &name, ModelBuilder::Ind
     ordered_operands_.push_back(name);
 }
 
-ModelBuilder::Index ModelBuilder::AddInput(string name, uint32_t height, uint32_t width, uint32_t depth) {
-    vector<uint32_t> dimen{1, width, height, depth};
-    uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
+ModelBuilder::Index ModelBuilder::AddInput(string name, const uint32_t height, const uint32_t width, const uint32_t depth) {
+    const vector<uint32_t> dimen{1, width, height, depth};
+    return AddInput(name, {Type::TENSOR_FLOAT32, dimen});
+}
 
-    shaper_.AddShape(name, dimen);
+ModelBuilder::Index ModelBuilder::AddInput(std::string name, const OperandType &operand_type) {
+    uint32_t index = AddNewOperand(operand_type);
+
+    shaper_.AddShape(name, operand_type.dimensions);
     input_index_vec_.push_back(index);
     dnn_model_->AddInput(name, shaper_[name]);
     AppendOperandIndex(name, index);
@@ -344,6 +348,7 @@ ModelBuilder::Index ModelBuilder::AddNewOperand(const OperandType &operand_type)
     return next_index_++;
 }
 
+// TODO: combine it and AddTensorFromBuffer
 ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name, const uint8_t *addr, Shape dimen) {
     DNN_ASSERT(!dimen.empty(), "");
     uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
@@ -355,21 +360,41 @@ ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name, const 
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(const string &name, const float *buffer, Shape dimen) {
+ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(const string &name, const void *buffer, const OperandType &operand_type) {
     DNN_ASSERT(!dimen.empty(), "");
-    uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
-    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, buffer, Product(dimen) * sizeof(float)));
-    shaper_.AddShape(name, dimen);
-    AppendOperandIndex(name, index);
-    return index;
-}
-
-ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(const string &name, const int32_t *buffer,
-                                                      Shape dimen) {
-    DNN_ASSERT(!dimen.empty(), "");
-    uint32_t index = AddNewOperand({Type::TENSOR_INT32, dimen});
-    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, buffer, Product(dimen) * sizeof(int32_t)));
-    shaper_.AddShape(name, dimen);
+    DNN_ASSERT(!isScalarType(operand_type.type), "");
+    size_t element_size;
+    switch (operand_type.type) {
+        case Type::TENSOR_BOOL8:
+            element_size = 1;
+            break;
+        case Type::TENSOR_FLOAT16:
+            element_size = 2;
+            break;
+        case Type::TENSOR_FLOAT32:
+            element_size = 4;
+            break;
+        case Type::TENSOR_INT32:
+            element_size = 4;
+            break;
+        case Type::TENSOR_QUANT8_SYMM_PER_CHANNEL:
+            element_size = 1;
+            break;
+        case Type::TENSOR_QUANT8_ASYMM:
+            element_size = 1;
+            break;
+        case Type::TENSOR_QUANT16_SYMM:
+            element_size = 2;
+            break;
+        case Type::TENSOR_QUANT16_ASYMM:
+            element_size = 2;
+            break;
+        default:
+            throw std::invalid_argument("Wrong type: " + typeToStr(operand_type.type));
+    }
+    uint32_t index = AddNewOperand(operand_type);
+    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, buffer, Product(operand_type.dimensions) * element_size));
+    shaper_.AddShape(name, operand_type.dimensions);
     AppendOperandIndex(name, index);
     return index;
 }
