@@ -114,10 +114,9 @@ ModelBuilder::AddStridedSlice(const string &input_name, const vector<int32_t> &s
 
     auto input = operand_indexes_[input_name];
 
-    uint32_t startsIndex = AddTensorFromBuffer(output_name + "_starts", &starts[0], vector<uint32_t>{static_cast<uint32_t>(starts.size())});
-    uint32_t endsIndex = AddTensorFromBuffer(output_name + "_ends", &ends[0], vector<uint32_t>{static_cast<uint32_t>(ends.size())});
-    uint32_t stridesIndex = AddTensorFromBuffer(output_name + "_strides", &strides[0],
-                                                   vector<uint32_t>{static_cast<uint32_t>(strides.size())});
+    uint32_t startsIndex = AddTensorFromBuffer(output_name + "_starts", &starts[0], {Type::TENSOR_INT32, Shape{static_cast<uint32_t>(starts.size())}});
+    uint32_t endsIndex = AddTensorFromBuffer(output_name + "_ends", &ends[0], {Type::TENSOR_INT32, Shape{static_cast<uint32_t>(ends.size())}});
+    uint32_t stridesIndex = AddTensorFromBuffer(output_name + "_strides", &strides[0], {Type::TENSOR_INT32, Shape{static_cast<uint32_t>(strides.size())}});
 
     shaper_.StridedSlice(input_name, starts, ends, strides, beginMask, endMask, shrinkAxisMask, output_name);
     IndexSeq input_indexes{input, startsIndex, endsIndex, stridesIndex};
@@ -132,8 +131,8 @@ ModelBuilder::Index ModelBuilder::AddSpaceToBatchND(const std::string &input_nam
         const std::vector<int32_t> &pads, const std::string &output_name) {
     auto input = operand_indexes_[input_name];
 
-    auto block_sizes_idx = AddTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
-    auto pads_idx = AddTensorFromBuffer(output_name + "_pad", &pads[0], Shape{static_cast<uint32_t>(pads.size()) / 2, 2});
+    auto block_sizes_idx = AddTensorFromBuffer(output_name + "_bs", &block_sizes[0], {Type::TENSOR_INT32, Shape{static_cast<uint32_t>(block_sizes.size())}});
+    auto pads_idx = AddTensorFromBuffer(output_name + "_pad", &pads[0], {Type::TENSOR_INT32, Shape{static_cast<uint32_t>(pads.size()) / 2, 2}});
 
     shaper_.SpaceToBatch(input_name, block_sizes, pads, output_name);
     IndexSeq input_indexes{input, block_sizes_idx, pads_idx};
@@ -146,7 +145,7 @@ ModelBuilder::Index ModelBuilder::AddBatchToSpaceND(const std::string &input_nam
         const std::string &output_name) {
     auto input = operand_indexes_[input_name];
 
-    auto block_sizes_idx = AddTensorFromBuffer(output_name + "_bs", &block_sizes[0], Shape{static_cast<uint32_t>(block_sizes.size())});
+    auto block_sizes_idx = AddTensorFromBuffer(output_name + "_bs", &block_sizes[0], {Type::TENSOR_INT32, Shape{static_cast<uint32_t>(block_sizes.size())}});
 
     shaper_.BatchToSpace(input_name, block_sizes, output_name);
     IndexSeq input_indexes{input, block_sizes_idx};
@@ -361,7 +360,7 @@ ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name, const 
 }
 
 ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(const string &name, const void *buffer, const OperandType &operand_type) {
-    DNN_ASSERT(!dimen.empty(), "");
+    DNN_ASSERT(!operand_type.dimensions.empty(), "");
     DNN_ASSERT(!isScalarType(operand_type.type), "");
     size_t element_size;
     switch (operand_type.type) {
@@ -474,7 +473,7 @@ ModelBuilder::Index ModelBuilder::FillOperand(css &name, const OperandType &oper
     for (size_t i = 0; i < Product(operand_type.dimensions); i++) { \
         buf[i] = val;   \
     }   \
-    auto idx = AddTensorFromBuffer(name, buf.get(), operand_type.dimensions);  \
+    auto idx = AddTensorFromBuffer(name, buf.get(), {Type::TENSOR_##op_type, operand_type.dimensions});  \
     RegisterBufferPointer(std::move(buf));  \
     return idx; \
 }
