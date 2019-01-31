@@ -9,9 +9,9 @@
 #include <vector>
 #include <memory>
 
-#include <android/NeuralNetworks.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
+#include <NeuralNetworksWrapper.h>
 
 class Model {
     friend class ModelBuilder;

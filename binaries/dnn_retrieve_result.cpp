@@ -24,6 +24,8 @@ int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_log_dir = "/data/local/tmp/log";
     FLAGS_logbuflevel = -1;
+    FLAGS_alsologtostderr = true;
+    FLAGS_v = 5;
     if (argc < 3 || argc > 4) {
         return -1;
     }

@@ -5,7 +5,6 @@
 #ifndef NNAPIEXAMPLE_MODELBUILDER_H
 #define NNAPIEXAMPLE_MODELBUILDER_H
 
-#include <android/NeuralNetworks.h>
 #include <string>
 #include <vector>
 #include <numeric>
@@ -16,6 +15,7 @@
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
 #include "Model.h"
+#include <NeuralNetworksWrapper.h>
 
 class ModelBuilder {
 public:
@@ -41,7 +41,7 @@ private:
     uint32_t next_index_ = 0;
 
     void AppendOperandIndex(const std::string &name, Index index);
-    uint32_t AddNewOperand(ANeuralNetworksOperandType *type);
+    uint32_t AddNewOperand(const android::nn::wrapper::OperandType &type);
 
     // IndexSeq addOperation(int op, IndexSeq input_indexes, Shape... shapes);
     template <typename... Shapes>
@@ -56,18 +56,15 @@ private:
     Index AddFloat32NullOperandWithDims(Shape &dims);
     Index AddFloat32ZeroOperandWithDims(Shape &dims);
 
-    ANeuralNetworksOperandType GetFloat32OperandTypeWithDims(Shape &dims);
-    ANeuralNetworksOperandType GetInt32OperandTypeWithDims(Shape &dims);
-
-    ANeuralNetworksOperandType GetInt32OperandType();
-    ANeuralNetworksOperandType GetFloat32OperandType();
+    android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type);
+    android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type, const Shape &dims);
 
 public:
     static const int MAX_POOL = 0;
     static const int AVE_POOL = 1;
 
-    static const uint32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
-    static const uint32_t ACTIVATION_RELU = ANEURALNETWORKS_FUSED_RELU;
+    static const int32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
+    static const int32_t ACTIVATION_RELU = ANEURALNETWORKS_FUSED_RELU;
 
     static const uint32_t PREFERENCE_FAST_SINGLE_ANSWER = ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER;
     static const uint32_t PREFERENCE_SUSTAINED_SPEED = ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;

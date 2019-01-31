@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 
+#include <glog/logging.h>
+
 template <typename T>
 std::ostream& operator<<(std::ostream& output, std::vector<T> const& values) {
     output << "[";

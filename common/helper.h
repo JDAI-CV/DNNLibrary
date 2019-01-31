@@ -12,4 +12,15 @@ T Product(const std::vector<T> &v) {
 
 using css = const std::string;
 
+#define STR(a) #a
+#define XSTR(a) STR(a)
+
+#define DNN_ASSERT(condition, note) \
+    if (!(condition)) { \
+        std::stringstream ss;   \
+        ss << std::string(XSTR(condition)) << std::string(" is not satisfied on ") << std::to_string(__LINE__) << " of " << __FILE__ << note; \
+        LOG(INFO) << ss.str();   \
+        throw std::runtime_error(ss.str()); \
+    }
+
 #endif /* DNNLIBRARY_HELPER_H */

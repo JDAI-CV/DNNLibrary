@@ -32,6 +32,7 @@
 
 using std::vector; using std::ifstream; using std::streamsize; using std::string; using std::ios;
 using std::stringstream; using std::array;
+using namespace android::nn::wrapper;
 
 void ModelBuilder::AppendOperandIndex(const std::string &name, ModelBuilder::Index index) {
     operand_indexes_[name] = index;
@@ -40,8 +41,7 @@ void ModelBuilder::AppendOperandIndex(const std::string &name, ModelBuilder::Ind
 
 ModelBuilder::Index ModelBuilder::AddInput(string name, uint32_t height, uint32_t width, uint32_t depth) {
     vector<uint32_t> dimen{1, width, height, depth};
-    ANeuralNetworksOperandType type = GetFloat32OperandTypeWithDims(dimen);
-    uint32_t index = AddNewOperand(&type);
+    uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
 
     shaper_.AddShape(name, dimen);
     input_index_vec_.push_back(index);
@@ -306,54 +306,17 @@ ModelBuilder::Index ModelBuilder::AddMulTensor(const string &input1_name, const 
 }
 //--------------------------------------------------------------------------------------------------//
 
-ANeuralNetworksOperandType ModelBuilder::GetInt32OperandTypeWithDims(Shape &dims) {
-    ANeuralNetworksOperandType type;
-    type.type = ANEURALNETWORKS_TENSOR_INT32;
-    type.scale = 0.f;
-    type.zeroPoint = 0;
-    type.dimensionCount = static_cast<uint32_t>(dims.size());
-    type.dimensions = &dims[0];
-
-    return type;
+OperandType ModelBuilder::GetOperandType(const Type &type) {
+    return {type, {}};
 }
 
-ANeuralNetworksOperandType ModelBuilder::GetFloat32OperandTypeWithDims(Shape &dims) {
-    ANeuralNetworksOperandType type;
-    type.type = ANEURALNETWORKS_TENSOR_FLOAT32;
-    type.scale = 0.f;
-    type.zeroPoint = 0;
-    type.dimensionCount = static_cast<uint32_t>(dims.size());
-    type.dimensions = &dims[0];
-
-    return type;
-}
-
-ANeuralNetworksOperandType ModelBuilder::GetInt32OperandType() {
-    ANeuralNetworksOperandType type;
-    type.type = ANEURALNETWORKS_INT32;
-    type.scale = 0.f;
-    type.zeroPoint = 0;
-    type.dimensionCount = 0;
-    type.dimensions = nullptr;
-
-    return type;
-}
-
-ANeuralNetworksOperandType ModelBuilder::GetFloat32OperandType() {
-    ANeuralNetworksOperandType type;
-    type.type = ANEURALNETWORKS_FLOAT32;
-    type.scale = 0.f;
-    type.zeroPoint = 0;
-    type.dimensionCount = 0;
-    type.dimensions = nullptr;
-
-    return type;
+OperandType ModelBuilder::GetOperandType(const Type &type, const Shape &dims) {
+    return {type, dims};
 }
 
 ModelBuilder::Index ModelBuilder::AddOperand(uint32_t value) {
     if (uint32_operand_map_.find(value) == uint32_operand_map_.end()) {
-        ANeuralNetworksOperandType type = GetInt32OperandType();
-        uint32_t index = AddNewOperand(&type);
+        uint32_t index = AddNewOperand({Type::UINT32});
         THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, &value, sizeof(value)), 
                 "value: " + std::to_string(value));
         uint32_operand_map_[value] = index;
@@ -363,8 +326,7 @@ ModelBuilder::Index ModelBuilder::AddOperand(uint32_t value) {
 
 ModelBuilder::Index ModelBuilder::AddOperand(int32_t value) {
     if (int32_operand_map_.find(value) == int32_operand_map_.end()) {
-        ANeuralNetworksOperandType type = GetInt32OperandType();
-        uint32_t index = AddNewOperand(&type);
+        uint32_t index = AddNewOperand({Type::INT32});
         THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, &value, sizeof(value)),
                 "value: " + std::to_string(value));
         int32_operand_map_[value] = index;
@@ -374,8 +336,7 @@ ModelBuilder::Index ModelBuilder::AddOperand(int32_t value) {
 
 ModelBuilder::Index ModelBuilder::AddOperand(float value) {
     if (float32_operand_map_.find(value) == float32_operand_map_.end()) {
-        ANeuralNetworksOperandType type = GetFloat32OperandType();
-        uint32_t index = AddNewOperand(&type);
+        uint32_t index = AddNewOperand({Type::FLOAT32});
         THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, &value, sizeof(value)),
                 "value: " + std::to_string(value));
         float32_operand_map_[value] = index;
@@ -391,8 +352,7 @@ ModelBuilder::Index ModelBuilder::AddFloat32AsTensorOperand(float value) {
          * because ANeuralNetworksOperandType is only a struct storing a pointer to dims[0]
          */
         auto dims = Shape{1};
-        auto type = GetFloat32OperandTypeWithDims(dims);
-        uint32_t index = AddNewOperand(&type);
+        uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dims});
         THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, &value, sizeof(value)),
                 "value: " + std::to_string(value));
         float32_as_tensor_operand_map_[value] = index;
@@ -403,8 +363,7 @@ ModelBuilder::Index ModelBuilder::AddFloat32AsTensorOperand(float value) {
 
 ModelBuilder::Index ModelBuilder::AddInt32NullOperand() {
     if (int32_missing_index == UINT32_MAX) {
-        ANeuralNetworksOperandType type = GetInt32OperandType();
-        int32_missing_index = AddNewOperand(&type);
+        int32_missing_index = AddNewOperand({Type::INT32});
         THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, int32_missing_index, nullptr, 0));
     }
     return int32_missing_index;
@@ -412,21 +371,20 @@ ModelBuilder::Index ModelBuilder::AddInt32NullOperand() {
 
 ModelBuilder::Index ModelBuilder::AddFloat32NullOperand() {
     if (float32_missing_index == UINT32_MAX) {
-        ANeuralNetworksOperandType type = GetFloat32OperandType();
-        float32_missing_index = AddNewOperand(&type);
+        float32_missing_index = AddNewOperand({Type::FLOAT32});
         THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, float32_missing_index, nullptr, 0));
     }
     return float32_missing_index;
 }
 
-ModelBuilder::Index ModelBuilder::AddNewOperand(ANeuralNetworksOperandType *type) {
-    THROW_ON_ERROR(ANeuralNetworksModel_addOperand(dnn_model_->model_, type));
+ModelBuilder::Index ModelBuilder::AddNewOperand(const OperandType &type) {
+    THROW_ON_ERROR(ANeuralNetworksModel_addOperand(dnn_model_->model_, &type.operandType));
     return next_index_++;
 }
 
 ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name, const uint8_t *addr, Shape dimen) {
-    ANeuralNetworksOperandType type = GetFloat32OperandTypeWithDims(dimen);
-    uint32_t index = AddNewOperand(&type);
+    DNN_ASSERT(!dimen.empty(), "");
+    uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
     THROW_ON_ERROR(ANeuralNetworksModel_setOperandValueFromMemory(
                 dnn_model_->model_, index, dnn_model_->memory_, addr - dnn_model_->data_,
                 Product(dimen) * sizeof(float)));
@@ -436,8 +394,7 @@ ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name, const 
 }
 
 ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(const string &name, const float *buffer, Shape dimen) {
-    ANeuralNetworksOperandType type = GetFloat32OperandTypeWithDims(dimen);
-    uint32_t index = AddNewOperand(&type);
+    uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
     THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, buffer, Product(dimen) * sizeof(float)));
     shaper_.AddShape(name, dimen);
     AppendOperandIndex(name, index);
@@ -446,8 +403,7 @@ ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(const string &name, const 
 
 ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(const string &name, const int32_t *buffer,
                                                       Shape dimen) {
-    ANeuralNetworksOperandType type = GetInt32OperandTypeWithDims(dimen);
-    uint32_t index = AddNewOperand(&type);
+    uint32_t index = AddNewOperand({Type::TENSOR_INT32, dimen});
     THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, buffer, Product(dimen) * sizeof(int32_t)));
     shaper_.AddShape(name, dimen);
     AppendOperandIndex(name, index);
@@ -523,8 +479,7 @@ ModelBuilder::Index ModelBuilder::GetBlobIndex(const string &blobName) {
 }
 
 ModelBuilder::Index ModelBuilder::AddFloat32NullOperandWithDims(Shape &dims) {
-    ANeuralNetworksOperandType type = GetFloat32OperandTypeWithDims(dims);
-    uint32_t index = AddNewOperand(&type);
+    uint32_t index = AddNewOperand({Type::TENSOR_FLOAT32, dims});
     ANeuralNetworksModel_setOperandValue(dnn_model_->model_, index, nullptr, 0);
     return index;
 }
@@ -582,8 +537,7 @@ ModelBuilder::IndexSeq ModelBuilder::AddOperation(int op, IndexSeq input_indexes
     (shape_vec.push_back(shapes), ...);
     IndexSeq output_indexes;
     for (auto shape : shape_vec) {
-        ANeuralNetworksOperandType type = GetFloat32OperandTypeWithDims(shape);
-        auto index = AddNewOperand(&type);
+        auto index = AddNewOperand({Type::TENSOR_FLOAT32, shape});
         output_indexes.push_back(index);
     }
 
