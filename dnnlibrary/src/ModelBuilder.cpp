@@ -157,7 +157,7 @@ ModelBuilder::Index ModelBuilder::AddPool(const string &input_name, int32_t stri
                                           int32_t paddingLeft, int32_t paddingRight,
                                           int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width,
                                           int32_t activation,
-                                          uint32_t poolingType, const string &output_name) {
+                                          PoolingType poolingType, const string &output_name) {
     auto input = operand_indexes_[input_name];
 
     if (height == -1 && width == -1) {
@@ -176,10 +176,12 @@ ModelBuilder::Index ModelBuilder::AddPool(const string &input_name, int32_t stri
             strideX, strideY, width, height, activation);
 
     Index output_index;
-    if (poolingType == MAX_POOL) {  // TODO: use strong typed enum here
+    if (poolingType == PoolingType::MAX_POOL) {
         output_index = AddOperation(ANEURALNETWORKS_MAX_POOL_2D, input_indexes, shaper_[output_name])[0];
-    } else if (poolingType == AVE_POOL) {
+    } else if (poolingType == PoolingType::AVE_POOL) {
         output_index = AddOperation(ANEURALNETWORKS_AVERAGE_POOL_2D, input_indexes, shaper_[output_name])[0];
+    } else {
+        throw std::invalid_argument("Unknown pooling type");
     }
     AppendOperandIndex(output_name, output_index);
     return output_index;

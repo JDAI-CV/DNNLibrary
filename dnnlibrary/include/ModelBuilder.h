@@ -58,8 +58,10 @@ private:
     android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type, const Shape &dims);
 
 public:
-    static const int MAX_POOL = 0;
-    static const int AVE_POOL = 1;
+    enum class PoolingType {
+        MAX_POOL,
+        AVE_POOL
+    };
 
     static const int32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
     static const int32_t ACTIVATION_RELU = ANEURALNETWORKS_FUSED_RELU;
@@ -93,7 +95,7 @@ public:
     Index
     AddPool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
             int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
-            uint32_t poolingType, const std::string &output_name);
+            PoolingType poolingType, const std::string &output_name);
     Index AddSoftMax(const std::string &input_name, float beta, const std::string &output_name);
     Index AddOperationAdd(const std::string &input_name, float scalar, std::string output_name);
     Index AddOperationAdd(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);

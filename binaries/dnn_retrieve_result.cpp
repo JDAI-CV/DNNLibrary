@@ -41,31 +41,29 @@ int main(int argc, char **argv) {
         daq_reader.ReadDaq(daqName, builder, false);
         model = builder.AddOutput(outputBlob).Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
     }
-    auto inputLen = model->GetInputSize(0), outputLen = model->GetOutputSize(0);
+    const auto inputLen = model->GetInputSize(0), outputLen = model->GetOutputSize(0);
     float data[inputLen];
     if (use_external_input) {
         std::ifstream ifs(argv[3]);
         float element;
-        for (int i = 0; i < inputLen; i++) {
+        FORZ(i, inputLen) {
             if (!(ifs >> element)) {
                 throw std::invalid_argument("Read file error");
             }
             data[i] = element;
         }
     } else {
-        for (int i = 0; i < inputLen; i++) {
+        FORZ(i, inputLen) {
             data[i] = i;
         }
     }
 
     float output[outputLen];
 
-    auto t1 = Clock::now();
     model->SetOutputBuffer(0, output);
     model->Predict(std::vector{data});
-    auto t2 = Clock::now();
     std::ofstream ofs("/data/local/tmp/result");
-    for (int i = 0; i < outputLen; i++) {
+    FORZ(i, outputLen) {
         ofs << output[i] << endl;
     }
 }

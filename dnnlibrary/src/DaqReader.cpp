@@ -147,7 +147,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1),
                                 convert_fuse_code_to_nnapi(fuse),
-                                ModelBuilder::AVE_POOL, output_name);
+                                ModelBuilder::PoolingType::AVE_POOL, output_name);
                 break;
             }
             case DNN::LayerType::MaxPool: {
@@ -163,7 +163,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1),
                                 convert_fuse_code_to_nnapi(fuse),
-                                ModelBuilder::MAX_POOL, output_name);
+                                ModelBuilder::PoolingType::MAX_POOL, output_name);
                 break;
             }
             case DNN::LayerType::Relu: {

@@ -12,6 +12,12 @@ T Product(const std::vector<T> &v) {
 
 using css = const std::string;
 
+#define FORZS(var, end, step) for (auto var = decltype(end){0}; var < end; var += (step))
+
+#define FORZ(var, end) for (auto var = decltype(end){0}; var < end; var++)
+
+#define FOR(var, start, end) for (auto var = decltype(end){start}; var < end; var++)
+
 #define STR(a) #a
 #define XSTR(a) STR(a)
 

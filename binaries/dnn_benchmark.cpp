@@ -30,7 +30,7 @@ auto get_model(css &daqName, css &outputBlob, const bool allowFp16, const Prefer
 #else
     model = builder.AddOutput(outputBlob).Compile(compilePreference);
 #endif
-    return std::move(model);
+    return model;
 }
 
 auto PrefCodeToStr(const PreferenceCode &preferenceCode) {
@@ -65,7 +65,7 @@ int main(int argc, char **argv) {
         outputLen = model->GetOutputSize(0);
     }
     float data[inputLen];
-    for (int i = 0; i < inputLen; i++) {
+    FORZ(i, inputLen) {
         data[i] = i;
     }
     float output[outputLen];

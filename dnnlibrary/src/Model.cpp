@@ -60,7 +60,7 @@ void Model::AddOutput(const std::string &name, const Shaper::Shape &shape) {
 
 void Model::Predict(std::vector<float *> inputs) {
     if (!prepared_for_exe_) PrepareForExecution();
-    for (int32_t i = 0; i < inputs.size(); i++) {
+    for (size_t i = 0; i < inputs.size(); i++) {
         SetInputBuffer(i, inputs[i]);
     }
     ANeuralNetworksEvent* event = nullptr;
