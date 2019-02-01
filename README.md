@@ -121,7 +121,7 @@ _ | TF Lite | DNNLibrary
 Supported Model Format | TensorFlow | ONNX
 Dilated Convolution | ❌ | ✔️
 Ease of Use | ❌ <br/>(Bazel build system,<br/>not friendly to Android developers) | ✔️ 
-Quantization | ✔️ | ❌<br/>(WIP, plan to base on [this](https://github.com/BUG1989/caffe-int8-convert-tools))
+Quantization | ✔️ | ❌<br/>(actively developing on [quantization](https://github.com/daquexian/DNNLibrary/tree/quantization) branch)
 
 However we are also far from maturity comparing to TF Lite. At least we are an another choice if you want to enjoy the power of NNAPI :)
 
