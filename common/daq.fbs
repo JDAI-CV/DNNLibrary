@@ -17,6 +17,11 @@ table Tensor {
     /// since flatbuffers doesn't have float16 data type, use uint16 instead
     float16_data: [uint16];
     bool8_data: [uint8];
+}
+
+table QuantInfo {
+    name: string;
+    data_type: DataType;
     /// a float32 array of scales, the length will be 1 for non per-channel quantization, and be channelDim for per-channel quantization
     scales: [float32];
     zero_point: int32;
@@ -165,6 +170,7 @@ table Model {
     layers:[Layer];
     initializers:[Tensor];
     inputs:[Input];
+    quant_infos:[QuantInfo];
 }
 
 root_type Model;

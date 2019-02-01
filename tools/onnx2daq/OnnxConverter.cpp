@@ -141,6 +141,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
     layers_.push_back(layer);
 }
 
+// The reason that we only store weights rather than directly add them in daq model is that there may be different transform (nchw->nhwc or not) on the weights
 void OnnxConverter::HandleInitializer() {
     for (const auto &tensor : model_proto_.graph().initializer()) {
         if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
@@ -154,7 +155,9 @@ void OnnxConverter::HandleInitializer() {
 
             onnx_tensors_[tensor.name()] = {data_vec, shape};
         } else if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
-            // const auto *ptr = tensor.raw_data().data();
+            const auto *ptr = tensor.raw_data().data();
+            DNN_ASSERT(tensor.has_name(), "");
+            const auto quant_info = quant_infos_.at(tensor.name());
             // const auto scale = quant_info.scales(0);
             // const auto zp = quant_info.zero_point();
         }
@@ -188,10 +191,34 @@ std::vector<flatbuffers::Offset<DNN::Input>> OnnxConverter::GetInputOfOnnxModel(
     return inputs;
 }
 
-void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const std::string &filepath) {
+void OnnxConverter::ReadTableFile(css &table_file) {
+    std::ifstream ifs(table_file);
+    while (!ifs.eof()) {
+        std::string name;
+        int scale_num, zero_point_num;
+        std::vector<float> scales;
+        nonstd::optional<int> zero_point;
+
+        ifs >> name >> scale_num;
+        FORZ(i, scale_num) {
+            float scale;
+            ifs >> scale;
+            scales.push_back(scale);
+        }
+        ifs >> zero_point_num;
+        if (zero_point_num > 0) {
+            ifs >> zero_point.value();
+        }
+        quant_infos_[name] = {scales, zero_point};
+    }
+}
+
+void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const std::string &filepath, const css &table_file) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
     model_proto_ = ONNX_NAMESPACE::optimization::Optimize(model_proto, vector<string>{"extract_constant_to_initializer", "eliminate_identity", "eliminate_nop_transpose", "eliminate_nop_pad", "fuse_bn_into_conv"});
+
+    ReadTableFile(table_file);
 
     HandleInitializer();
 

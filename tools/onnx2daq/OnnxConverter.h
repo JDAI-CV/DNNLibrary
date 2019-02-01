@@ -25,6 +25,12 @@ private:
         FUSED_RELU6
     };
 
+    struct QuantInfo {
+        std::vector<float> scales;
+        nonstd::optional<int32_t> zero_point;
+    };
+    StrKeyMap<QuantInfo> quant_infos_;
+
     std::map<std::string, std::string> name_map_;
 
     std::string m(const std::string &str);
@@ -45,6 +51,7 @@ private:
 
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
+    void ReadTableFile(css &table_file);
 
     void AddConv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
             const std::vector<int> &dilations, int group, 
@@ -225,5 +232,5 @@ private:
     }
 
 public:
-    void Convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath);
+    void Convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath, const css &table_file);
 };
