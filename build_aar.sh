@@ -7,6 +7,7 @@ rm -rf ${JNI_BUILD_DIR} && mkdir ${JNI_BUILD_DIR} && pushd ${JNI_BUILD_DIR}
 cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=android-28 -DANDROID_ABI=arm64-v8a -DDNN_BUILD_JNI=ON -DDNN_BUILD_SHARED_LIBS=ON -DDNN_BUILD_BIN=OFF ..
 cmake --build . -- "-j$(nproc)"
 popd
+mkdir -p ./android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a
 cp ${JNI_BUILD_DIR}/dnnlibrary/libdnn-jni.so ./android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/libdaq-jni.so
 
 # Increase version code and update version name
