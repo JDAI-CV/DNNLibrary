@@ -43,6 +43,9 @@ private:
     DNN::FuseCode ConvertFuseCodeType(FuseCode fuse_code);
     std::pair<nonstd::optional<std::string>, FuseCode> FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, css &output_name);
 
+    void HandleInitializer();
+    std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
+
     void AddConv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
             const std::vector<int> &dilations, int group, 
             const std::pair<nonstd::optional<std::string>, FuseCode>& activation,

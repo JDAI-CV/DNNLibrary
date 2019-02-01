@@ -6,7 +6,6 @@
 #include <map>
 
 #include <glog/logging.h>
-#include <onnx/onnx.pb.h>
 #include <onnx/optimizer/optimize.h>
 #include <common/StrKeyMap.h>
 #include <common/Shaper.h>
@@ -142,11 +141,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
     layers_.push_back(layer);
 }
 
-void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const std::string &filepath) {
-    GOOGLE_PROTOBUF_VERIFY_VERSION;
-
-    model_proto_ = ONNX_NAMESPACE::optimization::Optimize(model_proto, vector<string>{"extract_constant_to_initializer", "eliminate_identity", "eliminate_nop_transpose", "eliminate_nop_pad", "fuse_bn_into_conv"});
-
+void OnnxConverter::HandleInitializer() {
     for (const auto &tensor : model_proto_.graph().initializer()) {
         if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
             const float *ptr = tensor.float_data().empty() ?
@@ -158,11 +153,19 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
             auto data_vec = vector<float>(ptr, ptr + Product(shape));
 
             onnx_tensors_[tensor.name()] = {data_vec, shape};
+        } else if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
+            // const auto *ptr = tensor.raw_data().data();
+            // const auto scale = quant_info.scales(0);
+            // const auto zp = quant_info.zero_point();
         }
         operands_.push_back(tensor.name());
     }
 
+}
+
+std::vector<flatbuffers::Offset<DNN::Input>> OnnxConverter::GetInputOfOnnxModel() {
     vector<flatbuffers::Offset<DNN::Input>> inputs;
+
     for (const auto &input : model_proto_.graph().input()) {
         if (std::find(operands_.begin(), operands_.end(), input.name()) != operands_.end()) {
             continue;
@@ -181,6 +184,18 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
         auto flat_input = DNN::CreateInputDirect(builder_, &nnapi_shape, input.name().c_str());
         inputs.push_back(flat_input);
     }
+
+    return inputs;
+}
+
+void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const std::string &filepath) {
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+    model_proto_ = ONNX_NAMESPACE::optimization::Optimize(model_proto, vector<string>{"extract_constant_to_initializer", "eliminate_identity", "eliminate_nop_transpose", "eliminate_nop_pad", "fuse_bn_into_conv"});
+
+    HandleInitializer();
+
+    auto inputs = GetInputOfOnnxModel();
 
     bool has_reshape = false;
     for (const auto &node : model_proto_.graph().node()) {
