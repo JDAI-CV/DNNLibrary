@@ -106,7 +106,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
 
     const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
     string weight_name;
-    FTensor weight_tensor;
+    Tensor weight_tensor;
     if (group == 1) {
         LOG(INFO) << "Vanilla conv";
         weight_name = ori_weight_name + "_conv_w";
@@ -135,8 +135,9 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
         // TODO: Support it
         throw std::invalid_argument("group != 1 is not supported");
     }
+    const auto weight_data = weight_tensor.float_data();
     auto flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr, 
-            &weight_tensor.data, &weight_tensor.shape, weight_name.c_str());
+            &weight_data, &weight_tensor.shape, weight_name.c_str());
     tensors_.push_back(flat_tensor);
     layers_.push_back(layer);
 }
@@ -145,19 +146,25 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
 void OnnxConverter::HandleInitializer() {
     for (const auto &tensor : model_proto_.graph().initializer()) {
         if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
-            const float *ptr = tensor.float_data().empty() ?
-                reinterpret_cast<const float *>(tensor.raw_data().data()) : tensor.float_data().data();
+            const char *ptr = tensor.float_data().empty() ?
+                tensor.raw_data().data() : reinterpret_cast<const char *>(tensor.float_data().data());
             Shape shape;
             for (auto dim : tensor.dims()) {
                 shape.push_back(static_cast<uint32_t>(dim));
             }
-            auto data_vec = vector<float>(ptr, ptr + Product(shape));
+            auto data_vec = vector<char>(ptr, ptr + Product(shape) * sizeof(float));
 
-            onnx_tensors_[tensor.name()] = {data_vec, shape};
+            onnx_tensors_[tensor.name()] = {data_vec, shape, Tensor::DataType::FLOAT32};
         } else if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
             const auto *ptr = tensor.raw_data().data();
+            Shape shape;
+            for (auto dim : tensor.dims()) {
+                shape.push_back(static_cast<uint32_t>(dim));
+            }
+            const auto data_vec = vector<uint8_t>(ptr, ptr + Product(shape));
             DNN_ASSERT(tensor.has_name(), "");
             const auto quant_info = quant_infos_.at(tensor.name());
+            // onnx_quant8_tensors_[tensor.name()] = {data_vec, shape, quant_info.scales, quant_info.zero_point};
             // const auto scale = quant_info.scales(0);
             // const auto zp = quant_info.zero_point();
         }
@@ -193,6 +200,7 @@ std::vector<flatbuffers::Offset<DNN::Input>> OnnxConverter::GetInputOfOnnxModel(
 
 void OnnxConverter::ReadTableFile(css &table_file) {
     std::ifstream ifs(table_file);
+    DNN_ASSERT(!ifs.fail(), "");
     while (!ifs.eof()) {
         std::string name;
         int scale_num, zero_point_num;
@@ -218,7 +226,9 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
 
     model_proto_ = ONNX_NAMESPACE::optimization::Optimize(model_proto, vector<string>{"extract_constant_to_initializer", "eliminate_identity", "eliminate_nop_transpose", "eliminate_nop_pad", "fuse_bn_into_conv"});
 
-    ReadTableFile(table_file);
+    if (!table_file.empty()) {
+        ReadTableFile(table_file);
+    }
 
     HandleInitializer();
 
@@ -250,8 +260,9 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
                 auto ori_bias_name = m(node.input(2));
                 bias_name = ori_bias_name + "_conv_b";
                 nnapi_tensors_[bias_name.value()] = onnx_tensors_.at(ori_bias_name);
+                const auto bias_data = nnapi_tensors_.at(bias_name.value()).float_data();
                 auto flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr, 
-                        &nnapi_tensors_.at(bias_name.value()).data, &nnapi_tensors_.at(bias_name.value()).shape, 
+                        &bias_data, &nnapi_tensors_.at(bias_name.value()).shape, 
                         bias_name.value().c_str());
                 tensors_.push_back(flat_tensor);
             }

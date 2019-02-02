@@ -10,13 +10,20 @@ class OnnxConverter {
 private:
     Shaper shaper_;
 
-    template <typename T>
     struct Tensor {
-        std::vector<T> data;
+        enum class DataType {
+            FLOAT32,
+            UINT8
+        };
+        std::vector<char> data;
         Shaper::Shape shape;
+        DataType data_type;
+        const std::vector<float> float_data() const {
+            std::vector<float> float_vec(data.size() / 4);
+            memcpy(&float_vec[0], &data[0], data.size());
+            return float_vec;
+        }
     };
-
-    using FTensor = Tensor<float>;
 
     enum class FuseCode {
         FUSED_NONE,
@@ -40,8 +47,8 @@ private:
     std::vector<std::string> skipped_act_;
 
     std::vector<std::string> operands_;
-    StrKeyMap<FTensor> nnapi_tensors_;
-    StrKeyMap<FTensor> onnx_tensors_;
+    StrKeyMap<Tensor> nnapi_tensors_;
+    StrKeyMap<Tensor> onnx_tensors_;
     std::vector<flatbuffers::Offset<DNN::Layer>> layers_;
 
     std::vector<flatbuffers::Offset<DNN::Tensor>> tensors_;
@@ -130,17 +137,19 @@ private:
             {
                 nnapi_tensors_[weight_name] = onnx_tensors_.at(weight_name);
                 const auto &weight_tensor = nnapi_tensors_[weight_name];
+                const auto weight_data = weight_tensor.float_data();
                 shaper_.AddShape(weight_name, weight_tensor.shape);
                 auto flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr,
-                        &weight_tensor.data, &weight_tensor.shape,
+                        &weight_data, &weight_tensor.shape,
                         weight_name.c_str());
                 tensors_.push_back(flat_tensor);
             }
             if (bias_name.has_value()) {
                 nnapi_tensors_[bias_name.value()] = onnx_tensors_.at(bias_name.value());
                 const auto &bias_tensor = nnapi_tensors_[bias_name.value()];
+                const auto bias_data = bias_tensor.float_data();
                 auto flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr,
-                        &bias_tensor.data, &bias_tensor.shape, bias_name.value().c_str());
+                        &bias_data, &bias_tensor.shape, bias_name.value().c_str());
                 tensors_.push_back(flat_tensor);
             }
             auto activation = FindActivation(model_proto_, output_name);
@@ -184,10 +193,15 @@ private:
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
      * nnapi: [1, height, width, depth_out]
      */
-    template <typename T>
-    Tensor<T> OnnxToNnapiDw(const Tensor<T> &src) {
-        Tensor<T> dest;
-        dest.data.resize(Product(src.shape));
+    Tensor OnnxToNnapiDw(const Tensor &src) {
+        Tensor dest;
+        size_t elemsize = 0;
+        if (src.data_type == Tensor::DataType::UINT8) {
+            elemsize = 1;
+        } else if (src.data_type == Tensor::DataType::FLOAT32) {
+            elemsize = 4;
+        }
+        dest.data.resize(Product(src.shape) * elemsize);
         // t for total
         auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
         CHECK_EQ(in_t, 1u);
@@ -197,12 +211,15 @@ private:
                     for (uint32_t w = 0; w < w_t; w++) {
                         auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
                         auto nnapi_idx = h * w_t * out_t + w * out_t + out;
-                        dest.data[nnapi_idx] = src.data[onnx_idx];
+                        FORZ(i, elemsize) {
+                            dest.data[elemsize * nnapi_idx + i] = src.data[elemsize * onnx_idx + i];
+                        }
                     }
                 }
             }
         }
         dest.shape = {in_t, h_t, w_t, out_t};
+        dest.data_type = src.data_type;
         return dest;
     }
 
@@ -210,10 +227,15 @@ private:
      * onnx: [filter_out_channel, filter_in_channel, height, width]
      * nnapi: [depth_out, height, width, depth_in]
      */
-    template <typename T>
-    Tensor<T> OnnxToNnapiVanilla(const Tensor<T> &src) {
-        Tensor<T> dest;
-        dest.data.resize(Product(src.shape));
+    Tensor OnnxToNnapiVanilla(const Tensor &src) {
+        Tensor dest;
+        size_t elemsize = 0;
+        if (src.data_type == Tensor::DataType::UINT8) {
+            elemsize = 1;
+        } else if (src.data_type == Tensor::DataType::FLOAT32) {
+            elemsize = 4;
+        }
+        dest.data.resize(Product(src.shape) * elemsize);
         // t for total
         auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
         for (uint32_t out = 0; out < out_t; out++) {
@@ -222,15 +244,18 @@ private:
                     for (uint32_t w = 0; w < w_t; w++) {
                         auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
                         auto nnapi_idx = out * h_t * w_t * in_t + h * w_t * in_t + w * in_t + in;
-                        dest.data[nnapi_idx] = src.data[onnx_idx];
+                        FORZ(i, elemsize) {
+                            dest.data[elemsize * nnapi_idx + i] = src.data[elemsize * onnx_idx + i];
+                        }
                     }
                 }
             }
         }
         dest.shape = {out_t, h_t, w_t, in_t};
+        dest.data_type = src.data_type;
         return dest;
     }
 
 public:
-    void Convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath, const css &table_file);
+    void Convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath, const css &table_file="");
 };
