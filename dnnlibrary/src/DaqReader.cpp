@@ -75,11 +75,11 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
                                         tensor->float32_data()->data(),
                                         {Type::TENSOR_FLOAT32, shape});
         } else if (tensor->data_type() == DNN::DataType::QUANT8_ASYMM) {
-            const auto scale = tensor->scales()->Get(0);
-            const auto zero_point = tensor->zero_point();
-            builder.AddTensorFromBuffer(tensor->name()->str(),
-                                        tensor->int8_data()->data(),
-                                        {Type::TENSOR_QUANT8_ASYMM, shape, scale, zero_point});
+            // const auto scale = tensor->scales()->Get(0);
+            // const auto zero_point = tensor->zero_point();
+            // builder.AddTensorFromBuffer(tensor->name()->str(),
+                                        // tensor->int8_data()->data(),
+                                        // {Type::TENSOR_QUANT8_ASYMM, shape, scale, zero_point});
         }
     }
 }
