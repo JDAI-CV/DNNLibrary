@@ -15,6 +15,7 @@ private:
             FLOAT32,
             UINT8
         };
+        std::string name;
         std::vector<char> data;
         Shaper::Shape shape;
         DataType data_type;
@@ -22,6 +23,11 @@ private:
             std::vector<float> float_vec(data.size() / 4);
             memcpy(&float_vec[0], &data[0], data.size());
             return float_vec;
+        }
+        const std::vector<uint8_t> uint8_data() const {
+            std::vector<uint8_t> uint8_vec(data.size());
+            memcpy(&uint8_vec[0], &data[0], data.size());
+            return uint8_vec;
         }
     };
 
@@ -59,6 +65,7 @@ private:
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
     void ReadTableFile(css &table_file);
+    std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
 
     void AddConv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
             const std::vector<int> &dilations, int group, 

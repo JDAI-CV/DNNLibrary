@@ -48,7 +48,7 @@ struct Layer;
 
 struct Model;
 
-/// Int8 is deprecated
+/// Int8 is deprecated, but int8_data in table Tensor is used, since a Tensor just stores value, not care about quantization method
 enum class DataType : int8_t {
   Float32 = 0,
   Int8 = 1,
@@ -332,6 +332,7 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
       bool8_data ? _fbb.CreateVector<uint8_t>(*bool8_data) : 0);
 }
 
+/// For weights, and for features
 struct QuantInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_NAME = 4,

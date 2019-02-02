@@ -135,9 +135,27 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
         // TODO: Support it
         throw std::invalid_argument("group != 1 is not supported");
     }
-    const auto weight_data = weight_tensor.float_data();
-    auto flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr, 
-            &weight_data, &weight_tensor.shape, weight_name.c_str());
+    flatbuffers::Offset<DNN::Tensor> flat_tensor;
+    if (weight_tensor.data_type == Tensor::DataType::FLOAT32) {
+        const auto weight_data = weight_tensor.float_data();
+        flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr, 
+                &weight_data, &weight_tensor.shape, weight_name.c_str());
+    } else if (weight_tensor.data_type == Tensor::DataType::UINT8) {
+        const auto quant_info = quant_infos_.at(weight_tensor.name);
+        const auto weight_data = weight_tensor.uint8_data();
+        DNN::DataType daq_data_type;
+        if (quant_info.scales.size() == 1 && quant_info.zero_point.has_value()) {
+            daq_data_type = DNN::DataType::QUANT8_ASYMM;
+        } else if (quant_info.scales.size() == 1 && !quant_info.zero_point.has_value()) {
+            daq_data_type = DNN::DataType::QUANT8_SYMM;
+        } else {
+            daq_data_type = DNN::DataType::QUANT8_SYMM_PER_CHANNEL;
+        }
+        flat_tensor = DNN::CreateTensorDirect(builder_, daq_data_type, &weight_data, 
+                nullptr, &weight_tensor.shape, weight_name.c_str());
+    } else {
+        DNN_ASSERT(false, "Unknown data type of tensor");
+    }
     tensors_.push_back(flat_tensor);
     layers_.push_back(layer);
 }
@@ -145,6 +163,8 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
 // The reason that we only store weights rather than directly add them in daq model is that there may be different transform (nchw->nhwc or not) on the weights
 void OnnxConverter::HandleInitializer() {
     for (const auto &tensor : model_proto_.graph().initializer()) {
+        DNN_ASSERT(tensor.has_name(), "");
+        css name = tensor.name();
         if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
             const char *ptr = tensor.float_data().empty() ?
                 tensor.raw_data().data() : reinterpret_cast<const char *>(tensor.float_data().data());
@@ -152,23 +172,19 @@ void OnnxConverter::HandleInitializer() {
             for (auto dim : tensor.dims()) {
                 shape.push_back(static_cast<uint32_t>(dim));
             }
-            auto data_vec = vector<char>(ptr, ptr + Product(shape) * sizeof(float));
+            const auto data_vec = vector<char>(ptr, ptr + Product(shape) * sizeof(float));
 
-            onnx_tensors_[tensor.name()] = {data_vec, shape, Tensor::DataType::FLOAT32};
+            onnx_tensors_[name] = {name, data_vec, shape, Tensor::DataType::FLOAT32};
         } else if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
-            const auto *ptr = tensor.raw_data().data();
+            const auto *ptr = reinterpret_cast<const char *>(tensor.raw_data().data());
             Shape shape;
             for (auto dim : tensor.dims()) {
                 shape.push_back(static_cast<uint32_t>(dim));
             }
-            const auto data_vec = vector<uint8_t>(ptr, ptr + Product(shape));
-            DNN_ASSERT(tensor.has_name(), "");
-            const auto quant_info = quant_infos_.at(tensor.name());
-            // onnx_quant8_tensors_[tensor.name()] = {data_vec, shape, quant_info.scales, quant_info.zero_point};
-            // const auto scale = quant_info.scales(0);
-            // const auto zp = quant_info.zero_point();
+            const auto data_vec = vector<char>(ptr, ptr + Product(shape));
+            onnx_tensors_[name] = {name, data_vec, shape, Tensor::DataType::UINT8};
         }
-        operands_.push_back(tensor.name());
+        operands_.push_back(name);
     }
 
 }
@@ -219,6 +235,15 @@ void OnnxConverter::ReadTableFile(css &table_file) {
         }
         quant_infos_[name] = {scales, zero_point};
     }
+}
+
+std::vector<flatbuffers::Offset<DNN::QuantInfo>> OnnxConverter::ConvertQuantInfosToFbs() {
+    std::vector<flatbuffers::Offset<DNN::QuantInfo>> ret;
+    for (const auto x : quant_infos_) {
+        // TODO: handle more quantization type here
+        ret.push_back(DNN::CreateQuantInfoDirect(builder_, x.first.c_str(), DNN::DataType::QUANT8_ASYMM, &x.second.scales, x.second.zero_point.value_or(0)));
+    }
+    return ret;
 }
 
 void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const std::string &filepath, const css &table_file) {
@@ -398,7 +423,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
     auto flat_layers = builder_.CreateVector(layers_);
     auto flat_inputs = builder_.CreateVector(inputs);
     auto flat_tensors = builder_.CreateVector(tensors_);
-    auto flat_model = DNN::CreateModel(builder_, flat_layers, flat_tensors, flat_inputs);
+    const auto flat_quant_infos = builder_.CreateVector(ConvertQuantInfosToFbs());
+    auto flat_model = DNN::CreateModel(builder_, flat_layers, flat_tensors, flat_inputs, flat_quant_infos);
 
     builder_.Finish(flat_model);
 

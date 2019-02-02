@@ -1,6 +1,6 @@
 namespace DNN;
 
-/// Int8 is deprecated
+/// Int8 is deprecated, but int8_data in table Tensor is used, since a Tensor just stores value, not care about quantization method
 enum DataType:byte { Float32 = 0, Int8, Int32, Float16, Bool8,
     QUANT8_ASYMM, QUANT8_SYMM, QUANT8_SYMM_PER_CHANNEL, 
     QUANT16_ASYMM, QUANT16_SYMM}
@@ -19,6 +19,7 @@ table Tensor {
     bool8_data: [uint8];
 }
 
+/// For weights, and for features
 table QuantInfo {
     name: string;
     data_type: DataType;
