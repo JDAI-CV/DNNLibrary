@@ -75,11 +75,41 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
                                         tensor->float32_data()->data(),
                                         {Type::TENSOR_FLOAT32, shape});
         } else if (tensor->data_type() == DNN::DataType::QUANT8_ASYMM) {
-            // const auto scale = tensor->scales()->Get(0);
-            // const auto zero_point = tensor->zero_point();
-            // builder.AddTensorFromBuffer(tensor->name()->str(),
-                                        // tensor->int8_data()->data(),
-                                        // {Type::TENSOR_QUANT8_ASYMM, shape, scale, zero_point});
+            float scale = -1.f;
+            int32_t zero_point = 0;
+            FORZ(i, model.quant_infos()->size()) {
+                const auto &quant_info = model.quant_infos()->Get(i);
+                if (quant_info->name() == tensor->name()) {
+                    scale = quant_info->scales()->Get(0);
+                    zero_point = quant_info->zero_point();
+                    break;
+                }
+            }
+            if (scale == -1.f) {
+                throw std::invalid_argument("No quant info for " + tensor->name()->str());
+            }
+
+            builder.AddTensorFromBuffer(tensor->name()->str(),
+                                        tensor->int8_data()->data(),
+                                        {Type::TENSOR_QUANT8_ASYMM, shape, scale, zero_point});
+        } else if (tensor->data_type() == DNN::DataType::Int32) {
+            float scale = -1.f;
+            FORZ(i, model.quant_infos()->size()) {
+                const auto &quant_info = model.quant_infos()->Get(i);
+                if (quant_info->name() == tensor->name()) {
+                    scale = quant_info->scales()->Get(0);
+                    break;
+                }
+            }
+            if (scale == -1.f) {
+                throw std::invalid_argument("No quant info for " + tensor->name()->str());
+            }
+
+            builder.AddTensorFromBuffer(tensor->name()->str(),
+                                        tensor->int32_data(),
+                                        {Type::TENSOR_INT32, shape, scale});
+        } else {
+            throw std::invalid_argument("Unknown data type");
         }
     }
 }

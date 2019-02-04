@@ -17,6 +17,7 @@ table Tensor {
     /// since flatbuffers doesn't have float16 data type, use uint16 instead
     float16_data: [uint16];
     bool8_data: [uint8];
+    int32_data: [int32];
 }
 
 /// For weights, and for features

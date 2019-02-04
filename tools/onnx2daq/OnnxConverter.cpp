@@ -165,24 +165,26 @@ void OnnxConverter::HandleInitializer() {
     for (const auto &tensor : model_proto_.graph().initializer()) {
         DNN_ASSERT(tensor.has_name(), "");
         css name = tensor.name();
+        Shape shape;
+        for (auto dim : tensor.dims()) {
+            shape.push_back(static_cast<uint32_t>(dim));
+        }
         if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_FLOAT) {
             const char *ptr = tensor.float_data().empty() ?
                 tensor.raw_data().data() : reinterpret_cast<const char *>(tensor.float_data().data());
-            Shape shape;
-            for (auto dim : tensor.dims()) {
-                shape.push_back(static_cast<uint32_t>(dim));
-            }
             const auto data_vec = vector<char>(ptr, ptr + Product(shape) * sizeof(float));
-
             onnx_tensors_[name] = {name, data_vec, shape, Tensor::DataType::FLOAT32};
         } else if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_UINT8) {
             const auto *ptr = reinterpret_cast<const char *>(tensor.raw_data().data());
-            Shape shape;
-            for (auto dim : tensor.dims()) {
-                shape.push_back(static_cast<uint32_t>(dim));
-            }
             const auto data_vec = vector<char>(ptr, ptr + Product(shape));
             onnx_tensors_[name] = {name, data_vec, shape, Tensor::DataType::UINT8};
+        } else if (tensor.data_type() == ONNX_NAMESPACE::TensorProto_DataType_INT32) {
+            const char *ptr = tensor.int32_data().empty() ?
+                tensor.raw_data().data() : reinterpret_cast<const char *>(tensor.int32_data().data());
+            const auto data_vec = vector<char>(ptr, ptr + Product(shape) * sizeof(int32_t));
+            onnx_tensors_[name] = {name, data_vec, shape, Tensor::DataType::INT32};
+        } else {
+            LOG(INFO) << "invalid " << tensor.data_type();
         }
         operands_.push_back(name);
     }
@@ -215,33 +217,49 @@ std::vector<flatbuffers::Offset<DNN::Input>> OnnxConverter::GetInputOfOnnxModel(
 }
 
 void OnnxConverter::ReadTableFile(css &table_file) {
-    std::ifstream ifs(table_file);
-    DNN_ASSERT(!ifs.fail(), "");
-    while (!ifs.eof()) {
+    std::ifstream ifsf(table_file);
+    DNN_ASSERT(!ifsf.fail(), "");
+    for (std::string line; std::getline(ifsf, line); ) {
+        std::stringstream ss;
+        ss << line;
         std::string name;
         int scale_num, zero_point_num;
         std::vector<float> scales;
         nonstd::optional<int> zero_point;
 
-        ifs >> name >> scale_num;
+        ss >> name >> scale_num;
         FORZ(i, scale_num) {
             float scale;
-            ifs >> scale;
+            ss >> scale;
             scales.push_back(scale);
         }
-        ifs >> zero_point_num;
+        ss >> zero_point_num;
         if (zero_point_num > 0) {
-            ifs >> zero_point.value();
+            int tmp;
+            ss >> tmp;
+            zero_point = tmp;
         }
-        quant_infos_[name] = {scales, zero_point};
+        std::string quant_type_str;
+        QuantInfo::Type quant_type;
+        ss >> quant_type_str;
+        if (quant_type_str == "quant8_asymm") {
+            quant_type = QuantInfo::Type::QUANT8_ASYMM;
+        } else if (quant_type_str == "int32") {
+            quant_type = QuantInfo::Type::INT32;
+        } else {
+            throw std::invalid_argument(name + " has unknown quant type: " + quant_type_str);
+        }
+        quant_infos_[name] = {scales, zero_point, quant_type};
     }
 }
 
 std::vector<flatbuffers::Offset<DNN::QuantInfo>> OnnxConverter::ConvertQuantInfosToFbs() {
+    std::map<QuantInfo::Type, DNN::DataType> mapping_table{{QuantInfo::Type::INT32, DNN::DataType::Int32}, 
+        {QuantInfo::Type::QUANT8_ASYMM, DNN::DataType::QUANT8_ASYMM}};
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ret;
     for (const auto x : quant_infos_) {
-        // TODO: handle more quantization type here
-        ret.push_back(DNN::CreateQuantInfoDirect(builder_, x.first.c_str(), DNN::DataType::QUANT8_ASYMM, &x.second.scales, x.second.zero_point.value_or(0)));
+        const auto &quant_info = x.second;
+        ret.push_back(DNN::CreateQuantInfoDirect(builder_, x.first.c_str(), mapping_table.at(quant_info.type), &quant_info.scales, quant_info.zero_point.value_or(0)));
     }
     return ret;
 }
@@ -285,10 +303,20 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
                 auto ori_bias_name = m(node.input(2));
                 bias_name = ori_bias_name + "_conv_b";
                 nnapi_tensors_[bias_name.value()] = onnx_tensors_.at(ori_bias_name);
-                const auto bias_data = nnapi_tensors_.at(bias_name.value()).float_data();
-                auto flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr, 
-                        &bias_data, &nnapi_tensors_.at(bias_name.value()).shape, 
-                        bias_name.value().c_str());
+                flatbuffers::Offset<DNN::Tensor> flat_tensor;
+                if (nnapi_tensors_[bias_name.value()].data_type == Tensor::DataType::FLOAT32) {
+                    const auto bias_data = nnapi_tensors_.at(bias_name.value()).float_data();
+                    flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Float32, nullptr, 
+                            &bias_data, &nnapi_tensors_.at(bias_name.value()).shape, 
+                            bias_name.value().c_str());
+                } else if (nnapi_tensors_[bias_name.value()].data_type == Tensor::DataType::INT32) {
+                    const auto bias_data = nnapi_tensors_.at(bias_name.value()).int32_data();
+                    flat_tensor = DNN::CreateTensorDirect(builder_, DNN::DataType::Int32, nullptr, 
+                            nullptr, &nnapi_tensors_.at(bias_name.value()).shape, 
+                            bias_name.value().c_str(), nullptr, nullptr, &bias_data);
+                } else {
+                    std::invalid_argument("Unknown data type");
+                }
                 tensors_.push_back(flat_tensor);
             }
 

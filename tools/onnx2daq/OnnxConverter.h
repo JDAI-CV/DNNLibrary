@@ -13,7 +13,8 @@ private:
     struct Tensor {
         enum class DataType {
             FLOAT32,
-            UINT8
+            UINT8,
+            INT32
         };
         std::string name;
         std::vector<char> data;
@@ -29,6 +30,11 @@ private:
             memcpy(&uint8_vec[0], &data[0], data.size());
             return uint8_vec;
         }
+        const std::vector<int32_t> int32_data() const {
+            std::vector<int32_t> int32_vec(data.size() / 4);
+            memcpy(&int32_vec[0], &data[0], data.size());
+            return int32_vec;
+        }
     };
 
     enum class FuseCode {
@@ -39,8 +45,17 @@ private:
     };
 
     struct QuantInfo {
+        enum class Type {
+            QUANT8_SYMM,
+            QUANT8_ASYMM,
+            INT32,
+            QUANT8_SYMM_PER_CHANNEL,
+            QUANT16_SYMM,
+            QUANT16_ASYMM
+        };
         std::vector<float> scales;
         nonstd::optional<int32_t> zero_point;
+        Type type;
     };
     StrKeyMap<QuantInfo> quant_infos_;
 
@@ -201,7 +216,7 @@ private:
      * nnapi: [1, height, width, depth_out]
      */
     Tensor OnnxToNnapiDw(const Tensor &src) {
-        Tensor dest;
+        Tensor dest = src;
         size_t elemsize = 0;
         if (src.data_type == Tensor::DataType::UINT8) {
             elemsize = 1;
@@ -226,7 +241,6 @@ private:
             }
         }
         dest.shape = {in_t, h_t, w_t, out_t};
-        dest.data_type = src.data_type;
         return dest;
     }
 
@@ -235,7 +249,7 @@ private:
      * nnapi: [depth_out, height, width, depth_in]
      */
     Tensor OnnxToNnapiVanilla(const Tensor &src) {
-        Tensor dest;
+        Tensor dest = src;
         size_t elemsize = 0;
         if (src.data_type == Tensor::DataType::UINT8) {
             elemsize = 1;
@@ -259,7 +273,6 @@ private:
             }
         }
         dest.shape = {out_t, h_t, w_t, in_t};
-        dest.data_type = src.data_type;
         return dest;
     }
 

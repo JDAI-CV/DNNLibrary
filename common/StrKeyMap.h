@@ -41,6 +41,10 @@ public:
     bool has(const std::string &key) {
         return map_.find(key) != map_.end();
     }
+
+    void insert(const std::pair<std::string, V> &p) {
+        map_.insert(p);
+    }
 };
 
 

@@ -213,7 +213,8 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SHAPE = 10,
     VT_NAME = 12,
     VT_FLOAT16_DATA = 14,
-    VT_BOOL8_DATA = 16
+    VT_BOOL8_DATA = 16,
+    VT_INT32_DATA = 18
   };
   DataType data_type() const {
     return static_cast<DataType>(GetField<int8_t>(VT_DATA_TYPE, 0));
@@ -237,6 +238,9 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<uint8_t> *bool8_data() const {
     return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_BOOL8_DATA);
   }
+  const flatbuffers::Vector<int32_t> *int32_data() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_INT32_DATA);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_DATA_TYPE) &&
@@ -252,6 +256,8 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(float16_data()) &&
            VerifyOffset(verifier, VT_BOOL8_DATA) &&
            verifier.VerifyVector(bool8_data()) &&
+           VerifyOffset(verifier, VT_INT32_DATA) &&
+           verifier.VerifyVector(int32_data()) &&
            verifier.EndTable();
   }
 };
@@ -280,6 +286,9 @@ struct TensorBuilder {
   void add_bool8_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data) {
     fbb_.AddOffset(Tensor::VT_BOOL8_DATA, bool8_data);
   }
+  void add_int32_data(flatbuffers::Offset<flatbuffers::Vector<int32_t>> int32_data) {
+    fbb_.AddOffset(Tensor::VT_INT32_DATA, int32_data);
+  }
   explicit TensorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -300,8 +309,10 @@ inline flatbuffers::Offset<Tensor> CreateTensor(
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint16_t>> float16_data = 0,
-    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> int32_data = 0) {
   TensorBuilder builder_(_fbb);
+  builder_.add_int32_data(int32_data);
   builder_.add_bool8_data(bool8_data);
   builder_.add_float16_data(float16_data);
   builder_.add_name(name);
@@ -320,7 +331,8 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
     const std::vector<uint32_t> *shape = nullptr,
     const char *name = nullptr,
     const std::vector<uint16_t> *float16_data = nullptr,
-    const std::vector<uint8_t> *bool8_data = nullptr) {
+    const std::vector<uint8_t> *bool8_data = nullptr,
+    const std::vector<int32_t> *int32_data = nullptr) {
   return DNN::CreateTensor(
       _fbb,
       data_type,
@@ -329,7 +341,8 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
       shape ? _fbb.CreateVector<uint32_t>(*shape) : 0,
       name ? _fbb.CreateString(name) : 0,
       float16_data ? _fbb.CreateVector<uint16_t>(*float16_data) : 0,
-      bool8_data ? _fbb.CreateVector<uint8_t>(*bool8_data) : 0);
+      bool8_data ? _fbb.CreateVector<uint8_t>(*bool8_data) : 0,
+      int32_data ? _fbb.CreateVector<int32_t>(*int32_data) : 0);
 }
 
 /// For weights, and for features
