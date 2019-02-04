@@ -6,6 +6,7 @@ import numpy as np
 import tempfile
 
 def run(input_arr, onnx, onnx2daq, dnn_retrieve_result, output_name, table_file=''):
+    quant = len(table_file) != 0
     daq = "temp.daq"
     os.system("{} {} {} {}".format(onnx2daq, onnx, daq, table_file))
     print("Converted to daq")
@@ -19,7 +20,7 @@ def run(input_arr, onnx, onnx2daq, dnn_retrieve_result, output_name, table_file=
     os.system("adb push {} /data/local/tmp/".format(daq))
     os.system("adb push input.txt /data/local/tmp/")
     os.system("adb push {} /data/local/tmp/dnn_retrieve_result".format(dnn_retrieve_result))
-    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_retrieve_result /data/local/tmp/{} {} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name, 1 if len(table_file) != 0 else 0))
+    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_retrieve_result /data/local/tmp/{} {} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name, 1 if quant else 0))
     os.system("adb shell rm /data/local/tmp/input.txt")
     os.system("adb shell rm /data/local/tmp/dnn_retrieve_result")
     os.system("adb pull /data/local/tmp/result {}".format(txt))
@@ -45,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--res_shape', type=str, help='The shape of result in nhwc, such as [1000] or [1,224,224,3]', default='-1')
 
     args = parser.parse_args()
-    args.quant = len(args.table_file) == 0
+    args.quant = len(args.table_file) != 0
     import ast
     args.res_shape = ast.literal_eval(args.res_shape)
     if type(args.res_shape) == int:
