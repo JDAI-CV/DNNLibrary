@@ -34,6 +34,117 @@ def argmax(d):
     return ret
 
 
+def set_zeropoints(tensors):
+    for i, key in enumerate(tensors):
+        zp = qmin - mins[key] / scales[key]
+        zp = max(qmin, zp)
+        zp = min(qmax, zp)
+        zp = int(round(zp))
+        zps[key] = zp
+
+
+def modify_pb(m):
+    for node in m.graph.node:
+        if node.op_type == 'Conv':
+            weight = node.input[1]
+            if len(node.input) == 3:
+                bias = node.input[2]
+            for t in m.graph.initializer:
+                if t.name == weight:
+                    assert len(t.raw_data) == 0
+                    w = np.array(t.float_data)
+                    w = zps[weight] + w / scales[weight]
+                    w = np.clip(w, qmin, qmax)
+                    t.raw_data = w.astype(np.uint8).tobytes()
+                    t.data_type = onnx.TensorProto.UINT8
+                    del t.float_data[:]
+                if len(node.input) == 3 and t.name == bias:
+                    assert len(t.raw_data) == 0
+                    b = np.array(t.float_data)
+                    b /= scales[bias]
+                    t.raw_data = b.astype(np.int32).tobytes()
+                    t.data_type = onnx.TensorProto.INT32
+                    del t.float_data[:]
+
+
+def set_scales_of_weight(m):
+    for node in m.graph.node:
+        if node.op_type == 'Conv':
+            weight = node.input[1]
+            for t in m.graph.initializer:
+                if t.name == weight:
+                    update_scale(weight, t.raw_data if len(t.float_data) == 0 else t.float_data)
+
+
+def make_scales_right(m):
+    for node in m.graph.node:
+        if node.op_type == 'Relu':
+            ipt, opt = node.input[0], node.output[0]
+            for l in (scales, mins, maxs):
+                l[opt] = l[ipt]
+            print("Set scale[{}] to {}".format(opt, scales[ipt]))
+        elif node.op_type == 'Concat':
+            k = argmax({k: v for (k, v) in scales.items() if k in node.input})
+            for x in node.input:
+                for l in (scales, mins, maxs):
+                    l[x] = l[k]
+                print("Set scale[{}] to {}".format(x, scales[k]))
+
+    for node in m.graph.node:
+        if node.op_type == 'Conv':
+            ipt, weight, output = node.input[0], node.input[1], node.output[0]
+            assert scales[ipt] * scales[weight] < scales[output]
+
+
+def set_quant_info_of_bias(m):
+    for node in m.graph.node:
+        if node.op_type == 'Conv':
+            ipt = node.input[0]
+            weight = node.input[1]
+            if len(node.input) == 3:
+                bias = node.input[2]
+                zps[bias] = 0
+                scales[bias] = scales[ipt] * scales[weight]
+
+
+def get_quant_list(m):
+    features = [x.name for x in m.graph.output]
+    weights = []
+    biases = []
+    for node in m.graph.node:
+        if node.op_type == 'Conv':
+            weight = node.input[1]
+            weights.append(weight)
+            if len(node.input) == 3:
+                bias = node.input[2]
+                biases.append(bias)
+    return features, weights, biases
+
+
+def collect_scales_of_features():
+    import onnxruntime as rt
+    sess = rt.InferenceSession("/home/daquexian/models/mobilenetv2-1.0/imm-mobilenetv2-1.0.onnx")
+    input_name = sess.get_inputs()[0].name
+    output_names = [x.name for x in sess.get_outputs()]
+    '''
+    for _ in range(1):
+        x = np.random.random((1, 3, 224, 224)).astype(np.float32)
+        from collections import OrderedDict
+        res = OrderedDict(zip(output_names, sess.run(None, {input_name: x})))
+        for x in res:
+            update_scale(x, res[x])
+    '''
+    from onnx import numpy_helper
+    with open('/home/daquexian/models/mobilenetv2-1.0/test_data_set_0/input_0.pb', 'rb') as f:
+        tensor = onnx.TensorProto()
+        tensor.ParseFromString(f.read())
+        x = numpy_helper.to_array(tensor)
+    from collections import OrderedDict
+    res = OrderedDict(zip(output_names, sess.run(None, {input_name: x})))
+    for x in res:
+        update_scale(x, res[x])
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('table', help='name of the file storing scales and zeropoints', type=str)
@@ -41,86 +152,41 @@ def main():
 
     table_name = args.table
 
-    # m = onnx.load('/home/daquexian/models/mobilenetv2-1.0/mobilenetv2-1.0.onnx')
-    # passes = ['fuse_bn_into_conv']
-    # m = optimizer.optimize(m, passes)
-    # m = shape_inference.infer_shapes(m)
-    # del m.graph.output[:]
-    # m.graph.output.extend(m.graph.value_info)
-    # print(len(m.graph.value_info))
-    # print(len(m.graph.output))
-    # onnx.save(m, "/home/daquexian/models/mobilenetv2-1.0/imm-mobilenetv2-1.0.onnx")
+    m = onnx.load('/home/daquexian/models/mobilenetv2-1.0/mobilenetv2-1.0.onnx')
+    passes = ['fuse_bn_into_conv']
+    m = optimizer.optimize(m, passes)
+    m = shape_inference.infer_shapes(m)
+    del m.graph.output[:]
+    m.graph.output.extend(m.graph.value_info)
+    onnx.save(m, "/home/daquexian/models/mobilenetv2-1.0/imm-mobilenetv2-1.0.onnx")
 
     m = onnx.load("/home/daquexian/models/mobilenetv2-1.0/imm-mobilenetv2-1.0.onnx")
-    weights = []
-    output_to_weight = {}
-    for node in m.graph.node:
-        if node.op_type == 'Conv':
-            weight = node.input[1]
-            output = node.output[0]
-            weights.append(weight)
-            output_to_weight[output] = weight
-            for t in m.graph.initializer:
-                if t.name == weight:
-                    update_scale(weight, t.raw_data if len(t.float_data) == 0 else t.float_data)
+    features, weights, biases = get_quant_list(m)
 
+    set_scales_of_weight(m)
 
-    import onnxruntime as rt
-    sess = rt.InferenceSession("/home/daquexian/models/mobilenetv2-1.0/imm-mobilenetv2-1.0.onnx")
-    input_name = sess.get_inputs()[0].name
-    output_names = [x.name for x in sess.get_outputs()]
+    collect_scales_of_features()
 
-    for _ in range(1):
-        x = np.random.random((1,3,224,224)).astype(np.float32)
-        from collections import OrderedDict
-        res = OrderedDict(zip(output_names, sess.run(None, {input_name: x})))
-        for x in res:
-            update_scale(x, res[x])
+    scales['data'] = 1
+    zps['data'] = 0
 
+    make_scales_right(m)
 
-    for i, key in enumerate(output_names):
-        if i != 0:
-            prev_key = output_names[i - 1]
-            if 'conv' in key and not scales[key] > scales[prev_key] * scales[output_to_weight[key]]:
-                scales[key] = 2 * scales[prev_key] * scales[output_to_weight[key]]
-                print("Set scale[{}] to {}".format(key, scales[key]))
-        for node in m.graph.node:
-            if node.op_type == 'Relu':
-                if node.input[0] == key:
-                    for l in (scales, mins, maxs):
-                        l[node.output[0]] = l[key]
-                    print("Set scale[{}] to {}".format(node.output[0], scales[key]))
-            elif node.op_type == 'Concat':
-                k = argmax({k: v for (k, v) in scales.items() if k in node.input})
-                for x in node.input:
-                    for l in (scales, mins, maxs):
-                        l[x] = l[k]
-                    print("Set scale[{}] to {}".format(x, scales[k]))
+    set_quant_info_of_bias(m)
 
+    set_zeropoints(features + weights)
+
+    modify_pb(m)
 
     with open(table_name, 'w') as f:
-        for i, key in enumerate(output_names + weights):
-            zp = qmin - mins[key] / scales[key]
-            zp = max(qmin, zp)
-            zp = min(qmax, zp)
-            zp = int(round(zp))
-            zps[key] = zp
-
+        for i, key in enumerate(['data'] + features + weights):
             # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
-            f.write('{} {} {} {} {}\n'.format(key, 1, scales[key], 1, zps[key]))
+            f.write('{} {} {} {} {} quant8_asymm\n'.format(key, 1, scales[key], 1, zps[key]))
+        for i, key in enumerate(biases):
+            # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
+            f.write('{} {} {} {} int32\n'.format(key, 1, scales[key], 0))
 
 
-    for weight in weights:
-        for t in m.graph.initializer:
-            if t.name == weight:
-                assert len(t.raw_data) == 0
-                w = np.array(t.float_data)
-                w = zps[weight] + w / scales[weight]
-                w = np.clip(w, qmin, qmax)
-                t.raw_data = w.tobytes()
-                t.data_type = t.DataType.
-                del t.float_data[:]
-    
     onnx.save(m, "/home/daquexian/models/mobilenetv2-1.0/quant-mobilenetv2-1.0.onnx")
 
 
