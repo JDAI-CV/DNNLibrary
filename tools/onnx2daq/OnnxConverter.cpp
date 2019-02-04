@@ -228,10 +228,26 @@ void OnnxConverter::ReadTableFile(css &table_file) {
         nonstd::optional<int> zero_point;
 
         ss >> name >> scale_num;
-        FORZ(i, scale_num) {
-            float scale;
-            ss >> scale;
-            scales.push_back(scale);
+        if (scale_num > 0) {
+            FORZ(i, scale_num) {
+                float scale;
+                ss >> scale;
+                scales.push_back(scale);
+            }
+        } else {
+            scale_num = -scale_num;
+            LOG(INFO) << scale_num;
+            FORZ(j, scale_num) {
+                std::string mul;
+                ss >> mul;
+                LOG(INFO) << mul;
+                if (j == 0) {
+                    scales = std::vector<float>(quant_infos_.at(mul).scales.size(), 1.f);
+                }
+                FORZ(i, scales.size()) {
+                    scales[i] *= quant_infos_.at(mul).scales[i];
+                }
+            }
         }
         ss >> zero_point_num;
         if (zero_point_num > 0) {

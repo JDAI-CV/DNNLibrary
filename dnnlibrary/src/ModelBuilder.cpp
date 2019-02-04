@@ -74,7 +74,10 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(const string &input_name, int
         if (weight_type == Type::TENSOR_FLOAT32) {
             biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
         } else if (weight_type == Type::TENSOR_QUANT8_ASYMM) {
-            biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_INT32, bias_dims}, 0);
+            const auto input_scale = operand_types_.at(input_name).operandType.scale;
+            const auto weight_scale = operand_types_.at(weight_name).operandType.scale;
+            biasIndexValue = FillOperand(weight_name + "_b", 
+                    {Type::TENSOR_INT32, bias_dims, input_scale * weight_scale}, 0);
         } else {
             throw std::invalid_argument("Unknown type " + typeToStr(weight_type));
         }
@@ -82,6 +85,15 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(const string &input_name, int
         biasIndexValue = operand_indexes_[bias_name.value()];
     }
     shaper_.DepthwiseConv(input_name, strideX, strideY, 1, 1, paddingLeft, paddingRight, paddingTop, paddingBottom, weight_name, output_name);
+    if (bias_name.has_value() && operand_types_.at(input_name).isQuant()) {
+        const auto input_scale = operand_types_.at(input_name).operandType.scale;
+        const auto weight_scale = operand_types_.at(weight_name).operandType.scale;
+        const auto bias_scale = operand_types_.at(bias_name.value()).operandType.scale;
+        DNN_ASSERT(input_scale > 0, "");
+        DNN_ASSERT(weight_scale > 0, "");
+        DNN_ASSERT(bias_scale > 0, "");
+        DNN_ASSERT(input_scale * weight_scale == bias_scale, "");
+    }
     IndexSeq input_indexes{input, weight, biasIndexValue};
     AddScalarOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom,
                 strideX, strideY, depthMultiplier, activation);
@@ -109,7 +121,10 @@ ModelBuilder::AddConv(const string &input_name, int32_t strideX, int32_t strideY
         if (weight_type == Type::TENSOR_FLOAT32) {
             biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
         } else if (weight_type == Type::TENSOR_QUANT8_ASYMM) {
-            biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_INT32, bias_dims}, 0);
+            const auto input_scale = operand_types_.at(input_name).operandType.scale;
+            const auto weight_scale = operand_types_.at(weight_name).operandType.scale;
+            biasIndexValue = FillOperand(weight_name + "_b", 
+                    {Type::TENSOR_INT32, bias_dims, input_scale * weight_scale}, 0);
         } else {
             throw std::invalid_argument("Unknown type " + typeToStr(weight_type));
         }
@@ -117,6 +132,15 @@ ModelBuilder::AddConv(const string &input_name, int32_t strideX, int32_t strideY
         biasIndexValue = operand_indexes_[bias_name.value()];
     }
     shaper_.Conv(input_name, strideX, strideY, 1, 1, paddingLeft, paddingRight, paddingTop, paddingBottom, weight_name, output_name);
+    if (bias_name.has_value() && operand_types_.at(input_name).isQuant()) {
+        const auto input_scale = operand_types_.at(input_name).operandType.scale;
+        const auto weight_scale = operand_types_.at(weight_name).operandType.scale;
+        const auto bias_scale = operand_types_.at(bias_name.value()).operandType.scale;
+        DNN_ASSERT(input_scale > 0, "");
+        DNN_ASSERT(weight_scale > 0, "");
+        DNN_ASSERT(bias_scale > 0, "");
+        DNN_ASSERT(input_scale * weight_scale == bias_scale, "");
+    }
     IndexSeq input_indexes{input, weight, biasIndexValue};
     AddScalarOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom, strideX, strideY, activation);
     DNN_ASSERT((operand_types_.at(input_name).type == Type::TENSOR_FLOAT32 && operand_types_.at(weight_name).type == Type::TENSOR_FLOAT32) || (operand_types_.at(input_name).type == Type::TENSOR_QUANT8_ASYMM && operand_types_.at(weight_name).type == Type::TENSOR_QUANT8_ASYMM), "");

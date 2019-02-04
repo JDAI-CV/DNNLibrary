@@ -111,14 +111,18 @@ def get_quant_list(m):
     features = [x.name for x in m.graph.output]
     weights = []
     biases = []
+    three_tuple = []
     for node in m.graph.node:
         if node.op_type == 'Conv':
+            ipt = node.input[0]
             weight = node.input[1]
             weights.append(weight)
+            bias = None
             if len(node.input) == 3:
                 bias = node.input[2]
                 biases.append(bias)
-    return features, weights, biases
+            three_tuple.append((ipt, weight, bias))
+    return features, weights, biases, three_tuple
 
 
 def collect_scales_of_features():
@@ -161,7 +165,7 @@ def main():
     onnx.save(m, "/home/daquexian/models/mobilenetv2-1.0/imm-mobilenetv2-1.0.onnx")
 
     m = onnx.load("/home/daquexian/models/mobilenetv2-1.0/imm-mobilenetv2-1.0.onnx")
-    features, weights, biases = get_quant_list(m)
+    features, weights, biases, three_tuples = get_quant_list(m)
 
     set_scales_of_weight(m)
 
@@ -185,9 +189,11 @@ def main():
         for i, key in enumerate(weights):
             # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
             f.write('{} {} {} {} {} quant8_asymm\n'.format(key + "_conv_w", 1, scales[key], 1, zps[key]))
-        for i, key in enumerate(biases):
-            # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
-            f.write('{} {} {} {} int32\n'.format(key + "_conv_b", 1, scales[key], 0))
+        for i, t in enumerate(three_tuples):
+            if t[2] is None:
+                continue
+            # -2 means scales of 2 tensors multiply
+            f.write('{} -2 {} {} {} int32\n'.format(t[2] + "_conv_b", t[0], t[1] + '_conv_w', 0))
 
 
     onnx.save(m, "/home/daquexian/models/mobilenetv2-1.0/quant-mobilenetv2-1.0.onnx")

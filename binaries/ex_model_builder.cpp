@@ -11,30 +11,39 @@ int main() {
     using namespace android::nn::wrapper;
     ModelBuilder builder;
     builder.Prepare();
-    bool quant8 = false;
-    uint8_t weight_buf[999];
-    uint8_t bias_buf[999];
+    bool quant8 = true;
+    uint8_t weight_buf[999]{100, 200, 150, 20, 166, 22};
+    uint8_t bias_buf[999]{99, 13, 235, 131};
     if (quant8) {
-        builder.AddInput("data", {Type::TENSOR_QUANT8_ASYMM, {1, 3, 224, 224}, 1, 0});
+        builder.AddInput("data", {Type::TENSOR_QUANT8_ASYMM, {1, 224, 224, 3}, 1, 0});
         builder.AddTensorFromBuffer("weight", weight_buf, {Type::TENSOR_QUANT8_ASYMM, {3, 1, 1, 3}, 0.1, 150});
         builder.AddTensorFromBuffer("bias", bias_buf, {Type::TENSOR_INT32, {3}, 0.1, 0});
-        builder.AddConv("data", 1, 1, 0, 0, 0, 0, ModelBuilder::ACTIVATION_NONE, "weight", "bias", "output", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.5}, 100}));
+        builder.AddTensorFromBuffer("weight2", weight_buf, {Type::TENSOR_QUANT8_ASYMM, {3, 1, 1, 3}, 0.1, 150});
+        builder.AddTensorFromBuffer("bias2", bias_buf, {Type::TENSOR_INT32, {3}, 0.005, 0});
+        LOG(INFO) << "h";
+        builder.AddDepthWiseConv("data", 1, 1, 0, 0, 0, 0, ModelBuilder::ACTIVATION_NONE, 1, "weight", "bias", "conv_fwd", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.5}, 100}));
+        LOG(INFO) << "h";
+        builder.AddReLU("conv_fwd", "relu_fwd");
+        LOG(INFO) << "h";
+        builder.AddOperationAdd("data", "relu_fwd", "add_fwd", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.05}, 100}));
+        builder.AddDepthWiseConv("add_fwd", 2, 2, 1, 1, 1, 1, ModelBuilder::ACTIVATION_NONE, 1, "weight2", "bias2", "dw_fwd", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.8}, 110}));
+        builder.AddPool("dw_fwd", 1, 1, 1, 1, 1, 1, 3, 3, ModelBuilder::ACTIVATION_NONE, ModelBuilder::PoolingType::AVE_POOL, "output", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.3}, 120}));
+        LOG(INFO) << "h";
     } else {
-        builder.AddInput("data", {Type::TENSOR_FLOAT32, {1, 3, 224, 224}});
+        builder.AddInput("data", {Type::TENSOR_FLOAT32, {1, 224, 224, 3}});
         builder.AddTensorFromBuffer("weight", weight_buf, {Type::TENSOR_FLOAT32, {3, 1, 1, 3}});
         builder.AddTensorFromBuffer("bias", bias_buf, {Type::TENSOR_FLOAT32, {3}});
         builder.AddConv("data", 1, 1, 0, 0, 0, 0, ModelBuilder::ACTIVATION_NONE, "weight", "bias", "output");
     }
-    builder.AddOutput("output");
-    auto model = builder.Compile(ModelBuilder::PREFERENCE_FAST_SINGLE_ANSWER);
+    auto model = builder.AddOutput("output").Compile(ModelBuilder::PREFERENCE_FAST_SINGLE_ANSWER);
     if (quant8) {
-        uint8_t input[1*3*224*224];
+        uint8_t input[1*3*224*224]{29, 100, 66, 166, 188, 222};
         uint8_t output[1*3*224*224];
         model->SetOutputBuffer(0, output);
         model->Predict(std::vector<uint8_t *>{input});
-        LOG(INFO) << output[0];
+        LOG(INFO) << static_cast<int>(output[0]);
     } else {
-        float input[1*3*224*224];
+        float input[1*3*224*224]{29, 100, 66, 166, 188, 222};
         float output[1*3*224*224];
         model->SetOutputBuffer(0, output);
         model->Predict(std::vector<float *>{input});
