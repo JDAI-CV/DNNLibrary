@@ -70,7 +70,14 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(const string &input_name, int
     if (!bias_name.has_value()) {
         Shape weightDimen = shaper_[weight_name];     // 1, height, width, num_output
         Shape bias_dims = Shape{weightDimen[3]};
-        biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
+        const auto &weight_type = operand_types_.at(weight_name).type;
+        if (weight_type == Type::TENSOR_FLOAT32) {
+            biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
+        } else if (weight_type == Type::TENSOR_QUANT8_ASYMM) {
+            biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_INT32, bias_dims}, 0);
+        } else {
+            throw std::invalid_argument("Unknown type " + typeToStr(weight_type));
+        }
     } else {
         biasIndexValue = operand_indexes_[bias_name.value()];
     }
@@ -98,7 +105,14 @@ ModelBuilder::AddConv(const string &input_name, int32_t strideX, int32_t strideY
     if (!bias_name.has_value()) {
         Shape weightDimen = shaper_[weight_name];     // num_output, height, width, num_input
         Shape bias_dims = Shape{weightDimen[0]};
-        biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
+        const auto &weight_type = operand_types_.at(weight_name).type;
+        if (weight_type == Type::TENSOR_FLOAT32) {
+            biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
+        } else if (weight_type == Type::TENSOR_QUANT8_ASYMM) {
+            biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_INT32, bias_dims}, 0);
+        } else {
+            throw std::invalid_argument("Unknown type " + typeToStr(weight_type));
+        }
     } else {
         biasIndexValue = operand_indexes_[bias_name.value()];
     }
@@ -221,7 +235,7 @@ ModelBuilder::Index ModelBuilder::AddReLU(const string &input_name, const string
     shaper_.Relu(input_name, output_name);
     IndexSeq input_indexes{input};
 
-    const OperandType operand_type(operand_types_.at(input_name).type, shaper_[output_name]);
+    const OperandType operand_type = operand_types_.at(input_name);
     const auto output_index = AddOperation(ANEURALNETWORKS_RELU, input_indexes, operand_type)[0];
     RegisterOperand(output_name, output_index, operand_type);
     return output_index;
@@ -237,7 +251,9 @@ ModelBuilder::Index ModelBuilder::AddConcat(const vector<string> &input_names, i
     IndexSeq input_indexes(inputs);
     AddScalarOperands(input_indexes, axis);
 
-    const OperandType operand_type(operand_types_.at(input_names[0]).type, shaper_[output_name]);
+    const OperandType &input_op_type = operand_types_.at(input_names[0]); 
+
+    const OperandType operand_type(input_op_type.type, shaper_[output_name], input_op_type.operandType.scale, input_op_type.operandType.zeroPoint);
     const auto output_index = AddOperation(ANEURALNETWORKS_CONCATENATION, input_indexes, operand_type)[0];
     RegisterOperand(output_name, output_index, operand_type);
     return output_index;
@@ -490,6 +506,10 @@ void ModelBuilder::RegisterBufferPointer(std::unique_ptr<int8_t[]> &&pointer) {
     dnn_model_->int8_buf_pointers_.push_back(std::move(pointer));
 }
 
+void ModelBuilder::RegisterBufferPointer(std::unique_ptr<int32_t[]> &&pointer) {
+    dnn_model_->int32_buf_pointers_.push_back(std::move(pointer));
+}
+
 ModelBuilder::IndexSeq ModelBuilder::GetInputIndexes() {
     return input_index_vec_;
 }
@@ -515,6 +535,7 @@ ModelBuilder::Index ModelBuilder::FillOperand(css &name, const OperandType &oper
 }
 
 DEFINE_FILL_OPERAND(float, FLOAT32);
+DEFINE_FILL_OPERAND(int32_t, INT32);
 
 #undef DEFINE_FILL_OPERAND
 

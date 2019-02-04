@@ -76,4 +76,13 @@ inline std::vector<int32_t> unpack_fbs(const flatbuffers::Vector<int32_t> *fbs_v
     }
     return std_vec;
 }
+
+inline std::vector<float> unpack_fbs(const flatbuffers::Vector<float> *fbs_vec) {
+    using fbsoff_t = flatbuffers::uoffset_t;
+    std::vector<float> std_vec;
+    for (size_t i = 0; i < fbs_vec->size(); i++) {
+        std_vec.push_back(fbs_vec->Get(static_cast<fbsoff_t>(i)));
+    }
+    return std_vec;
+}
 #endif //DNNLIBRARY_FLATBUFFERS_HELPER_H

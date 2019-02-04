@@ -17,17 +17,17 @@
 #include "Model.h"
 #include <NeuralNetworksWrapper.h>
 
-struct QuantInfo {
-    android::nn::wrapper::Type type_;
-    std::vector<float> scales_;
-    std::optional<int> zero_point_;
-};
-
 class ModelBuilder {
 public:
     using Index = uint32_t;
     using IndexSeq = std::vector<Index>;
     using Shape = Shaper::Shape;
+
+    struct QuantInfo {
+        android::nn::wrapper::Type type_;
+        std::vector<float> scales_;
+        std::optional<int> zero_point_;
+    };
 
 private:
     std::unique_ptr<Model> dnn_model_;
@@ -137,6 +137,7 @@ public:
     void RegisterBufferPointer(std::unique_ptr<int8_t[]> &&pointer);
     void RegisterBufferPointer(std::unique_ptr<float[]> &&pointer);
     void RegisterBufferPointer(std::unique_ptr<uint8_t[]> &&pointer);
+    void RegisterBufferPointer(std::unique_ptr<int32_t[]> &&pointer);
 
     void Prepare();
     void SetMemory(int fd, size_t size, size_t offset);

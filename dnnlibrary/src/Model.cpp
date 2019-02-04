@@ -31,8 +31,16 @@ Model::~Model() {
 }
 
 void Model::SetInputBuffer(int32_t index, float *buffer) {
+    SetInputBuffer(index, buffer, 4);
+}
+
+void Model::SetInputBuffer(int32_t index, uint8_t *buffer) {
+    SetInputBuffer(index, buffer, 1);
+}
+
+void Model::SetInputBuffer(int32_t index, void *buffer, size_t elemsize) {
     if (!prepared_for_exe_) PrepareForExecution();
-    auto size = shaper_.GetSize(input_names_[index]) * sizeof(float);
+    auto size = shaper_.GetSize(input_names_[index]) * elemsize;
     auto ret = ANeuralNetworksExecution_setInput(execution_, index, nullptr, buffer, size);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
         throw std::invalid_argument("Invalid index in SetInputBuffer, return value: " + std::to_string(ret));
@@ -40,8 +48,17 @@ void Model::SetInputBuffer(int32_t index, float *buffer) {
 }
 
 void Model::SetOutputBuffer(int32_t index, float *buffer) {
+    SetOutputBuffer(index, buffer, 4);
+}
+
+void Model::SetOutputBuffer(int32_t index, uint8_t *buffer) {
+    SetOutputBuffer(index, buffer, 1);
+}
+
+void Model::SetOutputBuffer(int32_t index, void *buffer, size_t elemsize) {
     if (!prepared_for_exe_) PrepareForExecution();
-    auto size = shaper_.GetSize(output_names_[index]) * sizeof(float);
+    auto size = shaper_.GetSize(output_names_[index]) * elemsize;
+    LOG(INFO) << "output size: " << size;
     auto ret = ANeuralNetworksExecution_setOutput(execution_, index, nullptr, buffer, size);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
         throw std::invalid_argument("Invalid index in SetOutputBuffer, return value: " + std::to_string(ret));
@@ -56,25 +73,6 @@ void Model::AddInput(const std::string &name, const Shaper::Shape &shape) {
 void Model::AddOutput(const std::string &name, const Shaper::Shape &shape) {
     output_names_.push_back(name);
     shaper_.AddShape(name, shape);
-}
-
-void Model::Predict(std::vector<float *> inputs) {
-    if (!prepared_for_exe_) PrepareForExecution();
-    for (size_t i = 0; i < inputs.size(); i++) {
-        SetInputBuffer(i, inputs[i]);
-    }
-    ANeuralNetworksEvent* event = nullptr;
-    if (int ret = ANeuralNetworksExecution_startCompute(execution_, &event); ret != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("Error in startCompute, return value: " + std::to_string(ret));
-    }
-
-    if (int ret = ANeuralNetworksEvent_wait(event); ret != ANEURALNETWORKS_NO_ERROR) {
-        throw std::invalid_argument("Error in wait, return value: " + std::to_string(ret));
-    }
-
-    ANeuralNetworksEvent_free(event);
-    ANeuralNetworksExecution_free(execution_);
-    prepared_for_exe_ = false;
 }
 
 size_t Model::GetSize(const std::string &name) {

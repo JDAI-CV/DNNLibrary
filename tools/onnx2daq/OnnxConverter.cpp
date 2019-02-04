@@ -110,7 +110,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
     if (group == 1) {
         LOG(INFO) << "Vanilla conv";
         weight_name = ori_weight_name + "_conv_w";
-        weight_tensor = OnnxToNnapiVanilla(onnx_weight);
+        weight_tensor = OnnxToNnapiVanilla(onnx_weight, weight_name);
         shaper_.AddShape(weight_name, weight_tensor.shape);
         shaper_.Conv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3], pads[0], pads[1], weight_name, output_name);
         nnapi_tensors_[weight_name] = weight_tensor;
@@ -121,8 +121,8 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
         layer = DNN::CreateLayer(builder_, DNN::LayerType::Conv2D, param);
     } else if (onnx_weight.shape[1] == 1) {    // depthwise
         LOG(INFO) << "Depthwise conv";
-        weight_name = ori_weight_name + "_dwconv_w";
-        weight_tensor = OnnxToNnapiDw(onnx_weight);
+        weight_name = ori_weight_name + "_conv_w";
+        weight_tensor = OnnxToNnapiDw(onnx_weight, weight_name);
         shaper_.AddShape(weight_name, weight_tensor.shape);
         shaper_.DepthwiseConv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3], pads[0], pads[1], weight_name, output_name);
         nnapi_tensors_[weight_name] = weight_tensor;
@@ -250,6 +250,7 @@ void OnnxConverter::ReadTableFile(css &table_file) {
             throw std::invalid_argument(name + " has unknown quant type: " + quant_type_str);
         }
         quant_infos_[name] = {scales, zero_point, quant_type};
+        LOG(INFO) << "quant info of " << name;
     }
 }
 

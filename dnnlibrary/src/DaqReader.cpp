@@ -65,6 +65,35 @@ int convert_fuse_code_to_nnapi(const DNN::FuseCode fuse_code) {
     throw std::invalid_argument("Invalid fuse_code");
 }
 
+const DNN::QuantInfo *GetQuantInfo(const DNN::Model &model, css &name) {
+    FORZ(i, model.quant_infos()->size()) {
+        const auto &quant_info = model.quant_infos()->Get(i);
+        if (quant_info->name()->str() == name) {
+            return quant_info;
+            break;
+        }
+    }
+    return nullptr;
+}
+
+ModelBuilder::QuantInfo DaqQuantInfoToModelBuilderQuantInfo(const DNN::QuantInfo *daq_quant_info) {
+    using android::nn::wrapper::Type;
+    ModelBuilder::QuantInfo quant_info;
+    std::map<DNN::DataType, Type> type_mapping =    
+    {
+        {DNN::DataType::Float32, Type::TENSOR_FLOAT32},
+        {DNN::DataType::Int32, Type::TENSOR_INT32},
+        {DNN::DataType::QUANT8_ASYMM, Type::TENSOR_QUANT8_ASYMM},
+        {DNN::DataType::QUANT8_SYMM_PER_CHANNEL, Type::TENSOR_QUANT8_SYMM_PER_CHANNEL}
+    };
+    quant_info.type_ = type_mapping[daq_quant_info->data_type()];
+    quant_info.scales_ = unpack_fbs(daq_quant_info->scales());
+    quant_info.zero_point_ = daq_quant_info->zero_point();
+    
+    return quant_info;
+}
+
+
 void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
     using namespace android::nn::wrapper;
 
@@ -75,35 +104,25 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
                                         tensor->float32_data()->data(),
                                         {Type::TENSOR_FLOAT32, shape});
         } else if (tensor->data_type() == DNN::DataType::QUANT8_ASYMM) {
-            float scale = -1.f;
-            int32_t zero_point = 0;
-            FORZ(i, model.quant_infos()->size()) {
-                const auto &quant_info = model.quant_infos()->Get(i);
-                if (quant_info->name() == tensor->name()) {
-                    scale = quant_info->scales()->Get(0);
-                    zero_point = quant_info->zero_point();
-                    break;
-                }
-            }
-            if (scale == -1.f) {
+            const auto *quant_info = GetQuantInfo(model, tensor->name()->str());
+            if (quant_info == nullptr) {
                 throw std::invalid_argument("No quant info for " + tensor->name()->str());
             }
+            float scale = quant_info->scales()->Get(0);
+            int32_t zero_point = quant_info->zero_point();
 
             builder.AddTensorFromBuffer(tensor->name()->str(),
                                         tensor->int8_data()->data(),
                                         {Type::TENSOR_QUANT8_ASYMM, shape, scale, zero_point});
         } else if (tensor->data_type() == DNN::DataType::Int32) {
-            float scale = -1.f;
-            FORZ(i, model.quant_infos()->size()) {
-                const auto &quant_info = model.quant_infos()->Get(i);
-                if (quant_info->name() == tensor->name()) {
-                    scale = quant_info->scales()->Get(0);
-                    break;
+            const auto *quant_info = GetQuantInfo(model, tensor->name()->str());
+            if (quant_info == nullptr) {
+                FORZ(i, model.quant_infos()->size()) {
+                    LOG(INFO) << "quant info of: " << model.quant_infos()->Get(i)->name()->c_str();
                 }
-            }
-            if (scale == -1.f) {
                 throw std::invalid_argument("No quant info for " + tensor->name()->str());
             }
+            float scale = quant_info->scales()->Get(0);
 
             builder.AddTensorFromBuffer(tensor->name()->str(),
                                         tensor->int32_data(),
@@ -127,9 +146,19 @@ void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
 }
 
 void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
+    using namespace android::nn::wrapper;
     for (const auto &input : *model.inputs()) {
+        css input_name = input->name()->str();
         ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
-        builder.AddInput(input->name()->str(), shape[1], shape[2], shape[3]);
+        const auto *daq_quant_info = GetQuantInfo(model, input_name);
+        if (daq_quant_info != nullptr) {
+            const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
+            DNN_ASSERT(quant_info.type_ == Type::TENSOR_QUANT8_ASYMM, "");
+            OperandType operand_type(quant_info.type_, shape, quant_info.scales_[0], quant_info.zero_point_.value_or(0));
+            builder.AddInput(input_name, operand_type);
+        } else {
+            builder.AddInput(input_name, shape[1], shape[2], shape[3]);
+        }
     }
 
 }
@@ -146,12 +175,14 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto weight_name = param->weight()->str();
                 auto bias = param->bias();
                 auto output_name = param->output()->str();
+                const auto *daq_quant_info = GetQuantInfo(model, output_name);
+                const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
                 VLOG(5) << "Conv, input: " << input_name << ", weight: " << weight_name << ", output: " << output_name;
                 builder.AddConv(input_name, strides->Get(1), strides->Get(0),
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 convert_fuse_code_to_nnapi(fuse), weight_name,
                                 (bias ? std::make_optional(bias->str()) : std::nullopt),
-                                output_name);
+                                output_name, quant_info);
                 break;
             }
             case DNN::LayerType::DepthwiseConv2D: {
@@ -164,13 +195,15 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto weight_name = param->weight()->str();
                 auto bias = param->bias();
                 auto output_name = param->output()->str();
+                const auto *daq_quant_info = GetQuantInfo(model, output_name);
+                const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
                 VLOG(5) << "Depthwise Conv, input: " << input_name << ", weight: " << weight_name << ", output: " << output_name;
                 builder.AddDepthWiseConv(input_name, strides->Get(1), strides->Get(0),
                                          pads->Get(2), pads->Get(3), pads->Get(1), pads->Get(0),
                                          convert_fuse_code_to_nnapi(fuse), multiplier,
                                          weight_name,
                                          (bias ? std::make_optional(bias->str()) : std::nullopt),
-                                         output_name);
+                                         output_name, quant_info);
                 break;
             }
             case DNN::LayerType::AvePool: {
@@ -181,12 +214,15 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto fuse = param->fuse();
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
+                const auto *daq_quant_info = GetQuantInfo(model, output_name);
+                const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
                 VLOG(5) << "Average pool, input: " << input_name << ", output: " << output_name;
                 builder.AddPool(input_name, strides->Get(1), strides->Get(0),
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1),
                                 convert_fuse_code_to_nnapi(fuse),
-                                ModelBuilder::PoolingType::AVE_POOL, output_name);
+                                ModelBuilder::PoolingType::AVE_POOL, output_name,
+                                quant_info);
                 break;
             }
             case DNN::LayerType::MaxPool: {
@@ -197,12 +233,15 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto fuse = param->fuse();
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
+                const auto *daq_quant_info = GetQuantInfo(model, output_name);
+                const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
                 VLOG(5) << "Max pool, input: " << input_name << ", output: " << output_name;
                 builder.AddPool(input_name, strides->Get(1), strides->Get(0),
                                 pads->Get(2), pads->Get(3), pads->Get(0), pads->Get(1),
                                 kernel_shape->Get(0), kernel_shape->Get(1),
                                 convert_fuse_code_to_nnapi(fuse),
-                                ModelBuilder::PoolingType::MAX_POOL, output_name);
+                                ModelBuilder::PoolingType::MAX_POOL, output_name,
+                                quant_info);
                 break;
             }
             case DNN::LayerType::Relu: {
@@ -218,8 +257,10 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input1_name = param->input1()->str();
                 auto input2_name = param->input2()->str();
                 auto output_name = param->output()->str();
+                const auto *daq_quant_info = GetQuantInfo(model, output_name);
+                const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
                 VLOG(5) << "Add, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
-                builder.AddOperationAdd(input1_name, input2_name, output_name);
+                builder.AddOperationAdd(input1_name, input2_name, output_name, quant_info);
                 break;
             }
             case DNN::LayerType::AddScalar: {
@@ -236,8 +277,10 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto input1_name = param->input1()->str();
                 auto input2_name = param->input2()->str();
                 auto output_name = param->output()->str();
+                const auto *daq_quant_info = GetQuantInfo(model, output_name);
+                const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
                 VLOG(5) << "Mul, input1 " << input1_name << ", input2 " << input2_name << ", output: " << output_name;
-                builder.AddMul(input1_name, input2_name, output_name);
+                builder.AddMul(input1_name, input2_name, output_name, quant_info);
                 break;
             }
             case DNN::LayerType::MulScalar: {
@@ -256,9 +299,11 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 auto bias_name = param->bias()->str();
                 auto input_name = param->input()->str();
                 auto output_name = param->output()->str();
+                const auto *daq_quant_info = GetQuantInfo(model, output_name);
+                const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
                 VLOG(5) << "FC, input " << input_name << ", output: " << output_name;
                 builder.AddFC(input_name, convert_fuse_code_to_nnapi(fuse),
-                              weight_name, bias_name, output_name);
+                              weight_name, bias_name, output_name, quant_info);
                 break;
             }
             case DNN::LayerType::Softmax: {

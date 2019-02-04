@@ -26,12 +26,13 @@ int main(int argc, char **argv) {
     FLAGS_logbuflevel = -1;
     FLAGS_alsologtostderr = true;
     FLAGS_v = 5;
-    if (argc < 3 || argc > 4) {
+    if (argc < 4 || argc > 5) {
         return -1;
     }
     string daqName = argv[1];
     string outputBlob = argv[2];
-    bool use_external_input = argc == 4;
+    bool quant = std::atoi(argv[3]) != 0;
+    bool use_external_input = argc == 5;
 
     std::unique_ptr<Model> model;
     {
@@ -44,7 +45,7 @@ int main(int argc, char **argv) {
     const auto inputLen = model->GetInputSize(0), outputLen = model->GetOutputSize(0);
     float data[inputLen];
     if (use_external_input) {
-        std::ifstream ifs(argv[3]);
+        std::ifstream ifs(argv[4]);
         float element;
         FORZ(i, inputLen) {
             if (!(ifs >> element)) {
@@ -58,12 +59,27 @@ int main(int argc, char **argv) {
         }
     }
 
-    float output[outputLen];
+    if (quant) {
+        uint8_t output[outputLen];
+        model->SetOutputBuffer(0, output);
 
-    model->SetOutputBuffer(0, output);
-    model->Predict(std::vector{data});
-    std::ofstream ofs("/data/local/tmp/result");
-    FORZ(i, outputLen) {
-        ofs << output[i] << endl;
+        uint8_t uint8_data[inputLen];
+        FORZ(i, inputLen) {
+            uint8_data[i] = data[i];
+        }
+        model->Predict(std::vector{uint8_data});
+        std::ofstream ofs("/data/local/tmp/result");
+        FORZ(i, outputLen) {
+            ofs << output[i] << endl;
+        }
+    } else {
+        float output[outputLen];
+
+        model->SetOutputBuffer(0, output);
+        model->Predict(std::vector{data});
+        std::ofstream ofs("/data/local/tmp/result");
+        FORZ(i, outputLen) {
+            ofs << output[i] << endl;
+        }
     }
 }

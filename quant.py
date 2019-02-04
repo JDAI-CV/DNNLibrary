@@ -179,12 +179,15 @@ def main():
     modify_pb(m)
 
     with open(table_name, 'w') as f:
-        for i, key in enumerate(['data'] + features + weights):
+        for i, key in enumerate(['data'] + features):
             # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
             f.write('{} {} {} {} {} quant8_asymm\n'.format(key, 1, scales[key], 1, zps[key]))
+        for i, key in enumerate(weights):
+            # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
+            f.write('{} {} {} {} {} quant8_asymm\n'.format(key + "_conv_w", 1, scales[key], 1, zps[key]))
         for i, key in enumerate(biases):
             # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
-            f.write('{} {} {} {} int32\n'.format(key, 1, scales[key], 0))
+            f.write('{} {} {} {} int32\n'.format(key + "_conv_b", 1, scales[key], 0))
 
 
     onnx.save(m, "/home/daquexian/models/mobilenetv2-1.0/quant-mobilenetv2-1.0.onnx")

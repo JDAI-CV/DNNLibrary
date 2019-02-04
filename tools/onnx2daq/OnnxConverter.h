@@ -215,7 +215,7 @@ private:
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
      * nnapi: [1, height, width, depth_out]
      */
-    Tensor OnnxToNnapiDw(const Tensor &src) {
+    inline Tensor OnnxToNnapiDw(const Tensor &src, css &name) {
         Tensor dest = src;
         size_t elemsize = 0;
         if (src.data_type == Tensor::DataType::UINT8) {
@@ -241,6 +241,9 @@ private:
             }
         }
         dest.shape = {in_t, h_t, w_t, out_t};
+        if (name != "") {
+            dest.name = name;
+        }
         return dest;
     }
 
@@ -248,7 +251,7 @@ private:
      * onnx: [filter_out_channel, filter_in_channel, height, width]
      * nnapi: [depth_out, height, width, depth_in]
      */
-    Tensor OnnxToNnapiVanilla(const Tensor &src) {
+    inline Tensor OnnxToNnapiVanilla(const Tensor &src, css &name="") {
         Tensor dest = src;
         size_t elemsize = 0;
         if (src.data_type == Tensor::DataType::UINT8) {
@@ -273,6 +276,9 @@ private:
             }
         }
         dest.shape = {out_t, h_t, w_t, in_t};
+        if (name != "") {
+            dest.name = name;
+        }
         return dest;
     }
 
