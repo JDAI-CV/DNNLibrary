@@ -76,7 +76,10 @@ const DNN::QuantInfo *GetQuantInfo(const DNN::Model &model, css &name) {
     return nullptr;
 }
 
-ModelBuilder::QuantInfo DaqQuantInfoToModelBuilderQuantInfo(const DNN::QuantInfo *daq_quant_info) {
+std::optional<ModelBuilder::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(const DNN::QuantInfo *daq_quant_info) {
+    if (daq_quant_info == nullptr) {
+        return std::nullopt;
+    }
     using android::nn::wrapper::Type;
     ModelBuilder::QuantInfo quant_info;
     std::map<DNN::DataType, Type> type_mapping =    
@@ -152,7 +155,7 @@ void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
         ModelBuilder::Shape shape(input->shape()->begin(), input->shape()->end());
         const auto *daq_quant_info = GetQuantInfo(model, input_name);
         if (daq_quant_info != nullptr) {
-            const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
+            const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info).value();
             DNN_ASSERT(quant_info.type_ == Type::TENSOR_QUANT8_ASYMM, "");
             OperandType operand_type(quant_info.type_, shape, quant_info.scales_[0], quant_info.zero_point_.value_or(0));
             builder.AddInput(input_name, operand_type);

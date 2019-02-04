@@ -12,4 +12,11 @@ if (DNN_BUILD_BIN)
         dnnlibrary)
 
     treat_warnings_as_errors(dnn_benchmark)
+
+    add_executable(ex_model_builder
+        ex_model_builder.cpp)
+    target_link_libraries(ex_model_builder
+        dnnlibrary)
+
+    treat_warnings_as_errors(ex_model_builder)
 endif()
