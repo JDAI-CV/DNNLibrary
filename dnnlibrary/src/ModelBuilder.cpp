@@ -113,29 +113,30 @@ ModelBuilder::AddConv(const string &input_name, int32_t strideX, int32_t strideY
     const auto input = operand_indexes_[input_name];
     const auto weight = operand_indexes_[weight_name];
 
+    css bias_name_val = bias_name.value_or(weight_name + "_b");
     uint32_t biasIndexValue;
     if (!bias_name.has_value()) {
         Shape weightDimen = shaper_[weight_name];     // num_output, height, width, num_input
         Shape bias_dims = Shape{weightDimen[0]};
         const auto &weight_type = operand_types_.at(weight_name).type;
         if (weight_type == Type::TENSOR_FLOAT32) {
-            biasIndexValue = FillOperand(weight_name + "_b", {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
+            biasIndexValue = FillOperand(bias_name_val, {Type::TENSOR_FLOAT32, bias_dims}, 0.f);
         } else if (weight_type == Type::TENSOR_QUANT8_ASYMM) {
             const auto input_scale = operand_types_.at(input_name).operandType.scale;
             const auto weight_scale = operand_types_.at(weight_name).operandType.scale;
-            biasIndexValue = FillOperand(weight_name + "_b", 
+            biasIndexValue = FillOperand(bias_name_val, 
                     {Type::TENSOR_INT32, bias_dims, input_scale * weight_scale}, 0);
         } else {
             throw std::invalid_argument("Unknown type " + typeToStr(weight_type));
         }
     } else {
-        biasIndexValue = operand_indexes_[bias_name.value()];
+        biasIndexValue = operand_indexes_[bias_name_val];
     }
     shaper_.Conv(input_name, strideX, strideY, 1, 1, paddingLeft, paddingRight, paddingTop, paddingBottom, weight_name, output_name);
-    if (bias_name.has_value() && operand_types_.at(input_name).isQuant()) {
+    if (operand_types_.at(input_name).isQuant()) {
         const auto input_scale = operand_types_.at(input_name).operandType.scale;
         const auto weight_scale = operand_types_.at(weight_name).operandType.scale;
-        const auto bias_scale = operand_types_.at(bias_name.value()).operandType.scale;
+        const auto bias_scale = operand_types_.at(bias_name_val).operandType.scale;
         DNN_ASSERT(input_scale > 0, "");
         DNN_ASSERT(weight_scale > 0, "");
         DNN_ASSERT(bias_scale > 0, "");
@@ -553,7 +554,7 @@ ModelBuilder::Index ModelBuilder::FillOperand(css &name, const OperandType &oper
     for (size_t i = 0; i < Product(operand_type.dimensions); i++) { \
         buf[i] = val;   \
     }   \
-    auto idx = AddTensorFromBuffer(name, buf.get(), {Type::TENSOR_##op_type, operand_type.dimensions});  \
+    auto idx = AddTensorFromBuffer(name, buf.get(), operand_type);  \
     RegisterBufferPointer(std::move(buf));  \
     return idx; \
 }

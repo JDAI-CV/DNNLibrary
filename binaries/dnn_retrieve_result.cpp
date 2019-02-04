@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
         model->Predict(std::vector{uint8_data});
         std::ofstream ofs("/data/local/tmp/result");
         FORZ(i, outputLen) {
-            ofs << output[i] << endl;
+            ofs << static_cast<int>(output[i]) << endl;
         }
     } else {
         float output[outputLen];
