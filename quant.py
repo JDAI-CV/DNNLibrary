@@ -81,7 +81,7 @@ def make_scales_right(m):
         if node.op_type == 'Relu':
             ipt, opt = node.input[0], node.output[0]
             for l in (scales, mins, maxs):
-                l[opt] = l[ipt]
+                l[ipt] = l[opt]
             print("Set scale[{}] to {}".format(opt, scales[ipt]))
         elif node.op_type == 'Concat':
             k = argmax({k: v for (k, v) in scales.items() if k in node.input})
