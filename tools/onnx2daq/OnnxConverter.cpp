@@ -236,11 +236,9 @@ void OnnxConverter::ReadTableFile(css &table_file) {
             }
         } else {
             scale_num = -scale_num;
-            LOG(INFO) << scale_num;
             FORZ(j, scale_num) {
                 std::string mul;
                 ss >> mul;
-                LOG(INFO) << mul;
                 if (j == 0) {
                     scales = std::vector<float>(quant_infos_.at(mul).scales.size(), 1.f);
                 }
@@ -266,7 +264,6 @@ void OnnxConverter::ReadTableFile(css &table_file) {
             throw std::invalid_argument(name + " has unknown quant type: " + quant_type_str);
         }
         quant_infos_[name] = {scales, zero_point, quant_type};
-        LOG(INFO) << "quant info of " << name;
     }
 }
 
@@ -302,6 +299,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
         NodeAttrHelper helper(node);
         const auto &op = node.op_type();
         LOG(INFO) << "Node " << node.name();
+        if (std::find(skipped_act_.begin(), skipped_act_.end(), node.name()) != skipped_act_.end()) {
+            LOG(INFO) << "Skip layer " << node.name();
+            continue;
+        }
         if (op == "Conv") {
             LOG(INFO) << "Start converting Conv";
             auto strides = helper.get("strides", vector<int>{1, 1});
@@ -314,6 +315,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
             auto activation = FindActivation(model_proto_, node.output(0));
             if (activation.first.has_value()) {
                 skipped_act_.push_back(activation.first.value());
+                name_map_[activation.first.value()] = node.name();
             }
             nonstd::optional<string> bias_name;
             if (node.input_size() >= 3) {
@@ -446,7 +448,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
             LOG(INFO) << "Start converting Concat";
             vector<std::string> concat_inputs_str;
             for (const auto &onnx_input : node.input()) {
-                concat_inputs_str.push_back(onnx_input);
+                concat_inputs_str.push_back(m(onnx_input));
             }
             auto axis = helper.get("axis", 1);
             auto output_name = m(node.output(0));

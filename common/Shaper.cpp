@@ -98,12 +98,12 @@ void Shaper::Relu(const std::string &input_name, const std::string &output_name)
 void Shaper::Concat(const std::vector<std::string> &input_names, uint32_t axis, const std::string &output_name) {
     vector<Shape> dimens;
     for (const auto &input : input_names) {
-        auto &dimen = shape_map_[input];
+        auto &dimen = shape_map_.at(input);
         if (!dimens.empty()) {
             for (size_t i = 0; i < dimens[0].size(); i++) {
                 if (i == axis) continue;
                 if (dimen[i] != dimens[0][i]) {
-                    throw string("Wrong input for concat");
+                    throw std::invalid_argument("Wrong input for concat");
                 }
             }
         }

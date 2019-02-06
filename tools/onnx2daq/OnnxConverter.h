@@ -90,6 +90,7 @@ private:
         auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
             skipped_act_.push_back(activation.first.value());
+            name_map_[activation.first.value()] = output_name;
         }
         shaper_.Pool(input_name, strides[1], strides[0], pads[2], pads[3], pads[0], pads[1], kernel_shape[0], kernel_shape[1], output_name);
         flatbuffers::Offset<DNN::Layer> layer;
@@ -115,6 +116,7 @@ private:
         auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
             skipped_act_.push_back(activation.first.value());
+            name_map_[activation.first.value()] = output_name;
         }
         auto param = DNN::CreateAddDirect(builder_, input1_name.c_str(), input2_name.c_str(),
                 ConvertFuseCodeType(activation.second), output_name.c_str());
@@ -126,6 +128,7 @@ private:
         const auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
             skipped_act_.push_back(activation.first.value());
+            name_map_[activation.first.value()] = output_name;
         }
         const auto param = DNN::CreateAddScalarDirect(builder_, input1_name.c_str(), input2,
                 ConvertFuseCodeType(activation.second), output_name.c_str());
@@ -137,6 +140,7 @@ private:
         const auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
             skipped_act_.push_back(activation.first.value());
+            name_map_[activation.first.value()] = output_name;
         }
         const auto param = DNN::CreateMulDirect(builder_, input1_name.c_str(), input2_name.c_str(),
                 ConvertFuseCodeType(activation.second), output_name.c_str());
@@ -148,6 +152,7 @@ private:
         const auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
             skipped_act_.push_back(activation.first.value());
+            name_map_[activation.first.value()] = output_name;
         }
         const auto param = DNN::CreateMulScalarDirect(builder_, input1_name.c_str(), input2,
                 ConvertFuseCodeType(activation.second), output_name.c_str());
@@ -177,6 +182,7 @@ private:
             auto activation = FindActivation(model_proto_, output_name);
             if (activation.first.has_value()) {
                 skipped_act_.push_back(activation.first.value());
+            name_map_[activation.first.value()] = output_name;
             }
             shaper_.FC(input_name, weight_name, output_name);
             auto param = DNN::CreateFCDirect(builder_, input_name.c_str(), weight_name.c_str(),
@@ -201,9 +207,10 @@ private:
     inline void addLayerConcat(const std::vector<std::string> &inputs, css &output_name, const int axis) {
         std::vector<flatbuffers::Offset<flatbuffers::String>> concat_inputs;
         for (const auto &onnx_input : inputs) {
-            auto flat_input = builder_.CreateString(m(onnx_input).c_str(), onnx_input.size());
+            auto flat_input = builder_.CreateString(m(onnx_input).c_str(), m(onnx_input).size());
             concat_inputs.push_back(flat_input);
         }
+        DNN_ASSERT(axis < 4, axis);
         uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
         shaper_.Concat(inputs, axis, output_name);
         auto param = DNN::CreateConcatDirect(builder_, &concat_inputs, axis_nchw_to_nhwc[axis], output_name.c_str());
