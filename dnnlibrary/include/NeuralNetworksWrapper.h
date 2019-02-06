@@ -147,7 +147,7 @@ struct OperandType {
         };
     }
     bool isQuant() const {
-        return type == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL || type == Type::TENSOR_QUANT16_SYMM || type == Type::TENSOR_QUANT16_ASYMM || type == Type::TENSOR_QUANT8_ASYMM;
+        return type == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL || type == Type::TENSOR_QUANT16_SYMM || type == Type::TENSOR_QUANT16_ASYMM || type == Type::TENSOR_QUANT8_ASYMM || type == Type::TENSOR_INT32;
     }
     operator ANeuralNetworksOperandType() const {return operandType; }
 };

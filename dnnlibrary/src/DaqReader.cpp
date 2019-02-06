@@ -120,9 +120,6 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
         } else if (tensor->data_type() == DNN::DataType::Int32) {
             const auto *quant_info = GetQuantInfo(model, tensor->name()->str());
             if (quant_info == nullptr) {
-                FORZ(i, model.quant_infos()->size()) {
-                    LOG(INFO) << "quant info of: " << model.quant_infos()->Get(i)->name()->c_str();
-                }
                 throw std::invalid_argument("No quant info for " + tensor->name()->str());
             }
             float scale = quant_info->scales()->Get(0);
