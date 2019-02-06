@@ -128,7 +128,7 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
             float scale = quant_info->scales()->Get(0);
 
             builder.AddTensorFromBuffer(tensor->name()->str(),
-                                        tensor->int32_data(),
+                                        tensor->int32_data()->data(),
                                         {Type::TENSOR_INT32, shape, scale});
         } else {
             throw std::invalid_argument("Unknown data type");
