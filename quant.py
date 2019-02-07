@@ -189,7 +189,7 @@ def get_quant_list(m: onnx.ModelProto, quant_layers: List[str]) -> Tuple[List[st
     return weights, biases, three_tuple
 
 
-def collect_scales_of_features3(model: onnx.ModelProto, image_dir: str, features: List[str] = None) -> None:
+def collect_scales_of_features(model: onnx.ModelProto, image_dir: str, features: List[str] = None) -> None:
     """
     Collect infos of features by running model in onnxruntime
     :param model: the model
@@ -244,89 +244,6 @@ def collect_scales_of_features3(model: onnx.ModelProto, image_dir: str, features
 
     for t in threads:
         t.join()
-
-
-def collect_scales_of_features2(onnx_file, image_dir):
-    import cv2
-    import glob
-    import os
-    paths = []
-    for i, path in enumerate(glob.glob(os.path.join(image_dir, '*.JPEG'))):
-        paths.append(path)
-        if i % 256 == 0:
-            def read_img(img_path, norm=True):
-                a = cv2.imread(img_path)
-                a = cv2.resize(a, (224, 224))
-                a = a.astype(np.float32)
-                if norm:
-                    a /= 255
-                    a -= [0.485, 0.456, 0.406]
-                    a /= [0.229, 0.224, 0.225]
-                a = np.moveaxis(a, -1, 0)
-                return a
-
-            xs = np.stack(list(map(lambda x: read_img(x, True), paths)))
-            update_scale_and_zp('data', xs)
-            import onnxruntime as rt
-            sess = rt.InferenceSession(onnx_file)
-            from collections import OrderedDict
-            output_names = [x.name for x in sess.get_outputs()]
-            res = OrderedDict(zip(output_names, sess.run(None, {'data': xs})))
-            for key in res:
-                update_scale_and_zp(key, res[key])
-            paths.clear()
-
-
-def collect_scales_of_features(onnx_file, input_pb):
-    inputs = {}
-    from onnx import numpy_helper
-    with open(input_pb, 'rb') as f:
-        tensor = onnx.TensorProto()
-        tensor.ParseFromString(f.read())
-        x = numpy_helper.to_array(tensor)
-    x = np.round(x)
-    inputs['data'] = x
-
-    import onnxruntime as rt
-    m = onnx.load(onnx_file)
-    sess = rt.InferenceSession(m.SerializeToString())
-    from collections import OrderedDict
-    output_names = [x.name for x in sess.get_outputs()]
-    fpres = OrderedDict(zip(output_names, sess.run(None, {'data': x})))
-    for i, vi in enumerate(m.graph.value_info):
-        if i > 0:
-            prev_vi = m.graph.value_info[i - 1]
-            m.graph.input.extend([prev_vi])
-            for node in m.graph.node:
-                for j in range(len(node.output)):
-                    if node.output[j] == prev_vi.name:
-                        node.output[j] = node.output[j] + "_dummy"
-        del m.graph.output[:]
-        m.graph.output.extend([vi])
-
-        # onnx.save(m, "/home/daquexian/models/mobilenetv2-1.0/imm3-mobilenetv2-1.0.onnx")
-        sess = rt.InferenceSession(m.SerializeToString())
-        assert len(sess.get_outputs()) == 1
-        output_name = sess.get_outputs()[0].name
-
-        res = sess.run(None, inputs)[0]
-        update_scale_and_zp(output_name, res)
-        res = zps[output_name] + res / scales[output_name]
-        res = np.round(np.clip(res, qmin, qmax))
-        res = (res - zps[output_name]) * scales[output_name]
-        inputs[output_name] = res
-        print(f"{output_name} ok")
-
-    print("finish")
-
-    '''
-    for _ in range(0):
-        x = np.random.random((1, 3, 224, 224)).astype(np.float32) * 255
-        from collections import OrderedDict
-        res = OrderedDict(zip(output_names, sess.run(None, {input_name: x})))
-        for x in res:
-            update_scale(x, res[x])
-    '''
 
 
 def quant_weight(m: onnx.ModelProto, quant_layers: List[str]) -> None:
@@ -400,20 +317,14 @@ def main():
 
     quant_after_tensors = [args.quantize_after]
     dequant_after_tensors = [args.dequantize_after]
-    inferred_quant_tensors = quant_after_tensors[:]
-    quant_layers = []
-    for node in m.graph.node:
-        if node.input[0] in inferred_quant_tensors and node.input[0] not in dequant_after_tensors:
-            inferred_quant_tensors.extend([x for x in node.output])
-            quant_layers.append(node.name)
-    inferred_quant_tensors = list(OrderedSet(inferred_quant_tensors) & OrderedSet([x.name for x in m.graph.output]))
+    inferred_quant_tensors, quant_layers = get_quant_layers_and_tensors(m, quant_after_tensors, dequant_after_tensors)
 
     weights, biases, three_tuples = get_quant_list(m, quant_layers)
 
     set_scales_of_weight(m, quant_layers)
     quant_weight(m, quant_layers)
 
-    collect_scales_of_features3(m, args.image_dir, inferred_quant_tensors)
+    collect_scales_of_features(m, args.image_dir, inferred_quant_tensors)
     make_scales_right(m, quant_layers, inferred_quant_tensors)
     set_quant_info_of_bias(m, quant_layers)
 
@@ -435,6 +346,17 @@ def main():
             f.write('dequantize after: {}'.format(x))
 
     onnx.save(model_opt, os.path.join(model_dir, "quant-" + model_name))
+
+
+def get_quant_layers_and_tensors(m, quant_after_tensors, dequant_after_tensors):
+    inferred_quant_tensors = quant_after_tensors[:]
+    quant_layers = []
+    for node in m.graph.node:
+        if node.input[0] in inferred_quant_tensors and node.input[0] not in dequant_after_tensors:
+            inferred_quant_tensors.extend([x for x in node.output])
+            quant_layers.append(node.name)
+    inferred_quant_tensors = list(OrderedSet(inferred_quant_tensors) & OrderedSet([x.name for x in m.graph.output]))
+    return inferred_quant_tensors, quant_layers
 
 
 if __name__ == '__main__':
