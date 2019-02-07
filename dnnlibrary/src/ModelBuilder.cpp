@@ -93,7 +93,8 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(const string &input_name, int
         DNN_ASSERT(input_scale > 0, "");
         DNN_ASSERT(weight_scale > 0, "");
         DNN_ASSERT(bias_scale > 0, "");
-        DNN_ASSERT(input_scale * weight_scale == bias_scale, "");
+        // TODO: more decent assert here
+        // DNN_ASSERT(input_scale * weight_scale == bias_scale, "");
     }
     IndexSeq input_indexes{input, weight, biasIndexValue};
     AddScalarOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom,
@@ -141,7 +142,8 @@ ModelBuilder::AddConv(const string &input_name, int32_t strideX, int32_t strideY
         DNN_ASSERT(input_scale > 0, "");
         DNN_ASSERT(weight_scale > 0, "");
         DNN_ASSERT(bias_scale > 0, "");
-        DNN_ASSERT(input_scale * weight_scale == bias_scale, "");
+        // TODO: more decent assert here
+        // DNN_ASSERT(input_scale * weight_scale == bias_scale, "");
     }
     IndexSeq input_indexes{input, weight, biasIndexValue};
     AddScalarOperands(input_indexes, paddingLeft, paddingRight, paddingTop, paddingBottom, strideX, strideY, activation);
@@ -296,6 +298,16 @@ ModelBuilder::Index ModelBuilder::AddLRN(const string &input_name, int32_t local
 
     const OperandType operand_type(operand_types_.at(input_name).type, shaper_[output_name]);
     const auto output_idx = AddOperation(ANEURALNETWORKS_LOCAL_RESPONSE_NORMALIZATION, input_indexes, operand_type)[0];
+    RegisterOperand(output_name, output_idx, operand_type);
+    return output_idx;
+}
+
+ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input_name, const std::string &output_name) {
+    const auto input = operand_indexes_[input_name];
+    shaper_.Eltwise(input_name, output_name);
+    IndexSeq input_indexes{input};
+    const OperandType operand_type(Type::TENSOR_FLOAT32, shaper_[output_name]);
+    const auto output_idx = AddOperation(ANEURALNETWORKS_DEQUANTIZE, input_indexes, operand_type)[0];
     RegisterOperand(output_name, output_idx, operand_type);
     return output_idx;
 }

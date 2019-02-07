@@ -119,6 +119,7 @@ public:
     Index AddConcat(const std::vector<std::string> &input_names, int32_t axis, const std::string &output_name);
     Index AddLRN(const std::string &input_name, int32_t local_size, float bias, float alpha, float beta,
                  const std::string &output_name);
+    Index AddDequantize(const std::string &input_name, const std::string &output_name);
 #if __ANDROID_API__ >= __ANDROID_API_P__
     Index AddStridedSlice(const std::string &input_name, const std::vector<int32_t> &starts,
                           const std::vector<int32_t> &ends,

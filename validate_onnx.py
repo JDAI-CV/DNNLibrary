@@ -5,8 +5,7 @@ import glob
 import numpy as np
 import tempfile
 
-def run(input_arr, onnx, onnx2daq, dnn_retrieve_result, output_name, table_file=''):
-    quant = len(table_file) != 0
+def run(input_arr, onnx, onnx2daq, dnn_retrieve_result, output_name, quant_input=False, quant_output=False, table_file=''):
     daq = "temp.daq"
     os.system("{} {} {} {}".format(onnx2daq, onnx, daq, table_file))
     print("Converted to daq")
@@ -14,13 +13,14 @@ def run(input_arr, onnx, onnx2daq, dnn_retrieve_result, output_name, table_file=
     nhwc_shape = (nchw_shape[0], nchw_shape[2], nchw_shape[3], nchw_shape[1])
     nhwc_input = np.moveaxis(input_arr, 1, -1)
     assert nhwc_input.shape == nhwc_shape
+    assert nhwc_shape[-1] == 3 
     np.savetxt('input.txt', nhwc_input.flatten(), delimiter='\n')
 
     txt = os.path.join(tempfile._get_default_tempdir(), next(tempfile._get_candidate_names()))
     os.system("adb push {} /data/local/tmp/".format(daq))
     os.system("adb push input.txt /data/local/tmp/")
     os.system("adb push {} /data/local/tmp/dnn_retrieve_result".format(dnn_retrieve_result))
-    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_retrieve_result /data/local/tmp/{} {} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name, 1 if quant else 0))
+    os.system('adb shell "LD_LIBRARY_PATH=/data/local/tmp/ /data/local/tmp/dnn_retrieve_result /data/local/tmp/{} {} {} {} /data/local/tmp/input.txt"'.format(os.path.basename(daq), output_name, 1 if quant_input else 0, 1 if quant_output else 0))
     os.system("adb shell rm /data/local/tmp/input.txt")
     os.system("adb shell rm /data/local/tmp/dnn_retrieve_result")
     os.system("adb pull /data/local/tmp/result {}".format(txt))
@@ -43,6 +43,8 @@ if __name__ == '__main__':
     parser.add_argument('output', type=str, help='Output name of the model')
     parser.add_argument('test_data_dir', type=str, help='e.g. test_data_set_0')
     parser.add_argument('--table_file', type=str, help='table file for 8-bit quantization', default='')
+    parser.add_argument('--quant_input', help='whether the input is quant8', action='store_true')
+    parser.add_argument('--quant_output', help='whether the output is quant8', action='store_true')
     parser.add_argument('--res_shape', type=str, help='The shape of result in nhwc, such as [1000] or [1,224,224,3]', default='-1')
 
     args = parser.parse_args()
@@ -77,7 +79,7 @@ if __name__ == '__main__':
 
     assert inputs_num == ref_outputs_num
     for i in range(inputs_num):
-        actual = run(inputs[i], args.onnx, args.onnx2daq, args.dnn_retrieve_result, args.output, args.table_file)
+        actual = run(inputs[i], args.onnx, args.onnx2daq, args.dnn_retrieve_result, args.output, args.quant_input, args.quant_output, args.table_file)
         if len(args.res_shape) == 4:
             actual = np.transpose(actual.reshape(args.res_shape), [0, 3, 1, 2]).flatten()
         expected = ref_outputs[i].flatten()
@@ -87,9 +89,10 @@ if __name__ == '__main__':
             print("Max relative diff: {}".format(np.max(np.abs(expected - actual) / expected)))
             np.testing.assert_array_almost_equal(expected, actual, decimal=3)
             print('No.{} in {} passed'.format(i, args.test_data_dir))
-        except AssertionError as e:
+        except (AssertionError, ValueError) as e:
             print('No.{} in {} failed'.format(i, args.test_data_dir))
             print(str(e))
             print(expected)
             print('-----')
             print(actual)
+            print(np.argmax(actual))

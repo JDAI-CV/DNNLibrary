@@ -70,7 +70,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
         LOG(INFO) << input_shape << ", " << pads << ", " << dilations << ", " << new_pads;
         {
             shaper_.SpaceToBatch(input_name, dilations, new_pads, s2b_name);
-            auto param = DNN::CreateSpaceToBatchDirect(builder_, input_name.c_str(), &dilations, &new_pads, s2b_name.c_str());
+            auto param = DNN::CreateSpaceToBatchDirect(builder_, m(input_name).c_str(), &dilations, &new_pads, s2b_name.c_str());
             layer = DNN::CreateLayer(builder_, DNN::LayerType::SpaceToBatch, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
             layers_.push_back(layer);
         }
@@ -115,7 +115,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
         shaper_.Conv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3], pads[0], pads[1], weight_name, output_name);
         nnapi_tensors_[weight_name] = weight_tensor;
 
-        auto param = DNN::CreateConv2DDirect(builder_, input_name.c_str(), weight_name.c_str(),
+        auto param = DNN::CreateConv2DDirect(builder_, m(input_name).c_str(), weight_name.c_str(),
                 bias_name ? bias_name.value().c_str() : nullptr,
                 &pads, &strides, ConvertFuseCodeType(activation.second), output_name.c_str());
         layer = DNN::CreateLayer(builder_, DNN::LayerType::Conv2D, param);
@@ -127,7 +127,7 @@ void OnnxConverter::AddConv(const string &input_name, const std::vector<int> &st
         shaper_.DepthwiseConv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3], pads[0], pads[1], weight_name, output_name);
         nnapi_tensors_[weight_name] = weight_tensor;
         auto multiplier = nnapi_tensors_.at(weight_name).shape[3] / group;
-        auto param = DNN::CreateDepthwiseConv2DDirect(builder_, input_name.c_str(), weight_name.c_str(),
+        auto param = DNN::CreateDepthwiseConv2DDirect(builder_, m(input_name).c_str(), weight_name.c_str(),
                 bias_name ? bias_name.value().c_str() : nullptr,
                 &pads, &strides, multiplier, ConvertFuseCodeType(activation.second), output_name.c_str());
         layer = DNN::CreateLayer(builder_, DNN::LayerType::DepthwiseConv2D, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -220,6 +220,10 @@ void OnnxConverter::ReadTableFile(css &table_file) {
     std::ifstream ifsf(table_file);
     DNN_ASSERT(!ifsf.fail(), "");
     for (std::string line; std::getline(ifsf, line); ) {
+        if (line.substr(0, 18) == "dequantize after: ") {
+            dequantize_after_.push_back(line.substr(18));
+            continue;
+        }
         std::stringstream ss;
         ss << line;
         std::string name;
@@ -456,8 +460,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
             LOG(INFO) << "Converting Concat completed";
         } else if (op == "Dropout") {
             LOG(INFO) << "Start converting Dropout";
-            // Dropout does nothing, so the output is the same as the input
-            name_map_[node.output(0)] = m(node.input(0));
+            AddLayerDropout(node.input(0), node.output(0));
             LOG(INFO) << "Converting Dropout completed";
         } else if (op == "Reshape") {
             LOG(INFO) << "Start converting Reshape";
@@ -465,6 +468,14 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto, const
             LOG(INFO) << "Converting Reshape completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
+        }
+        FORZ(i, node.output_size()) {
+            const auto output = node.output(i);
+            if (std::find(dequantize_after_.begin(), dequantize_after_.end(), output) != dequantize_after_.end()) {
+                css dequant_output = output + "_dequant";
+                AddLayerDequantize(output, dequant_output);
+                name_map_[output] = dequant_output;
+            }
         }
     }
     auto flat_layers = builder_.CreateVector(layers_);

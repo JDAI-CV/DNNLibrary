@@ -1,4 +1,6 @@
 import argparse
+import copy
+import collections
 import os
 from typing import List, Tuple
 
@@ -13,6 +15,27 @@ maxs = {}
 mins = {}
 scales = {}
 zps = {}
+
+
+class OrderedSet(collections.Set):
+    '''
+    Althought there is a warning that
+    "Using or importing the ABCs from 'collections' instead of
+    from 'collections.abc' is deprecated, and in 3.8 it will
+    stop working"
+    but it is caused by python's own code, so just ignore it
+    '''
+    def __init__(self, iterable=()):
+        self.d = collections.OrderedDict.fromkeys(iterable)
+
+    def __len__(self):
+        return len(self.d)
+
+    def __contains__(self, element):
+        return element in self.d
+
+    def __iter__(self):
+        return iter(self.d)
 
 
 def update_scale_and_zp(key, arr):
@@ -39,12 +62,14 @@ def argmax(d):
     return ret
 
 
-def modify_pb(m: onnx.ModelProto) -> None:
+def modify_pb(m: onnx.ModelProto, quant_layers: List[str]) -> None:
     """
     Modify proto buffers when all quantization infos are set correctly
     :param m: the model
     """
     for node in m.graph.node:
+        if node.name not in quant_layers:
+            continue
         if node.op_type == 'Conv':
             weight = node.input[1]
             if len(node.input) == 3:
@@ -67,8 +92,22 @@ def modify_pb(m: onnx.ModelProto) -> None:
                     del t.float_data[:]
 
 
-def set_scales_of_weight(m):
+def add_features_to_output(m):
+    del m.graph.output[:]
+    m.graph.output.extend(m.graph.value_info)
+
+
+def optimize(m):
+    passes = ['fuse_bn_into_conv']
+    m = optimizer.optimize(m, passes)
+    m = shape_inference.infer_shapes(m)
+    return m
+
+
+def set_scales_of_weight(m, quant_layers: List[str]):
     for node in m.graph.node:
+        if node.name not in quant_layers:
+            continue
         if node.op_type == 'Conv':
             weight = node.input[1]
             for t in m.graph.initializer:
@@ -83,7 +122,7 @@ def get_initializer(m, name):
             return numpy_helper.to_array(t)
 
 
-def make_scales_right(m: onnx.ModelProto) -> None:
+def make_scales_right(m: onnx.ModelProto, quant_layers: List[str], quant_tensors: List[str]) -> None:
     """
     There are some requirement for quantization info, we assert and infer them here
     Some layer sequence need multiple runs to make infos right, like concat->conv->relu
@@ -94,26 +133,34 @@ def make_scales_right(m: onnx.ModelProto) -> None:
         for node in m.graph.node:
             if node.op_type == 'Relu':
                 ipt, opt = node.input[0], node.output[0]
-                for l in (scales, zps, mins, maxs):
-                    l[ipt] = l[opt]
-            elif node.op_type == 'Concat':
-                k = argmax({k: v for (k, v) in scales.items() if k in node.input})
-                for x in node.input:
+                if ipt in quant_tensors and opt in quant_tensors:
                     for l in (scales, zps, mins, maxs):
-                        l[x] = l[k]
+                        l[ipt] = l[opt]
+            elif node.op_type == 'Concat':
+                assert all([x in quant_tensors for x in node.input]) or all(
+                    [x not in quant_tensors for x in node.input])
+                if all([x in quant_tensors for x in node.input]):
+                    k = argmax({k: v for (k, v) in scales.items() if k in node.input})
+                    for x in node.input:
+                        for l in (scales, zps, mins, maxs):
+                            l[x] = l[k]
 
         for node in m.graph.node:
+            if node.name not in quant_layers:
+                continue
             if node.op_type == 'Conv':
                 ipt, weight, output = node.input[0], node.input[1], node.output[0]
                 assert scales[ipt] * scales[weight] < scales[output]
 
 
-def set_quant_info_of_bias(m: onnx.ModelProto) -> None:
+def set_quant_info_of_bias(m: onnx.ModelProto, quant_layers: List[str]) -> None:
     """
     NNAPI requires scales[bias] equals scales[input]*scales[weight] and zps[scale]=0
     :param m: the model
     """
     for node in m.graph.node:
+        if node.name not in quant_layers:
+            continue
         if node.op_type == 'Conv':
             ipt = node.input[0]
             weight = node.input[1]
@@ -123,12 +170,13 @@ def set_quant_info_of_bias(m: onnx.ModelProto) -> None:
                 scales[bias] = scales[ipt] * scales[weight]
 
 
-def get_quant_list(m: onnx.ModelProto) -> Tuple[List[str], List[str], List[str], Tuple[str, str, str]]:
-    features = [x.name for x in m.graph.output]
+def get_quant_list(m: onnx.ModelProto, quant_layers: List[str]) -> Tuple[List[str], List[str], Tuple[str, str, str]]:
     weights = []
     biases = []
     three_tuple = []
     for node in m.graph.node:
+        if node.name not in quant_layers:
+            continue
         if node.op_type == 'Conv':
             ipt = node.input[0]
             weight = node.input[1]
@@ -138,14 +186,15 @@ def get_quant_list(m: onnx.ModelProto) -> Tuple[List[str], List[str], List[str],
                 bias = node.input[2]
                 biases.append(bias)
             three_tuple.append((ipt, weight, bias))
-    return features, weights, biases, three_tuple
+    return weights, biases, three_tuple
 
 
-def collect_scales_of_features3(model: onnx.ModelProto, image_dir: str) -> None:
+def collect_scales_of_features3(model: onnx.ModelProto, image_dir: str, features: List[str] = None) -> None:
     """
     Collect infos of features by running model in onnxruntime
     :param model: the model
     :param image_dir: the directory of images
+    :param features: names of features that need to collect, None for all features
     """
     from queue import Queue
     import threading
@@ -168,7 +217,7 @@ def collect_scales_of_features3(model: onnx.ModelProto, image_dir: str) -> None:
 
         bs = 128
         for i in range(0, len(paths), bs):
-            xs = np.stack(list(map(lambda x: read_img(x, True), paths[i:i+bs])))
+            xs = np.stack(list(map(lambda x: read_img(x, True), paths[i:i + bs])))
             q.put(xs)
         q.put(None)
 
@@ -187,8 +236,9 @@ def collect_scales_of_features3(model: onnx.ModelProto, image_dir: str) -> None:
         import onnxruntime as rt
         sess = rt.InferenceSession(model.SerializeToString())
         from collections import OrderedDict
-        output_names = [x.name for x in sess.get_outputs()]
-        res = OrderedDict(zip(output_names, sess.run(None, {'data': xs})))
+        all_outputs = [x.name for x in sess.get_outputs()]
+        features = all_outputs if features is None else list(OrderedSet(features) & OrderedSet(all_outputs))
+        res = OrderedDict(zip(features, sess.run(features, {'data': xs})))
         for key in res:
             update_scale_and_zp(key, res[key])
 
@@ -214,6 +264,7 @@ def collect_scales_of_features2(onnx_file, image_dir):
                     a /= [0.229, 0.224, 0.225]
                 a = np.moveaxis(a, -1, 0)
                 return a
+
             xs = np.stack(list(map(lambda x: read_img(x, True), paths)))
             update_scale_and_zp('data', xs)
             import onnxruntime as rt
@@ -278,12 +329,14 @@ def collect_scales_of_features(onnx_file, input_pb):
     '''
 
 
-def quant_weight(m: onnx.ModelProto) -> None:
+def quant_weight(m: onnx.ModelProto, quant_layers: List[str]) -> None:
     """
     quant weights before collecting min and max, for simulating the effect of quantization
     :param m: the model
     """
     for node in m.graph.node:
+        if node.name not in quant_layers:
+            continue
         if node.op_type == 'Conv':
             weight = node.input[1]
             for t in m.graph.initializer:
@@ -319,37 +372,55 @@ def main():
     parser.add_argument('table', help='name of the file storing scales and zeropoints', type=str)
     parser.add_argument('--input_pb', help='pb file storing model input', type=str)
     parser.add_argument('--image_dir', help='directory storing model input', type=str)
+    parser.add_argument('--dequantize_after', help='The name of tensor we want to insert dequantize layer after',
+                        type=str, default='')
+    parser.add_argument('--float_input', help='whether the input of model is float, only for Android 29 (NNAPI 1.2)',
+                        action="store_true")
+    parser.add_argument('--quantize_after',
+                        help='The name of tensor we want to insert quantize layer after, only for Android 29 (NNAPI 1.2)',
+                        type=str, default='')
     args = parser.parse_args()
 
     model_path = args.model
     table_name = args.table
+    float_input = args.float_input
     model_dir = os.path.dirname(model_path)
     model_name = os.path.basename(model_path)
+    if not float_input:
+        assert args.quantize_after == ''
+        args.quantize_after = 'data'
 
-    m = onnx.load(os.path.join(model_dir, model_name))
+    m: onnx.ModelProto = onnx.load(os.path.join(model_dir, model_name))
     move_raw_to_float(m)
 
-    passes = ['fuse_bn_into_conv']
-    m = optimizer.optimize(m, passes)
-    m = shape_inference.infer_shapes(m)
-    import copy
+    m = optimize(m)
+
     model_opt = copy.deepcopy(m)
-    del m.graph.output[:]
-    m.graph.output.extend(m.graph.value_info)
+    add_features_to_output(m)
 
-    features, weights, biases, three_tuples = get_quant_list(m)
+    quant_after_tensors = [args.quantize_after]
+    dequant_after_tensors = [args.dequantize_after]
+    inferred_quant_tensors = quant_after_tensors[:]
+    quant_layers = []
+    for node in m.graph.node:
+        if node.input[0] in inferred_quant_tensors and node.input[0] not in dequant_after_tensors:
+            inferred_quant_tensors.extend([x for x in node.output])
+            quant_layers.append(node.name)
+    inferred_quant_tensors = list(OrderedSet(inferred_quant_tensors) & OrderedSet([x.name for x in m.graph.output]))
 
-    set_scales_of_weight(m)
-    quant_weight(m)
+    weights, biases, three_tuples = get_quant_list(m, quant_layers)
 
-    collect_scales_of_features3(m, args.image_dir)
-    make_scales_right(m)
-    set_quant_info_of_bias(m)
+    set_scales_of_weight(m, quant_layers)
+    quant_weight(m, quant_layers)
 
-    modify_pb(model_opt)
+    collect_scales_of_features3(m, args.image_dir, inferred_quant_tensors)
+    make_scales_right(m, quant_layers, inferred_quant_tensors)
+    set_quant_info_of_bias(m, quant_layers)
+
+    modify_pb(model_opt, quant_layers)
 
     with open(table_name, 'w') as f:
-        for i, key in enumerate(['data'] + features):
+        for i, key in enumerate(['data'] + inferred_quant_tensors):
             # 1 is the number of the following elements, may be channels_num or 0 for scale and zeropoint in the future
             f.write('{} {} {} {} {} quant8_asymm\n'.format(key, 1, scales[key], 1, zps[key]))
         for i, key in enumerate(weights):
@@ -360,7 +431,8 @@ def main():
                 continue
             # -2 means scales of 2 tensors multiply
             f.write('{} -2 {} {} {} int32\n'.format(t[2] + "_conv_b", t[0], t[1] + '_conv_w', 0))
-
+        for x in dequant_after_tensors:
+            f.write('dequantize after: {}'.format(x))
 
     onnx.save(model_opt, os.path.join(model_dir, "quant-" + model_name))
 

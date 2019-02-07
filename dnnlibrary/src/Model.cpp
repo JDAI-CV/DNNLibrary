@@ -58,7 +58,6 @@ void Model::SetOutputBuffer(int32_t index, uint8_t *buffer) {
 void Model::SetOutputBuffer(int32_t index, void *buffer, size_t elemsize) {
     if (!prepared_for_exe_) PrepareForExecution();
     auto size = shaper_.GetSize(output_names_[index]) * elemsize;
-    LOG(INFO) << "output size: " << size;
     auto ret = ANeuralNetworksExecution_setOutput(execution_, index, nullptr, buffer, size);
     if (ret != ANEURALNETWORKS_NO_ERROR) {
         throw std::invalid_argument("Invalid index in SetOutputBuffer, return value: " + std::to_string(ret));

@@ -48,6 +48,8 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "mulscalar";
         case DNN::LayerType::AddScalar:
             return "addscalar";
+        case DNN::LayerType::Dequantize:
+            return "dequantize";
     }
 }
 
@@ -325,6 +327,14 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 }
                 VLOG(5) << "Concat, input " << input_names << ", output: " << output_name;
                 builder.AddConcat(input_names, axis, output_name);
+                break;
+            }
+            case DNN::LayerType::Dequantize: {
+                const auto param = layer->dequantize_param();
+                const auto input_name = param->input()->str();
+                const auto output_name = param->output()->str();
+                VLOG(5) << "Dequantize, input " << input_name << ", output: " << output_name;
+                builder.AddDequantize(input_name, output_name);
                 break;
             }
             case DNN::LayerType::BatchToSpace: {

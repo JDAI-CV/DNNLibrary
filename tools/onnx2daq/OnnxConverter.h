@@ -66,6 +66,7 @@ private:
     ONNX_NAMESPACE::ModelProto model_proto_;
     flatbuffers::FlatBufferBuilder builder_;
     std::vector<std::string> skipped_act_;
+    std::vector<std::string> dequantize_after_;
 
     std::vector<std::string> operands_;
     StrKeyMap<Tensor> nnapi_tensors_;
@@ -95,11 +96,11 @@ private:
         shaper_.Pool(input_name, strides[1], strides[0], pads[2], pads[3], pads[0], pads[1], kernel_shape[0], kernel_shape[1], output_name);
         flatbuffers::Offset<DNN::Layer> layer;
         if (op == "AveragePool" || op == "GlobalAveragePool") {
-            auto param = DNN::CreateAvePoolDirect(builder_, input_name.c_str(), &kernel_shape, &pads, &strides,
+            auto param = DNN::CreateAvePoolDirect(builder_, m(input_name).c_str(), &kernel_shape, &pads, &strides,
                     ConvertFuseCodeType(activation.second), output_name.c_str());
             layer = DNN::CreateLayer(builder_, DNN::LayerType::AvePool, 0, param);
         } else {
-            auto param = DNN::CreateMaxPoolDirect(builder_, input_name.c_str(), &kernel_shape, &pads, &strides,
+            auto param = DNN::CreateMaxPoolDirect(builder_, m(input_name).c_str(), &kernel_shape, &pads, &strides,
                     ConvertFuseCodeType(activation.second), output_name.c_str());
             layer = DNN::CreateLayer(builder_, DNN::LayerType::MaxPool, 0, 0, param);
         }
@@ -107,7 +108,7 @@ private:
     }
     inline void addLayerRelu(css &input_name, css &output_name) {
         shaper_.Relu(input_name, output_name);
-        auto param = DNN::CreateReluDirect(builder_, input_name.c_str(), output_name.c_str());
+        auto param = DNN::CreateReluDirect(builder_, m(input_name).c_str(), output_name.c_str());
         auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Relu, 0, 0, 0, param);
         layers_.push_back(layer);
     }
@@ -118,7 +119,7 @@ private:
             skipped_act_.push_back(activation.first.value());
             name_map_[activation.first.value()] = output_name;
         }
-        auto param = DNN::CreateAddDirect(builder_, input1_name.c_str(), input2_name.c_str(),
+        auto param = DNN::CreateAddDirect(builder_, m(input1_name).c_str(), m(input2_name).c_str(),
                 ConvertFuseCodeType(activation.second), output_name.c_str());
         auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Add, 0, 0, 0, 0, 0, 0, param);
         layers_.push_back(layer);
@@ -130,7 +131,7 @@ private:
             skipped_act_.push_back(activation.first.value());
             name_map_[activation.first.value()] = output_name;
         }
-        const auto param = DNN::CreateAddScalarDirect(builder_, input1_name.c_str(), input2,
+        const auto param = DNN::CreateAddScalarDirect(builder_, m(input1_name).c_str(), input2,
                 ConvertFuseCodeType(activation.second), output_name.c_str());
         const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::AddScalar, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param, 0);
         layers_.push_back(layer);
@@ -142,7 +143,7 @@ private:
             skipped_act_.push_back(activation.first.value());
             name_map_[activation.first.value()] = output_name;
         }
-        const auto param = DNN::CreateMulDirect(builder_, input1_name.c_str(), input2_name.c_str(),
+        const auto param = DNN::CreateMulDirect(builder_, m(input1_name).c_str(), m(input2_name).c_str(),
                 ConvertFuseCodeType(activation.second), output_name.c_str());
         const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Mul, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
         layers_.push_back(layer);
@@ -154,7 +155,7 @@ private:
             skipped_act_.push_back(activation.first.value());
             name_map_[activation.first.value()] = output_name;
         }
-        const auto param = DNN::CreateMulScalarDirect(builder_, input1_name.c_str(), input2,
+        const auto param = DNN::CreateMulScalarDirect(builder_, m(input1_name).c_str(), input2,
                 ConvertFuseCodeType(activation.second), output_name.c_str());
         const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::MulScalar, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
         layers_.push_back(layer);
@@ -185,7 +186,7 @@ private:
             name_map_[activation.first.value()] = output_name;
             }
             shaper_.FC(input_name, weight_name, output_name);
-            auto param = DNN::CreateFCDirect(builder_, input_name.c_str(), weight_name.c_str(),
+            auto param = DNN::CreateFCDirect(builder_, m(input_name).c_str(), weight_name.c_str(),
                     bias_name.has_value() ? bias_name.value().c_str() : nullptr,
                     ConvertFuseCodeType(activation.second), output_name.c_str()
                     );
@@ -199,7 +200,7 @@ private:
     inline void addLayerSoftmax(css &input_name, css &output_name) {
         shaper_.Softmax(input_name, output_name);
         // simply ignore attribute "axis", because nnapi softmax didn't has this attr, and we will check the equality of the two ops in DaqReader.cpp
-        auto param = DNN::CreateSoftmaxDirect(builder_, input_name.c_str(), output_name.c_str());
+        auto param = DNN::CreateSoftmaxDirect(builder_, m(input_name).c_str(), output_name.c_str());
         auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Softmax, 0, 0, 0, 0, param);
         layers_.push_back(layer);
     }
@@ -216,6 +217,20 @@ private:
         auto param = DNN::CreateConcatDirect(builder_, &concat_inputs, axis_nchw_to_nhwc[axis], output_name.c_str());
         auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Concat, 0, 0, 0, 0, 0, 0, 0, param);
         layers_.push_back(layer);
+    }
+
+    void AddLayerDequantize(css &input_name, css &output_name) {
+        shaper_.Eltwise(input_name, output_name);
+        const auto param = DNN::CreateDequantizeDirect(builder_, m(input_name).c_str(), output_name.c_str());
+        const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Dequantize, 0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,param);
+        layers_.push_back(layer);
+    }
+
+    void AddLayerDropout(css &input_name, css &output_name) {
+        // Dropout does nothing, so the output is the same as the input
+        shaper_.Eltwise(input_name, output_name);
+        name_map_[output_name] = m(input_name);
     }
 
     /**

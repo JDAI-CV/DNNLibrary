@@ -6,7 +6,8 @@ enum DataType:byte { Float32 = 0, Int8, Int32, Float16, Bool8,
     QUANT16_ASYMM, QUANT16_SYMM}
 enum FuseCode:byte { None = 0, Relu, Relu1, Relu6 }
 enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat,
-    DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar }
+    DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar,
+    Dequantize}
 
 table Tensor {
     data_type:DataType;
@@ -149,6 +150,11 @@ table MulScalar {
     output:string;
 }
 
+table Dequantize {
+    input:string;
+    output:string;
+}
+
 table Layer {
     type:LayerType;
     conv2d_param:Conv2D;
@@ -166,6 +172,7 @@ table Layer {
     mul_param:Mul;
     add_scalar_param:AddScalar;
     mul_scalar_param:MulScalar;
+    dequantize_param:Dequantize;
 }
 
 table Model {

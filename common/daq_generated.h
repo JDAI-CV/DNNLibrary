@@ -44,6 +44,8 @@ struct AddScalar;
 
 struct MulScalar;
 
+struct Dequantize;
+
 struct Layer;
 
 struct Model;
@@ -153,11 +155,12 @@ enum class LayerType : int8_t {
   Mul = 12,
   AddScalar = 13,
   MulScalar = 14,
+  Dequantize = 15,
   MIN = Conv2D,
-  MAX = MulScalar
+  MAX = Dequantize
 };
 
-inline const LayerType (&EnumValuesLayerType())[15] {
+inline const LayerType (&EnumValuesLayerType())[16] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -173,7 +176,8 @@ inline const LayerType (&EnumValuesLayerType())[15] {
     LayerType::StridedSlice,
     LayerType::Mul,
     LayerType::AddScalar,
-    LayerType::MulScalar
+    LayerType::MulScalar,
+    LayerType::Dequantize
   };
   return values;
 }
@@ -195,6 +199,7 @@ inline const char * const *EnumNamesLayerType() {
     "Mul",
     "AddScalar",
     "MulScalar",
+    "Dequantize",
     nullptr
   };
   return names;
@@ -1930,6 +1935,68 @@ inline flatbuffers::Offset<MulScalar> CreateMulScalarDirect(
       output ? _fbb.CreateString(output) : 0);
 }
 
+struct Dequantize FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct DequantizeBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(Dequantize::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(Dequantize::VT_OUTPUT, output);
+  }
+  explicit DequantizeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  DequantizeBuilder &operator=(const DequantizeBuilder &);
+  flatbuffers::Offset<Dequantize> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Dequantize>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Dequantize> CreateDequantize(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  DequantizeBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Dequantize> CreateDequantizeDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    const char *output = nullptr) {
+  return DNN::CreateDequantize(
+      _fbb,
+      input ? _fbb.CreateString(input) : 0,
+      output ? _fbb.CreateString(output) : 0);
+}
+
 struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_TYPE = 4,
@@ -1947,7 +2014,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_STRIDED_SLICE_PARAM = 28,
     VT_MUL_PARAM = 30,
     VT_ADD_SCALAR_PARAM = 32,
-    VT_MUL_SCALAR_PARAM = 34
+    VT_MUL_SCALAR_PARAM = 34,
+    VT_DEQUANTIZE_PARAM = 36
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -1997,6 +2065,9 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const MulScalar *mul_scalar_param() const {
     return GetPointer<const MulScalar *>(VT_MUL_SCALAR_PARAM);
   }
+  const Dequantize *dequantize_param() const {
+    return GetPointer<const Dequantize *>(VT_DEQUANTIZE_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -2030,6 +2101,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(add_scalar_param()) &&
            VerifyOffset(verifier, VT_MUL_SCALAR_PARAM) &&
            verifier.VerifyTable(mul_scalar_param()) &&
+           VerifyOffset(verifier, VT_DEQUANTIZE_PARAM) &&
+           verifier.VerifyTable(dequantize_param()) &&
            verifier.EndTable();
   }
 };
@@ -2085,6 +2158,9 @@ struct LayerBuilder {
   void add_mul_scalar_param(flatbuffers::Offset<MulScalar> mul_scalar_param) {
     fbb_.AddOffset(Layer::VT_MUL_SCALAR_PARAM, mul_scalar_param);
   }
+  void add_dequantize_param(flatbuffers::Offset<Dequantize> dequantize_param) {
+    fbb_.AddOffset(Layer::VT_DEQUANTIZE_PARAM, dequantize_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -2114,8 +2190,10 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<StridedSlice> strided_slice_param = 0,
     flatbuffers::Offset<Mul> mul_param = 0,
     flatbuffers::Offset<AddScalar> add_scalar_param = 0,
-    flatbuffers::Offset<MulScalar> mul_scalar_param = 0) {
+    flatbuffers::Offset<MulScalar> mul_scalar_param = 0,
+    flatbuffers::Offset<Dequantize> dequantize_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_dequantize_param(dequantize_param);
   builder_.add_mul_scalar_param(mul_scalar_param);
   builder_.add_add_scalar_param(add_scalar_param);
   builder_.add_mul_param(mul_param);
