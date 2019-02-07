@@ -287,7 +287,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('model', help='model filename', type=str)
     parser.add_argument('table', help='name of the file storing scales and zeropoints', type=str)
-    parser.add_argument('--input_pb', help='pb file storing model input', type=str)
     parser.add_argument('--image_dir', help='directory storing model input', type=str)
     parser.add_argument('--dequantize_after', help='The name of tensor we want to insert dequantize layer after',
                         type=str, default='')
