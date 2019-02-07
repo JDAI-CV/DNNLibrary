@@ -7,4 +7,5 @@ compile_commands.json
 .ccls-cache/
 .daq_pm/status/
 build*/
-table.txt
+table*.txt
+*.npy
