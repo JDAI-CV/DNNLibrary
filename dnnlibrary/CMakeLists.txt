@@ -52,9 +52,9 @@ treat_warnings_as_errors(dnnlibrary)
 
 if (DNN_BUILD_JNI)
     add_library(
-        dnn-jni
+        daq-jni
         SHARED
         src/JavaWrapper.cpp)
-    target_link_libraries(dnn-jni
+    target_link_libraries(daq-jni
         dnnlibrary)
 endif()
