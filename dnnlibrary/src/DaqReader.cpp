@@ -68,6 +68,9 @@ int convert_fuse_code_to_nnapi(const DNN::FuseCode fuse_code) {
 }
 
 const DNN::QuantInfo *GetQuantInfo(const DNN::Model &model, css &name) {
+    if (model.quant_infos() == nullptr) {
+        return nullptr;
+    }
     FORZ(i, model.quant_infos()->size()) {
         const auto &quant_info = model.quant_infos()->Get(i);
         if (quant_info->name()->str() == name) {
