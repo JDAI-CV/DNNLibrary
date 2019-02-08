@@ -76,29 +76,34 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_compile(
     return model_obj;
 }
 
-extern "C"
-JNIEXPORT jfloatArray
-JNICALL
-Java_me_daquexian_dnnlibrary_Model_predict(
-        JNIEnv *env,
-        jobject obj/* this */,
-        jfloatArray dataArrayObject) {
-    Model *model = getHandle<Model>(env, obj);
+#define DEFINE_PREDICT(name, input_type, output_type)   \
+    extern "C"  \
+    JNIEXPORT j##output_type##Array    \
+    JNICALL \
+    Java_me_daquexian_dnnlibrary_Model_##name(  \
+            JNIEnv *env,    \
+            jobject obj/* this */,  \
+            j##input_type##Array dataArrayObject) {  \
+        Model *model = getHandle<Model>(env, obj);  \
+    \
+        j##input_type *data = env->GetFloatArrayElements(dataArrayObject, nullptr);    \
+    \
+        uint32_t outputLen = model->GetOutputSize(0);   \
+        j##output_type output[outputLen];  \
+        model->SetOutputBuffer(0, output);  \
+    \
+        model->Predict(std::vector{static_cast<input_type *>(data)});    \
+    \
+        j##output_type##Array result = env->NewByteArray(outputLen);   \
+        env->SetByteArrayRegion(result, 0, outputLen, output);   \
+    \
+        return result;  \
+    }
 
-    jfloat *data = env->GetFloatArrayElements(dataArrayObject, nullptr);
-    jsize dataLen = env->GetArrayLength(dataArrayObject) * sizeof(jfloat);
-
-    uint32_t outputLen = model->GetOutputSize(0);
-    float output[outputLen];
-    model->SetOutputBuffer(0, output);
-
-    model->Predict(std::vector{static_cast<float *>(data)});
-
-    jfloatArray result = env->NewFloatArray(outputLen);
-    env->SetFloatArrayRegion(result, 0, outputLen, output);
-
-    return result;
-}
+DEFINE_PREDICT(predict, float, float);
+DEFINE_PREDICT(predict_quant8, float, byte);
+DEFINE_PREDICT(predict, byte, float);
+DEFINE_PREDICT(predict_quant8, byte, byte);
 
 extern "C"
 JNIEXPORT void

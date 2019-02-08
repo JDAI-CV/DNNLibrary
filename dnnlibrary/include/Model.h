@@ -61,6 +61,7 @@ public:
     ~Model();
     void SetOutputBuffer(int32_t index, float *buffer);
     void SetOutputBuffer(int32_t index, uint8_t *buffer);
+    void SetOutputBuffer(int32_t index, char *buffer);
     void SetOutputBuffer(int32_t index, void *buffer, size_t elemsize);
     size_t GetSize(const std::string &name);
     size_t GetInputSize(const int &index);

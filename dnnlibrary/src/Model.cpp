@@ -55,6 +55,10 @@ void Model::SetOutputBuffer(int32_t index, uint8_t *buffer) {
     SetOutputBuffer(index, buffer, 1);
 }
 
+void Model::SetOutputBuffer(int32_t index, char *buffer) {
+    SetOutputBuffer(index, reinterpret_cast<uint8_t *>(buffer));
+}
+
 void Model::SetOutputBuffer(int32_t index, void *buffer, size_t elemsize) {
     if (!prepared_for_exe_) PrepareForExecution();
     auto size = shaper_.GetSize(output_names_[index]) * elemsize;
