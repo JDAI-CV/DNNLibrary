@@ -16,13 +16,9 @@ Telegram Group: [link](https://t.me/joinchat/DjMsYRBe0UtG6OZsYes5KQ), QQ Group (
 
 ## Screenshot
 
-This screenshot is ResNet-18
+This screenshot is MobileNet v2, both float version and 8-bit quantized version
 
-![Screenshot image resnet](images/screenshot_image_resnet.png)
-
-This screenshot is LeNet
-
-![Screenshot camera mnist](images/screenshot_camera_mnist.png)
+![Screenshot image mobilenetv2](images/screenshot_quant8.png)
 
 ## Preparation
 
@@ -121,7 +117,7 @@ _ | TF Lite | DNNLibrary
 Supported Model Format | TensorFlow | ONNX
 Dilated Convolution | ❌ | ✔️
 Ease of Use | ❌ <br/>(Bazel build system,<br/>not friendly to Android developers) | ✔️ 
-Quantization | ✔️ | ❌<br/>(actively developing on [quantization](https://github.com/daquexian/DNNLibrary/tree/quantization) branch)
+Quantization | ✔️ | ✔️ <br/> (since 0.6.10)
 
 However we are also far from maturity comparing to TF Lite. At least we are an another choice if you want to enjoy the power of NNAPI :)
 
