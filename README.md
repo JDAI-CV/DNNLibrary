@@ -79,7 +79,7 @@ Welcome! It has been published on jcenter.
 Add
 
 ```
-implementation 'me.daquexian:dnnlibrary:the_latest_version'
+implementation 'me.daquexian:dnnlibrary:replace_me_with_the_latest_version'
 ```
 
 (for Gradle 3.0+),
@@ -87,12 +87,14 @@ implementation 'me.daquexian:dnnlibrary:the_latest_version'
 or
 
 ```
-compile 'me.daquexian:dnnlibrary:the_latest_version'
+compile 'me.daquexian:dnnlibrary:replace_me_with_the_latest_version'
 ```
 
 (for Gradle lower than 3.0)
 
-in your app's `build.gradle`'s `dependencies` section. `the_latest_version` is in the following badge:
+in your app's `build.gradle`'s `dependencies` section. 
+
+The lastest version can be found in the following badge:
 
 ![Download](https://api.bintray.com/packages/daquexian566/maven/dnnlibrary/images/download.svg) 
 
