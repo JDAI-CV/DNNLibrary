@@ -215,32 +215,45 @@ def collect_scales_of_features(model: onnx.ModelProto, image_dir: str, features:
             a = np.moveaxis(a, -1, 0)
             return a
 
-        bs = 128
+        bs = 4
         for i in range(0, len(paths), bs):
             xs = np.stack(list(map(lambda x: read_img(x, True), paths[i:i + bs])))
             q.put(xs)
         q.put(None)
 
-    threads = []
     num_worker_threads = 1
+    filenames = glob.glob(os.path.join(image_dir, '**/*.JPEG'), recursive=True)
+    import random
+    random.shuffle(filenames)
+    filenames = filenames[:400000]
+    file_num = len(filenames)
+    chunk_num = file_num // num_worker_threads
+    threads = []
     for i in range(num_worker_threads):
-        t = threading.Thread(target=worker, args=(glob.glob(os.path.join(image_dir, '*.JPEG')),))
+        t = threading.Thread(target=worker, args=((filenames[chunk_num*i:chunk_num*(i+1)],)))
         t.start()
         threads.append(t)
 
+    import onnxruntime as rt
+    sess = rt.InferenceSession(model.SerializeToString())
+    all_outputs = [x.name for x in sess.get_outputs()]
+    features = all_outputs if features is None else list(OrderedSet(features) & OrderedSet(all_outputs))
+    i = 0
+    from collections import defaultdict, Counter
+    d = defaultdict(int)
     while True:
         xs = q.get()
         if xs is None:
             break
+        i += xs.shape[0]
         update_scale_and_zp('data', xs)
-        import onnxruntime as rt
-        sess = rt.InferenceSession(model.SerializeToString())
         from collections import OrderedDict
-        all_outputs = [x.name for x in sess.get_outputs()]
-        features = all_outputs if features is None else list(OrderedSet(features) & OrderedSet(all_outputs))
         res = OrderedDict(zip(features, sess.run(features, {'data': xs})))
         for key in res:
             update_scale_and_zp(key, res[key])
+        q.task_done()
+        print("{}/{}".format(i, file_num))
+    print(d)
 
     for t in threads:
         t.join()
