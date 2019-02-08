@@ -1,3 +1,6 @@
+/**
+ * It is an example showing how to use the ModelBuilder API to build an model
+ */
 #include <iostream>
 #include <chrono>
 #include <vector>
