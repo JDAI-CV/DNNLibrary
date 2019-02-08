@@ -32,14 +32,37 @@ private:
     void AddInput(const std::string &name, const Shaper::Shape &shape);
     void AddOutput(const std::string &name, const Shaper::Shape &shape);
     void SetInputBuffer(int32_t index, float *buffer);
+    void SetInputBuffer(int32_t index, uint8_t *buffer);
+    void SetInputBuffer(int32_t index, void *buffer, size_t elemsize);
     void PrepareForExecution();
     bool prepared_for_exe_;
     Model() = default;
 public:
-    // int Predict();
-    void Predict(std::vector<float *> inputs);
+    template <typename T>
+    void Predict(std::vector<T *> inputs) {
+        if (!prepared_for_exe_) PrepareForExecution();
+        for (size_t i = 0; i < inputs.size(); i++) {
+            SetInputBuffer(i, inputs[i]);
+        }
+        ANeuralNetworksEvent* event = nullptr;
+        if (int ret = ANeuralNetworksExecution_startCompute(execution_, &event); ret != ANEURALNETWORKS_NO_ERROR) {
+            throw std::invalid_argument("Error in startCompute, return value: " + std::to_string(ret));
+        }
+
+        if (int ret = ANeuralNetworksEvent_wait(event); ret != ANEURALNETWORKS_NO_ERROR) {
+            throw std::invalid_argument("Error in wait, return value: " + std::to_string(ret));
+        }
+
+        ANeuralNetworksEvent_free(event);
+        ANeuralNetworksExecution_free(execution_);
+        prepared_for_exe_ = false;
+    }
+
     ~Model();
     void SetOutputBuffer(int32_t index, float *buffer);
+    void SetOutputBuffer(int32_t index, uint8_t *buffer);
+    void SetOutputBuffer(int32_t index, char *buffer);
+    void SetOutputBuffer(int32_t index, void *buffer, size_t elemsize);
     size_t GetSize(const std::string &name);
     size_t GetInputSize(const int &index);
     size_t GetOutputSize(const int &index);

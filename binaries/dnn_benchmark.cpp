@@ -51,12 +51,13 @@ int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_logtostderr = true;
     FLAGS_logbuflevel = -1;
-    if (argc != 4) {
+    if (argc != 5) {
         return -1;
     }
     css daqName = argv[1];
     css outputBlob = argv[2];
     const int numberRunning = std::atoi(argv[3]);
+    const bool quant = std::atoi(argv[4]) != 0;
 
     size_t inputLen, outputLen;
     {
@@ -64,42 +65,56 @@ int main(int argc, char **argv) {
         inputLen = model->GetInputSize(0);
         outputLen = model->GetOutputSize(0);
     }
-    float data[inputLen];
-    FORZ(i, inputLen) {
-        data[i] = i;
+#define WARM_UP \
+    {   \
+        auto model = get_model(daqName, outputBlob, false, ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);  \
+        for (int i = 0; i < 10; i++) {  \
+            model->SetOutputBuffer(0, output);  \
+            model->Predict(std::vector{data});  \
+        }   \
     }
-    float output[outputLen];
 
-    // warm up
-    {
-        auto model = get_model(daqName, outputBlob, false, ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
-        for (int i = 0; i < 10; i++) {
-            model->SetOutputBuffer(0, output);
-            model->Predict(std::vector{data});
-        }
+#define BENCHMARK(fp16Candidates, preferenceCandidates) \
+    for (const auto allowFp16 : fp16Candidates) {    \
+        for (const auto compilePreference : preferenceCandidates) {    \
+            auto model = get_model(daqName, outputBlob, allowFp16, compilePreference);  \
+            const auto t1 = Clock::now();   \
+            for (int i = 0; i < numberRunning; i++) {   \
+                model->SetOutputBuffer(0, output);  \
+                model->Predict(std::vector{data});  \
+            }   \
+            const auto t2 = Clock::now();   \
+            const auto totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();  \
+            const auto singleTime = 1. * totalTime / numberRunning; \
+            LOG(INFO) << "AllowFp16: " << allowFp16 << ", compile preference: " << PrefCodeToStr(compilePreference) <<  \
+                ", time: " << totalTime << "/" << numberRunning << " = " << singleTime; \
+        }   \
     }
+
+    const std::vector<PreferenceCode> preferenceCandidates{ ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER,
+        ANEURALNETWORKS_PREFER_SUSTAINED_SPEED,
+        ANEURALNETWORKS_PREFER_LOW_POWER};
+    if (quant) {
+        uint8_t data[inputLen];
+        uint8_t output[outputLen];
+        WARM_UP;
+        const std::vector<bool> fp16Candidates{false};
+        BENCHMARK(fp16Candidates, preferenceCandidates);
+    } else {
+        float data[inputLen];
+        FORZ(i, inputLen) {
+            data[i] = i;
+        }
+        float output[outputLen];
+
+        WARM_UP;
 
 #if __ANDROID_API__ >= __ANDROID_API_P__
-    for (const auto allowFp16 : {false, true}) {
+        const std::vector<bool> fp16Candidates{false, true};
 #else
-    for (const auto allowFp16 : {false}) {
+        const std::vector<bool> fp16Candidates{false};
 #endif
-        for (const auto compilePreference : 
-                {ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER, 
-                ANEURALNETWORKS_PREFER_SUSTAINED_SPEED, 
-                ANEURALNETWORKS_PREFER_LOW_POWER}) {
-            auto model = get_model(daqName, outputBlob, allowFp16, compilePreference);
-            const auto t1 = Clock::now();
-            for (int i = 0; i < numberRunning; i++) {
-                model->SetOutputBuffer(0, output);
-                model->Predict(std::vector{data});
-            }
-            const auto t2 = Clock::now();
-            const auto totalTime = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-            const auto singleTime = 1. * totalTime / numberRunning;
-            LOG(INFO) << "AllowFp16: " << allowFp16 << ", compile preference: " << PrefCodeToStr(compilePreference) <<
-                ", time: " << totalTime << "/" << numberRunning << " = " << singleTime;
-        }
+        BENCHMARK(fp16Candidates, preferenceCandidates);
     }
 }
 

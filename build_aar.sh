@@ -1,5 +1,7 @@
 #! /usr/bin/env bash
 
+set -e
+
 MY_ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 MY_ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$MY_ANDROID_HOME/ndk-bundle}"
 JNI_BUILD_DIR=build_jni_tmp
@@ -8,7 +10,7 @@ cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/
 cmake --build . -- "-j$(nproc)"
 popd
 mkdir -p ./android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a
-cp ${JNI_BUILD_DIR}/dnnlibrary/libdnn-jni.so ./android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/libdaq-jni.so
+cp ${JNI_BUILD_DIR}/dnnlibrary/libdaq-jni.so ./android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/libdaq-jni.so
 
 # Increase version code and update version name
 if (( $# >= 1 )); then

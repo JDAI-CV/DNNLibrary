@@ -15,10 +15,11 @@ using std::string; using std::vector;
 int main(int argc, char **argv) {
     FLAGS_logtostderr = true;
     google::InitGoogleLogging(argv[0]);
-    if (argc != 3) {
-        std::cerr << "argc must be 3" << std::endl;
+    if (argc != 3 && argc != 4) {
+        std::cerr << "argc must be 3 or 4" << std::endl;
         return -1;
     }
+    css table_file = argc == 4 ? argv[3] : "";
     ONNX_NAMESPACE::ModelProto model_proto;
     {
         std::ifstream ifs(argv[1], std::ios::in | std::ios::binary);
@@ -27,7 +28,7 @@ int main(int argc, char **argv) {
     }
 
     OnnxConverter converter;
-    converter.Convert(model_proto, argv[2]);
+    converter.Convert(model_proto, argv[2], table_file);
 
     google::protobuf::ShutdownProtobufLibrary();
     return 0;

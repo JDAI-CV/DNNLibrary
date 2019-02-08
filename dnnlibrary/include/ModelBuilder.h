@@ -23,6 +23,12 @@ public:
     using IndexSeq = std::vector<Index>;
     using Shape = Shaper::Shape;
 
+    struct QuantInfo {
+        android::nn::wrapper::Type type_;
+        std::vector<float> scales_;
+        std::optional<int> zero_point_;
+    };
+
 private:
     std::unique_ptr<Model> dnn_model_;
     std::vector<std::string> ordered_operands_;  // operands in insertion order, for printing in finish()
@@ -34,17 +40,18 @@ private:
     std::map<int32_t , Index> int32_operand_map_;
     std::map<float, Index> float32_operand_map_;
     std::map<float, Index> float32_as_tensor_operand_map_;
+    StrKeyMap<android::nn::wrapper::OperandType> operand_types_;
 
     uint32_t int32_missing_index = UINT32_MAX;
     uint32_t float32_missing_index = UINT32_MAX;
 
     uint32_t next_index_ = 0;
 
-    void AppendOperandIndex(const std::string &name, Index index);
+    void RegisterOperand(const std::string &name, Index index, const android::nn::wrapper::OperandType& operand_type);
     uint32_t AddNewOperand(const android::nn::wrapper::OperandType &type);
 
-    template <typename... Shapes>
-    IndexSeq AddOperation(int op, IndexSeq input_indexes, Shapes... shapes);
+    template <typename... OperandTypes>
+    IndexSeq AddOperation(int op, IndexSeq input_indexes, OperandTypes... output_types);
 
     Index OperandFromScalar(int32_t value);
     Index OperandFromScalar(float value);
@@ -55,7 +62,8 @@ private:
     Index FillOperand(css &name, const android::nn::wrapper::OperandType &operand_type, const uint32_t val);
 
     android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type);
-    android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type, const Shape &dims);
+    android::nn::wrapper::OperandType GetOperandType(const android::nn::wrapper::Type &type, const Shape &dims, const std::optional<QuantInfo> &quant_info = std::nullopt);
+    android::nn::wrapper::OperandType GetOperandType(const QuantInfo &quant_info, const Shape &dims);
 
 public:
     enum class PoolingType {
@@ -75,36 +83,43 @@ public:
     Index GetBlobIndex(const std::string &blobName);
     Shape GetBlobDim(const std::string &blobName);
     Shape GetBlobDim(Index index);
-    Index AddInput(std::string name, uint32_t height, uint32_t width, uint32_t depth);
+    Index AddInput(std::string name, const uint32_t height, const uint32_t width, const uint32_t depth);
+    Index AddInput(std::string name, const android::nn::wrapper::OperandType &operand_type);
     Index AddDepthWiseConv(const std::string &input_name, int32_t strideX, int32_t strideY,
                                          int32_t paddingLeft,
                                          int32_t paddingRight, int32_t paddingBottom, int32_t paddingTop,
                                          int32_t activation,
                                          int32_t depthMultiplier, const std::string &weight_name,
                                          const std::optional<std::string> &bias_name,
-                                         const std::string &output_name);
+                                         const std::string &output_name,
+                                         const std::optional<QuantInfo> &output_quant_info = std::nullopt);
     Index AddConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft,
                                 int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom,
                                 int32_t activation, const std::string &weight_name,
-                                const std::optional<std::string> &bias_name, const std::string &output_name);
-    Index AddTensorFromBuffer(const std::string &name, const float *buffer, Shape dimen);
-    Index AddTensorFromBuffer(const std::string &name, const int32_t *buffer, Shape dimen);
+                                const std::optional<std::string> &bias_name, const std::string &output_name,
+                                const std::optional<QuantInfo> &output_quant_info = std::nullopt);
+    Index AddTensorFromBuffer(const std::string &name, const void *buffer, const android::nn::wrapper::OperandType &operand_type);
     Index AddTensorFromMemory(const std::string &name, const uint8_t *addr, Shape dimen);
     Index AddFC(const std::string &input_name, int32_t activation, const std::string &weight_name,
-                const std::optional<std::string> &bias_name, const std::string &output_name);
+                const std::optional<std::string> &bias_name, const std::string &output_name,
+                const std::optional<QuantInfo> &output_quant_info = std::nullopt);
     Index
     AddPool(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
             int32_t paddingTop, int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
-            PoolingType poolingType, const std::string &output_name);
+            PoolingType poolingType, const std::string &output_name,
+            const std::optional<QuantInfo> &output_quant_info = std::nullopt);
     Index AddSoftMax(const std::string &input_name, float beta, const std::string &output_name);
     Index AddOperationAdd(const std::string &input_name, float scalar, std::string output_name);
-    Index AddOperationAdd(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index AddOperationAdd(const std::string &input1_name, const std::string &input2_name, const std::string &output_name,
+            const std::optional<QuantInfo> &output_quant_info = std::nullopt);
     Index AddMul(const std::string &input_name, float scalar, const std::string &output_name);
-    Index AddMul(const std::string &input1_name, const std::string &input2_name, const std::string &output_name);
+    Index AddMul(const std::string &input1_name, const std::string &input2_name, const std::string &output_name,
+            const std::optional<QuantInfo> &output_quant_info = std::nullopt);
     Index AddReLU(const std::string &input_name, const std::string &output_name);
     Index AddConcat(const std::vector<std::string> &input_names, int32_t axis, const std::string &output_name);
     Index AddLRN(const std::string &input_name, int32_t local_size, float bias, float alpha, float beta,
                  const std::string &output_name);
+    Index AddDequantize(const std::string &input_name, const std::string &output_name);
 #if __ANDROID_API__ >= __ANDROID_API_P__
     Index AddStridedSlice(const std::string &input_name, const std::vector<int32_t> &starts,
                           const std::vector<int32_t> &ends,
@@ -123,6 +138,7 @@ public:
     void RegisterBufferPointer(std::unique_ptr<int8_t[]> &&pointer);
     void RegisterBufferPointer(std::unique_ptr<float[]> &&pointer);
     void RegisterBufferPointer(std::unique_ptr<uint8_t[]> &&pointer);
+    void RegisterBufferPointer(std::unique_ptr<int32_t[]> &&pointer);
 
     void Prepare();
     void SetMemory(int fd, size_t size, size_t offset);

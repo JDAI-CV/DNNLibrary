@@ -10,6 +10,8 @@ namespace DNN {
 
 struct Tensor;
 
+struct QuantInfo;
+
 struct Input;
 
 struct StridedSlice;
@@ -42,21 +44,40 @@ struct AddScalar;
 
 struct MulScalar;
 
+struct Dequantize;
+
 struct Layer;
 
 struct Model;
 
+/// Int8 is deprecated, but int8_data in table Tensor is used, since a Tensor just stores value, not care about quantization method
 enum class DataType : int8_t {
   Float32 = 0,
   Int8 = 1,
+  Int32 = 2,
+  Float16 = 3,
+  Bool8 = 4,
+  QUANT8_ASYMM = 5,
+  QUANT8_SYMM = 6,
+  QUANT8_SYMM_PER_CHANNEL = 7,
+  QUANT16_ASYMM = 8,
+  QUANT16_SYMM = 9,
   MIN = Float32,
-  MAX = Int8
+  MAX = QUANT16_SYMM
 };
 
-inline const DataType (&EnumValuesDataType())[2] {
+inline const DataType (&EnumValuesDataType())[10] {
   static const DataType values[] = {
     DataType::Float32,
-    DataType::Int8
+    DataType::Int8,
+    DataType::Int32,
+    DataType::Float16,
+    DataType::Bool8,
+    DataType::QUANT8_ASYMM,
+    DataType::QUANT8_SYMM,
+    DataType::QUANT8_SYMM_PER_CHANNEL,
+    DataType::QUANT16_ASYMM,
+    DataType::QUANT16_SYMM
   };
   return values;
 }
@@ -65,6 +86,14 @@ inline const char * const *EnumNamesDataType() {
   static const char * const names[] = {
     "Float32",
     "Int8",
+    "Int32",
+    "Float16",
+    "Bool8",
+    "QUANT8_ASYMM",
+    "QUANT8_SYMM",
+    "QUANT8_SYMM_PER_CHANNEL",
+    "QUANT16_ASYMM",
+    "QUANT16_SYMM",
     nullptr
   };
   return names;
@@ -126,11 +155,12 @@ enum class LayerType : int8_t {
   Mul = 12,
   AddScalar = 13,
   MulScalar = 14,
+  Dequantize = 15,
   MIN = Conv2D,
-  MAX = MulScalar
+  MAX = Dequantize
 };
 
-inline const LayerType (&EnumValuesLayerType())[15] {
+inline const LayerType (&EnumValuesLayerType())[16] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -146,7 +176,8 @@ inline const LayerType (&EnumValuesLayerType())[15] {
     LayerType::StridedSlice,
     LayerType::Mul,
     LayerType::AddScalar,
-    LayerType::MulScalar
+    LayerType::MulScalar,
+    LayerType::Dequantize
   };
   return values;
 }
@@ -168,6 +199,7 @@ inline const char * const *EnumNamesLayerType() {
     "Mul",
     "AddScalar",
     "MulScalar",
+    "Dequantize",
     nullptr
   };
   return names;
@@ -184,7 +216,10 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_INT8_DATA = 6,
     VT_FLOAT32_DATA = 8,
     VT_SHAPE = 10,
-    VT_NAME = 12
+    VT_NAME = 12,
+    VT_FLOAT16_DATA = 14,
+    VT_BOOL8_DATA = 16,
+    VT_INT32_DATA = 18
   };
   DataType data_type() const {
     return static_cast<DataType>(GetField<int8_t>(VT_DATA_TYPE, 0));
@@ -201,6 +236,16 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
+  /// since flatbuffers doesn't have float16 data type, use uint16 instead
+  const flatbuffers::Vector<uint16_t> *float16_data() const {
+    return GetPointer<const flatbuffers::Vector<uint16_t> *>(VT_FLOAT16_DATA);
+  }
+  const flatbuffers::Vector<uint8_t> *bool8_data() const {
+    return GetPointer<const flatbuffers::Vector<uint8_t> *>(VT_BOOL8_DATA);
+  }
+  const flatbuffers::Vector<int32_t> *int32_data() const {
+    return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_INT32_DATA);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_DATA_TYPE) &&
@@ -212,6 +257,12 @@ struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(shape()) &&
            VerifyOffset(verifier, VT_NAME) &&
            verifier.VerifyString(name()) &&
+           VerifyOffset(verifier, VT_FLOAT16_DATA) &&
+           verifier.VerifyVector(float16_data()) &&
+           VerifyOffset(verifier, VT_BOOL8_DATA) &&
+           verifier.VerifyVector(bool8_data()) &&
+           VerifyOffset(verifier, VT_INT32_DATA) &&
+           verifier.VerifyVector(int32_data()) &&
            verifier.EndTable();
   }
 };
@@ -234,6 +285,15 @@ struct TensorBuilder {
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(Tensor::VT_NAME, name);
   }
+  void add_float16_data(flatbuffers::Offset<flatbuffers::Vector<uint16_t>> float16_data) {
+    fbb_.AddOffset(Tensor::VT_FLOAT16_DATA, float16_data);
+  }
+  void add_bool8_data(flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data) {
+    fbb_.AddOffset(Tensor::VT_BOOL8_DATA, bool8_data);
+  }
+  void add_int32_data(flatbuffers::Offset<flatbuffers::Vector<int32_t>> int32_data) {
+    fbb_.AddOffset(Tensor::VT_INT32_DATA, int32_data);
+  }
   explicit TensorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -252,8 +312,14 @@ inline flatbuffers::Offset<Tensor> CreateTensor(
     flatbuffers::Offset<flatbuffers::Vector<uint8_t>> int8_data = 0,
     flatbuffers::Offset<flatbuffers::Vector<float>> float32_data = 0,
     flatbuffers::Offset<flatbuffers::Vector<uint32_t>> shape = 0,
-    flatbuffers::Offset<flatbuffers::String> name = 0) {
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint16_t>> float16_data = 0,
+    flatbuffers::Offset<flatbuffers::Vector<uint8_t>> bool8_data = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int32_t>> int32_data = 0) {
   TensorBuilder builder_(_fbb);
+  builder_.add_int32_data(int32_data);
+  builder_.add_bool8_data(bool8_data);
+  builder_.add_float16_data(float16_data);
   builder_.add_name(name);
   builder_.add_shape(shape);
   builder_.add_float32_data(float32_data);
@@ -268,14 +334,108 @@ inline flatbuffers::Offset<Tensor> CreateTensorDirect(
     const std::vector<uint8_t> *int8_data = nullptr,
     const std::vector<float> *float32_data = nullptr,
     const std::vector<uint32_t> *shape = nullptr,
-    const char *name = nullptr) {
+    const char *name = nullptr,
+    const std::vector<uint16_t> *float16_data = nullptr,
+    const std::vector<uint8_t> *bool8_data = nullptr,
+    const std::vector<int32_t> *int32_data = nullptr) {
   return DNN::CreateTensor(
       _fbb,
       data_type,
       int8_data ? _fbb.CreateVector<uint8_t>(*int8_data) : 0,
       float32_data ? _fbb.CreateVector<float>(*float32_data) : 0,
       shape ? _fbb.CreateVector<uint32_t>(*shape) : 0,
-      name ? _fbb.CreateString(name) : 0);
+      name ? _fbb.CreateString(name) : 0,
+      float16_data ? _fbb.CreateVector<uint16_t>(*float16_data) : 0,
+      bool8_data ? _fbb.CreateVector<uint8_t>(*bool8_data) : 0,
+      int32_data ? _fbb.CreateVector<int32_t>(*int32_data) : 0);
+}
+
+/// For weights, and for features
+struct QuantInfo FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_NAME = 4,
+    VT_DATA_TYPE = 6,
+    VT_SCALES = 8,
+    VT_ZERO_POINT = 10
+  };
+  const flatbuffers::String *name() const {
+    return GetPointer<const flatbuffers::String *>(VT_NAME);
+  }
+  DataType data_type() const {
+    return static_cast<DataType>(GetField<int8_t>(VT_DATA_TYPE, 0));
+  }
+  /// a float32 array of scales, the length will be 1 for non per-channel quantization, and be channelDim for per-channel quantization
+  const flatbuffers::Vector<float> *scales() const {
+    return GetPointer<const flatbuffers::Vector<float> *>(VT_SCALES);
+  }
+  int32_t zero_point() const {
+    return GetField<int32_t>(VT_ZERO_POINT, 0);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_NAME) &&
+           verifier.VerifyString(name()) &&
+           VerifyField<int8_t>(verifier, VT_DATA_TYPE) &&
+           VerifyOffset(verifier, VT_SCALES) &&
+           verifier.VerifyVector(scales()) &&
+           VerifyField<int32_t>(verifier, VT_ZERO_POINT) &&
+           verifier.EndTable();
+  }
+};
+
+struct QuantInfoBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_name(flatbuffers::Offset<flatbuffers::String> name) {
+    fbb_.AddOffset(QuantInfo::VT_NAME, name);
+  }
+  void add_data_type(DataType data_type) {
+    fbb_.AddElement<int8_t>(QuantInfo::VT_DATA_TYPE, static_cast<int8_t>(data_type), 0);
+  }
+  void add_scales(flatbuffers::Offset<flatbuffers::Vector<float>> scales) {
+    fbb_.AddOffset(QuantInfo::VT_SCALES, scales);
+  }
+  void add_zero_point(int32_t zero_point) {
+    fbb_.AddElement<int32_t>(QuantInfo::VT_ZERO_POINT, zero_point, 0);
+  }
+  explicit QuantInfoBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  QuantInfoBuilder &operator=(const QuantInfoBuilder &);
+  flatbuffers::Offset<QuantInfo> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<QuantInfo>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<QuantInfo> CreateQuantInfo(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> name = 0,
+    DataType data_type = DataType::Float32,
+    flatbuffers::Offset<flatbuffers::Vector<float>> scales = 0,
+    int32_t zero_point = 0) {
+  QuantInfoBuilder builder_(_fbb);
+  builder_.add_zero_point(zero_point);
+  builder_.add_scales(scales);
+  builder_.add_name(name);
+  builder_.add_data_type(data_type);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<QuantInfo> CreateQuantInfoDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *name = nullptr,
+    DataType data_type = DataType::Float32,
+    const std::vector<float> *scales = nullptr,
+    int32_t zero_point = 0) {
+  return DNN::CreateQuantInfo(
+      _fbb,
+      name ? _fbb.CreateString(name) : 0,
+      data_type,
+      scales ? _fbb.CreateVector<float>(*scales) : 0,
+      zero_point);
 }
 
 struct Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1775,6 +1935,68 @@ inline flatbuffers::Offset<MulScalar> CreateMulScalarDirect(
       output ? _fbb.CreateString(output) : 0);
 }
 
+struct Dequantize FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct DequantizeBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(Dequantize::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(Dequantize::VT_OUTPUT, output);
+  }
+  explicit DequantizeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  DequantizeBuilder &operator=(const DequantizeBuilder &);
+  flatbuffers::Offset<Dequantize> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Dequantize>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Dequantize> CreateDequantize(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  DequantizeBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Dequantize> CreateDequantizeDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    const char *output = nullptr) {
+  return DNN::CreateDequantize(
+      _fbb,
+      input ? _fbb.CreateString(input) : 0,
+      output ? _fbb.CreateString(output) : 0);
+}
+
 struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_TYPE = 4,
@@ -1792,7 +2014,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_STRIDED_SLICE_PARAM = 28,
     VT_MUL_PARAM = 30,
     VT_ADD_SCALAR_PARAM = 32,
-    VT_MUL_SCALAR_PARAM = 34
+    VT_MUL_SCALAR_PARAM = 34,
+    VT_DEQUANTIZE_PARAM = 36
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -1842,6 +2065,9 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const MulScalar *mul_scalar_param() const {
     return GetPointer<const MulScalar *>(VT_MUL_SCALAR_PARAM);
   }
+  const Dequantize *dequantize_param() const {
+    return GetPointer<const Dequantize *>(VT_DEQUANTIZE_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -1875,6 +2101,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(add_scalar_param()) &&
            VerifyOffset(verifier, VT_MUL_SCALAR_PARAM) &&
            verifier.VerifyTable(mul_scalar_param()) &&
+           VerifyOffset(verifier, VT_DEQUANTIZE_PARAM) &&
+           verifier.VerifyTable(dequantize_param()) &&
            verifier.EndTable();
   }
 };
@@ -1930,6 +2158,9 @@ struct LayerBuilder {
   void add_mul_scalar_param(flatbuffers::Offset<MulScalar> mul_scalar_param) {
     fbb_.AddOffset(Layer::VT_MUL_SCALAR_PARAM, mul_scalar_param);
   }
+  void add_dequantize_param(flatbuffers::Offset<Dequantize> dequantize_param) {
+    fbb_.AddOffset(Layer::VT_DEQUANTIZE_PARAM, dequantize_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -1959,8 +2190,10 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<StridedSlice> strided_slice_param = 0,
     flatbuffers::Offset<Mul> mul_param = 0,
     flatbuffers::Offset<AddScalar> add_scalar_param = 0,
-    flatbuffers::Offset<MulScalar> mul_scalar_param = 0) {
+    flatbuffers::Offset<MulScalar> mul_scalar_param = 0,
+    flatbuffers::Offset<Dequantize> dequantize_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_dequantize_param(dequantize_param);
   builder_.add_mul_scalar_param(mul_scalar_param);
   builder_.add_add_scalar_param(add_scalar_param);
   builder_.add_mul_param(mul_param);
@@ -1984,7 +2217,8 @@ struct Model FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_LAYERS = 4,
     VT_INITIALIZERS = 6,
-    VT_INPUTS = 8
+    VT_INPUTS = 8,
+    VT_QUANT_INFOS = 10
   };
   const flatbuffers::Vector<flatbuffers::Offset<Layer>> *layers() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Layer>> *>(VT_LAYERS);
@@ -1994,6 +2228,9 @@ struct Model FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   const flatbuffers::Vector<flatbuffers::Offset<Input>> *inputs() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Input>> *>(VT_INPUTS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<QuantInfo>> *quant_infos() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<QuantInfo>> *>(VT_QUANT_INFOS);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -2006,6 +2243,9 @@ struct Model FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_INPUTS) &&
            verifier.VerifyVector(inputs()) &&
            verifier.VerifyVectorOfTables(inputs()) &&
+           VerifyOffset(verifier, VT_QUANT_INFOS) &&
+           verifier.VerifyVector(quant_infos()) &&
+           verifier.VerifyVectorOfTables(quant_infos()) &&
            verifier.EndTable();
   }
 };
@@ -2021,6 +2261,9 @@ struct ModelBuilder {
   }
   void add_inputs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Input>>> inputs) {
     fbb_.AddOffset(Model::VT_INPUTS, inputs);
+  }
+  void add_quant_infos(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<QuantInfo>>> quant_infos) {
+    fbb_.AddOffset(Model::VT_QUANT_INFOS, quant_infos);
   }
   explicit ModelBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -2038,8 +2281,10 @@ inline flatbuffers::Offset<Model> CreateModel(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Layer>>> layers = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Tensor>>> initializers = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Input>>> inputs = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Input>>> inputs = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<QuantInfo>>> quant_infos = 0) {
   ModelBuilder builder_(_fbb);
+  builder_.add_quant_infos(quant_infos);
   builder_.add_inputs(inputs);
   builder_.add_initializers(initializers);
   builder_.add_layers(layers);
@@ -2050,12 +2295,14 @@ inline flatbuffers::Offset<Model> CreateModelDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<flatbuffers::Offset<Layer>> *layers = nullptr,
     const std::vector<flatbuffers::Offset<Tensor>> *initializers = nullptr,
-    const std::vector<flatbuffers::Offset<Input>> *inputs = nullptr) {
+    const std::vector<flatbuffers::Offset<Input>> *inputs = nullptr,
+    const std::vector<flatbuffers::Offset<QuantInfo>> *quant_infos = nullptr) {
   return DNN::CreateModel(
       _fbb,
       layers ? _fbb.CreateVector<flatbuffers::Offset<Layer>>(*layers) : 0,
       initializers ? _fbb.CreateVector<flatbuffers::Offset<Tensor>>(*initializers) : 0,
-      inputs ? _fbb.CreateVector<flatbuffers::Offset<Input>>(*inputs) : 0);
+      inputs ? _fbb.CreateVector<flatbuffers::Offset<Input>>(*inputs) : 0,
+      quant_infos ? _fbb.CreateVector<flatbuffers::Offset<QuantInfo>>(*quant_infos) : 0);
 }
 
 inline const DNN::Model *GetModel(const void *buf) {

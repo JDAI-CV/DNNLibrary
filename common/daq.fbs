@@ -1,9 +1,13 @@
 namespace DNN;
 
-enum DataType:byte { Float32 = 0, Int8 }
+/// Int8 is deprecated, but int8_data in table Tensor is used, since a Tensor just stores value, not care about quantization method
+enum DataType:byte { Float32 = 0, Int8, Int32, Float16, Bool8,
+    QUANT8_ASYMM, QUANT8_SYMM, QUANT8_SYMM_PER_CHANNEL, 
+    QUANT16_ASYMM, QUANT16_SYMM}
 enum FuseCode:byte { None = 0, Relu, Relu1, Relu6 }
 enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat,
-    DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar }
+    DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar,
+    Dequantize}
 
 table Tensor {
     data_type:DataType;
@@ -11,6 +15,19 @@ table Tensor {
     float32_data: [float32];
     shape: [uint32];
     name: string;
+    /// since flatbuffers doesn't have float16 data type, use uint16 instead
+    float16_data: [uint16];
+    bool8_data: [uint8];
+    int32_data: [int32];
+}
+
+/// For weights, and for features
+table QuantInfo {
+    name: string;
+    data_type: DataType;
+    /// a float32 array of scales, the length will be 1 for non per-channel quantization, and be channelDim for per-channel quantization
+    scales: [float32];
+    zero_point: int32;
 }
 
 table Input {
@@ -133,6 +150,11 @@ table MulScalar {
     output:string;
 }
 
+table Dequantize {
+    input:string;
+    output:string;
+}
+
 table Layer {
     type:LayerType;
     conv2d_param:Conv2D;
@@ -150,12 +172,14 @@ table Layer {
     mul_param:Mul;
     add_scalar_param:AddScalar;
     mul_scalar_param:MulScalar;
+    dequantize_param:Dequantize;
 }
 
 table Model {
     layers:[Layer];
     initializers:[Tensor];
     inputs:[Input];
+    quant_infos:[QuantInfo];
 }
 
 root_type Model;
