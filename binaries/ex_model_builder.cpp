@@ -11,24 +11,16 @@ int main() {
     using namespace android::nn::wrapper;
     ModelBuilder builder;
     builder.Prepare();
-    bool quant8 = true;
+    const bool quant8 = true;
     uint8_t weight_buf[999]{100, 200, 150, 20, 166, 22};
     uint8_t bias_buf[999]{99, 13, 235, 131};
     if (quant8) {
         builder.AddInput("data", {Type::TENSOR_QUANT8_ASYMM, {1, 224, 224, 3}, 1, 0});
         builder.AddTensorFromBuffer("weight", weight_buf, {Type::TENSOR_QUANT8_ASYMM, {3, 1, 1, 3}, 0.1, 150});
         builder.AddTensorFromBuffer("bias", bias_buf, {Type::TENSOR_INT32, {3}, 0.1, 0});
-        builder.AddTensorFromBuffer("weight2", weight_buf, {Type::TENSOR_QUANT8_ASYMM, {3, 1, 1, 3}, 0.1, 150});
-        builder.AddTensorFromBuffer("bias2", bias_buf, {Type::TENSOR_INT32, {3}, 0.005, 0});
-        LOG(INFO) << "h";
         builder.AddDepthWiseConv("data", 1, 1, 0, 0, 0, 0, ModelBuilder::ACTIVATION_NONE, 1, "weight", "bias", "conv_fwd", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.5}, 100}));
-        LOG(INFO) << "h";
         builder.AddReLU("conv_fwd", "relu_fwd");
-        LOG(INFO) << "h";
-        builder.AddOperationAdd("data", "relu_fwd", "add_fwd", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.05}, 100}));
-        builder.AddDepthWiseConv("add_fwd", 2, 2, 1, 1, 1, 1, ModelBuilder::ACTIVATION_NONE, 1, "weight2", "bias2", "dw_fwd", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.8}, 110}));
-        builder.AddPool("dw_fwd", 1, 1, 1, 1, 1, 1, 3, 3, ModelBuilder::ACTIVATION_NONE, ModelBuilder::PoolingType::AVE_POOL, "output", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.3}, 120}));
-        LOG(INFO) << "h";
+        builder.AddOperationAdd("data", "relu_fwd", "output", std::make_optional<ModelBuilder::QuantInfo>({Type::TENSOR_QUANT8_ASYMM, {0.05}, 100}));
     } else {
         builder.AddInput("data", {Type::TENSOR_FLOAT32, {1, 224, 224, 3}});
         builder.AddTensorFromBuffer("weight", weight_buf, {Type::TENSOR_FLOAT32, {3, 1, 1, 3}});
