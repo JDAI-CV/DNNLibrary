@@ -3,6 +3,7 @@ import copy
 import collections
 import os
 from typing import List, Tuple
+import itertools
 
 import numpy as np
 import onnx
@@ -25,6 +26,7 @@ class OrderedSet(collections.Set):
     stop working"
     but it is caused by python's own code, so just ignore it
     '''
+
     def __init__(self, iterable=()):
         self.d = collections.OrderedDict.fromkeys(iterable)
 
@@ -66,6 +68,7 @@ def modify_pb(m: onnx.ModelProto, quant_layers: List[str]) -> None:
     """
     Modify proto buffers when all quantization infos are set correctly
     :param m: the model
+    :param quant_layers: layers need to be quantized
     """
     for node in m.graph.node:
         if node.name not in quant_layers:
@@ -128,6 +131,8 @@ def make_scales_right(m: onnx.ModelProto, quant_layers: List[str], quant_tensors
     Some layer sequence need multiple runs to make infos right, like concat->conv->relu
     The range(3) is set arbitrarily, but it must not be lower than the number of if branch
     :param m: the model
+    :param quant_layers: layers need to be quantized
+    :param quant_tensors: tensors need to be quantized
     """
     for _ in range(3):
         for node in m.graph.node:
@@ -157,6 +162,7 @@ def set_quant_info_of_bias(m: onnx.ModelProto, quant_layers: List[str]) -> None:
     """
     NNAPI requires scales[bias] equals scales[input]*scales[weight] and zps[scale]=0
     :param m: the model
+    :param quant_layers: layers need to be quantized
     """
     for node in m.graph.node:
         if node.name not in quant_layers:
@@ -189,12 +195,16 @@ def get_quant_list(m: onnx.ModelProto, quant_layers: List[str]) -> Tuple[List[st
     return weights, biases, three_tuple
 
 
-def collect_scales_of_features(model: onnx.ModelProto, image_dir: str, features: List[str] = None) -> None:
+def collect_scales_of_features(model: onnx.ModelProto, image_dir: str,
+                               features: List[str] = None, batch_size=56,
+                               num_workers=1, show_cls=False) -> None:
     """
     Collect infos of features by running model in onnxruntime
     :param model: the model
     :param image_dir: the directory of images
     :param features: names of features that need to collect, None for all features
+    :param batch_size: batch size for net forward
+    :param num_workers: number of thread fetching and preprocessing images
     """
     from queue import Queue
     import threading
@@ -208,29 +218,32 @@ def collect_scales_of_features(model: onnx.ModelProto, image_dir: str, features:
             a = cv2.imread(path)
             a = cv2.resize(a, (224, 224))
             a = a.astype(np.float32)
+            a = cv2.cvtColor(a, cv2.COLOR_BGR2RGB)
             if norm:
                 a /= 255
+                # mean and std for RGB images
                 a -= [0.485, 0.456, 0.406]
                 a /= [0.229, 0.224, 0.225]
             a = np.moveaxis(a, -1, 0)
             return a
 
-        bs = 4
-        for i in range(0, len(paths), bs):
-            xs = np.stack(list(map(lambda x: read_img(x, True), paths[i:i + bs])))
+        for i in range(0, len(paths), batch_size):
+            xs = np.stack(list(map(lambda x: read_img(x, True), paths[i:i + batch_size])))
             q.put(xs)
         q.put(None)
 
-    num_worker_threads = 1
-    filenames = glob.glob(os.path.join(image_dir, '**/*.JPEG'), recursive=True)
+    image_exts = ['JPEG', 'jpg', 'jpeg', 'png']
+    filenames = list(itertools.chain(*[glob.glob(os.path.join(image_dir, '**/*.' + ext), recursive=True)
+                                       for ext in image_exts]))
     import random
     random.shuffle(filenames)
-    filenames = filenames[:400000]
+    filenames = filenames[:10000]
     file_num = len(filenames)
-    chunk_num = file_num // num_worker_threads
+    num_workers = min((file_num + batch_size - 1) // batch_size, num_workers)
+    chunk_num = file_num // num_workers
     threads = []
-    for i in range(num_worker_threads):
-        t = threading.Thread(target=worker, args=((filenames[chunk_num*i:chunk_num*(i+1)],)))
+    for i in range(num_workers):
+        t = threading.Thread(target=worker, args=((filenames[chunk_num * i:chunk_num * (i + 1)],)))
         t.start()
         threads.append(t)
 
@@ -239,21 +252,32 @@ def collect_scales_of_features(model: onnx.ModelProto, image_dir: str, features:
     all_outputs = [x.name for x in sess.get_outputs()]
     features = all_outputs if features is None else list(OrderedSet(features) & OrderedSet(all_outputs))
     i = 0
-    from collections import defaultdict, Counter
-    d = defaultdict(int)
+    done_workers = 0
+    if show_cls:
+        from collections import defaultdict, Counter
+        d = defaultdict(int)
     while True:
         xs = q.get()
         if xs is None:
-            break
+            done_workers += 1
+            if done_workers == num_workers:
+                break
+            continue
         i += xs.shape[0]
         update_scale_and_zp('data', xs)
         from collections import OrderedDict
         res = OrderedDict(zip(features, sess.run(features, {'data': xs})))
+        if show_cls:
+            cls = Counter(res['mobilenetv20_output_pred_fwd'].squeeze(axis=(2,3)).argmax(axis=1))
+            for key in cls:
+                d[key] += cls[key]
         for key in res:
             update_scale_and_zp(key, res[key])
         q.task_done()
         print("{}/{}".format(i, file_num))
-    print(d)
+
+    if show_cls:
+        print(d)
 
     for t in threads:
         t.join()
@@ -263,6 +287,7 @@ def quant_weight(m: onnx.ModelProto, quant_layers: List[str]) -> None:
     """
     quant weights before collecting min and max, for simulating the effect of quantization
     :param m: the model
+    :param quant_layers: layers need to be quantized
     """
     for node in m.graph.node:
         if node.name not in quant_layers:
@@ -306,8 +331,17 @@ def main():
     parser.add_argument('--float_input', help='whether the input of model is float, only for Android 29 (NNAPI 1.2)',
                         action="store_true")
     parser.add_argument('--quantize_after',
-                        help='The name of tensor we want to insert quantize layer after, only for Android 29 (NNAPI 1.2)',
+                        help='The name of tensor we want to insert quantize layer after, '
+                             'only for Android 29 (NNAPI 1.2)',
                         type=str, default='')
+    parser.add_argument('--batch_size',
+                        help='batch size for net forwarding',
+                        type=int,
+                        default=56)
+    parser.add_argument('--num_workers',
+                        help='number of threads fetching and preprocessing images',
+                        type=int,
+                        default=1)
     args = parser.parse_args()
 
     model_path = args.model
@@ -336,7 +370,7 @@ def main():
     set_scales_of_weight(m, quant_layers)
     quant_weight(m, quant_layers)
 
-    collect_scales_of_features(m, args.image_dir, inferred_quant_tensors)
+    collect_scales_of_features(m, args.image_dir, inferred_quant_tensors, args.batch_size, args.num_workers)
     make_scales_right(m, quant_layers, inferred_quant_tensors)
     set_quant_info_of_bias(m, quant_layers)
 
