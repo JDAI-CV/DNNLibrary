@@ -15,7 +15,12 @@ add_executable(onnx2daq
     ${ONNX_PROTO_SRCS}
     ${ONNX_PROTO_HDRS})
 
-treat_warnings_as_errors(onnx2daq)
+if (${DNN_SYSTEM_PROTOBUF})
+    # protobuf headers in third_party brings many warnings, need 
+    # a way to suppress these warnings
+    # before getting a proper way, only enable -Werror when using system protobuf
+    treat_warnings_as_errors(onnx2daq)
+endif()
 
 target_link_libraries(onnx2daq
     protobuf::libprotobuf
