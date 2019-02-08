@@ -76,34 +76,35 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_compile(
     return model_obj;
 }
 
-#define DEFINE_PREDICT(name, input_type, output_type)   \
+#define DEFINE_PREDICT(name, cpp_input_type, jni_input_type, JniInputType, \
+        cpp_output_type, jni_output_type, JniOutputType)   \
     extern "C"  \
-    JNIEXPORT j##output_type##Array    \
+    JNIEXPORT jni_output_type##Array    \
     JNICALL \
     Java_me_daquexian_dnnlibrary_Model_##name(  \
             JNIEnv *env,    \
             jobject obj/* this */,  \
-            j##input_type##Array dataArrayObject) {  \
+            jni_input_type##Array dataArrayObject) {  \
         Model *model = getHandle<Model>(env, obj);  \
     \
-        j##input_type *data = env->GetFloatArrayElements(dataArrayObject, nullptr);    \
+        jni_input_type *data = env->Get##JniInputType##ArrayElements(dataArrayObject, nullptr);    \
     \
         uint32_t outputLen = model->GetOutputSize(0);   \
-        j##output_type output[outputLen];  \
+        cpp_output_type output[outputLen];  \
         model->SetOutputBuffer(0, output);  \
     \
-        model->Predict(std::vector{static_cast<input_type *>(data)});    \
+        model->Predict(std::vector{reinterpret_cast<cpp_input_type *>(data)});    \
     \
-        j##output_type##Array result = env->NewByteArray(outputLen);   \
-        env->SetByteArrayRegion(result, 0, outputLen, output);   \
+        jni_output_type##Array result = env->New##JniOutputType##Array(outputLen);   \
+        env->Set##JniOutputType##ArrayRegion(result, 0, outputLen, reinterpret_cast<jni_output_type *>(output));   \
     \
         return result;  \
     }
 
-DEFINE_PREDICT(predict, float, float);
-DEFINE_PREDICT(predict_quant8, float, byte);
-DEFINE_PREDICT(predict, byte, float);
-DEFINE_PREDICT(predict_quant8, byte, byte);
+DEFINE_PREDICT(predict_1float_1float, float, jfloat, Float, float, jfloat, Float);
+DEFINE_PREDICT(predict_1float_1quant8, float, jfloat, Float, uint8_t, jbyte, Byte);
+DEFINE_PREDICT(predict_1quant8_1float, uint8_t, jbyte, Byte, float, jfloat, Float);
+DEFINE_PREDICT(predict_1quant8_1quant8, uint8_t, jbyte, Byte, uint8_t, jbyte, Byte);
 
 extern "C"
 JNIEXPORT void
