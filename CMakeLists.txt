@@ -8,6 +8,7 @@ project(DNNLibrary)
 
 option(DNN_BUILD_BIN "Build binaries" ON)
 option(DNN_BUILD_JNI "Build Java Wrapper" OFF)
+option(DNN_SYSTEM_PROTOBUF "Use system protobuf when building onnx2daq" OFF)
 
 include(cmake/system.cmake)
 include(cmake/glog.cmake)
