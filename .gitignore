@@ -9,3 +9,4 @@ compile_commands.json
 build*/
 table*.txt
 *.npy
+val.py
