@@ -70,27 +70,19 @@ For example, if you have a model named "mobilenetv2.onnx" in your current direct
 ./tools/onnx2daq/onnx2daq mobilenetv2.onnx mobilenetv2.daq
 ```
 
+For 8-bit quantization, please check out [our wiki](https://github.com/daquexian/DNNLibrary/wiki/Quantization)
+
 ## Usage
 
 ### If you are an Android app developer and want it to work out of the box
 
 Welcome! It has been published on jcenter.
 
-Add
+Just add
 
 ```
 implementation 'me.daquexian:dnnlibrary:replace_me_with_the_latest_version'
 ```
-
-(for Gradle 3.0+),
-
-or
-
-```
-compile 'me.daquexian:dnnlibrary:replace_me_with_the_latest_version'
-```
-
-(for Gradle lower than 3.0)
 
 in your app's `build.gradle`'s `dependencies` section. 
 
@@ -98,13 +90,13 @@ The lastest version can be found in the following badge:
 
 ![Download](https://api.bintray.com/packages/daquexian566/maven/dnnlibrary/images/download.svg) 
 
-### If you don't care about Android app
+### If you are an c++ developer and don't care about Android app
 
 We use CMake as the build system. So you can build it as most C++ projects, the only difference is that you need Android NDK, **r17b or higher NDK is necessary** :
 
 ```bash
 mkdir build && cd build
-cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=path_of_android_ndk -DCMAKE_ANDROID_ARCH_ABI=arm64-v8a -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_ANDROID_STL_TYPE=c++_static -DCMAKE_SYSTEM_VERSION=Android_API_level(27_or_28) ..
+cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=path_of_android_ndk/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=replace_me_with_android-28_or_android-27 -DANDROID_ABI=arm64-v8a 
 cmake --build .
 ```
 
@@ -112,9 +104,9 @@ then you will get binary files.
 
 ## But TensorFlow Lite also supports NNAPI...
 
-Yes, but its support for NNAPI is far from perfect. For example, dilated convolution (which is widely used in segmentation) are not supported (https://github.com/tensorflow/tensorflow/blob/da7b71f67147ff4795c5c0168d1f225ba2b4b522/tensorflow/lite/delegates/nnapi/nnapi_delegate.cc#L463), prelu is also not supported. 
+Yes, but its support for NNAPI is far from perfect. For example, dilated convolution (which is widely used in segmentation) are [not supported](https://github.com/tensorflow/tensorflow/blob/da7b71f67147ff4795c5c0168d1f225ba2b4b522/tensorflow/lite/delegates/nnapi/nnapi_delegate.cc#L463), prelu is also not supported. 
 
-What's more, only the models got from TensorFlow can easily get converted to TF Lite model. Since NNAPI is independent of any frameworks, we support ONNX, a framework-independent model format.
+What's more, only the TensorFlow models can easily get converted to TensorFlow Lite model. Since NNAPI is independent of any frameworks, we support ONNX, a framework-independent model format.
 
 _ | TF Lite | DNNLibrary
 --- |:---:|:---:
