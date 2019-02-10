@@ -46,10 +46,11 @@ def infer_cfg(op):
     if 'base_input_num' not in op or op['base_input_num'] == 1:
         op['input'].insert(0, {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True})
     elif op['base_input_num'] == 2:
-        op['input1'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True}]
-        op['input2'] = [{'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True}]
+        op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True},
+                       {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True}] \
+                      + op['input']
     elif op['base_input_num'] == 'n':
-        op['inputs'] = [{'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'need_by_shaper': True}]
+        op['input'].insert(0, {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'need_by_shaper': True})
     elif op['base_input_num'] == 0:
         pass
     else:
@@ -94,7 +95,7 @@ for i, op in enumerate(cfg):
     if op['fused']:
         op_type_params.append('output_quant_info')
     cogoutl('const OperandType operand_type({});'.format(', '.join(op_type_params)))
-    cogoutl('const auto output_index = '
+    cogoutl('const auto output_idx = '
             'AddOperation(ANEURALNETWORKS_{}, input_indexes, operand_type)[0];'.format(op['nnapi']))
     cogout(
         '''RegisterOperand(output_name, output_index, operand_type);

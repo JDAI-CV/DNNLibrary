@@ -23,7 +23,11 @@
     base_input_num: 0
 -
     name: Add
-    base_input_num: 0
+    base_input_num: 2
+    fused: true
+    shaper: Eltwise
+    support_quant_asymm: True
+    api: 27
 -
     name: Concat
     base_input_num: 0
@@ -41,10 +45,22 @@
     base_input_num: 0
 -
     name: Mul
-    base_input_num: 0
+    base_input_num: 2
+    fused: true
+    shaper: Eltwise
+    support_quant_asymm: True
+    api: 27
 -
     name: Add
-    base_input_num: 0
+    input:
+        -
+            name: scalar
+            nnapi_type: tensor
+            cpp_type: float
+            need_by_shaper: false
+    fused: true
+    shaper: Eltwise
+    api: 27
 -
     name: Mul
     input:
@@ -55,5 +71,4 @@
             need_by_shaper: false
     fused: true
     shaper: Eltwise
-    support_quant_asymm: True
     api: 27
