@@ -1,21 +1,17 @@
-#include <onnx/onnx_pb.h>
-#include <glog/logging.h>
+#include <common/Shaper.h>
+#include <common/StrKeyMap.h>
 #include <common/daq_generated.h>
 #include <common/helper.h>
-#include <common/StrKeyMap.h>
-#include <common/Shaper.h>
+#include <glog/logging.h>
+#include <onnx/onnx_pb.h>
 #include "optional.h"
 
 class OnnxConverter {
-private:
+   private:
     Shaper shaper_;
 
     struct Tensor {
-        enum class DataType {
-            FLOAT32,
-            UINT8,
-            INT32
-        };
+        enum class DataType { FLOAT32, UINT8, INT32 };
         std::string name;
         std::vector<char> data;
         Shaper::Shape shape;
@@ -37,12 +33,7 @@ private:
         }
     };
 
-    enum class FuseCode {
-        FUSED_NONE,
-        FUSED_RELU,
-        FUSED_RELU1,
-        FUSED_RELU6
-    };
+    enum class FuseCode { FUSED_NONE, FUSED_RELU, FUSED_RELU1, FUSED_RELU6 };
 
     struct QuantInfo {
         enum class Type {
@@ -76,27 +67,39 @@ private:
     std::vector<flatbuffers::Offset<DNN::Tensor>> tensors_;
 
     DNN::FuseCode ConvertFuseCodeType(FuseCode fuse_code);
-    std::pair<nonstd::optional<std::string>, FuseCode> FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto, css &output_name);
+    std::pair<nonstd::optional<std::string>, FuseCode> FindActivation(
+        const ONNX_NAMESPACE::ModelProto &model_proto, css &output_name);
 
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
     void ReadTableFile(css &table_file);
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
 
-    void AddConv(const std::string &input_name, const std::vector<int> &strides, const std::vector<int> &pads, 
-            const std::vector<int> &dilations, int group, 
-            const std::pair<nonstd::optional<std::string>, FuseCode>& activation,
-            const std::string &ori_weight_name, const nonstd::optional<std::string> &bias_name, const std::string &output_name);
-    void AddLayerPool(css &op, css &input_name, const std::vector<int> &kernel_shape, const std::vector<int> &pads, const std::vector<int> &strides, css &output_name);
+    void AddConv(
+        const std::string &input_name, const std::vector<int> &strides,
+        const std::vector<int> &pads, const std::vector<int> &dilations,
+        int group,
+        const std::pair<nonstd::optional<std::string>, FuseCode> &activation,
+        const std::string &ori_weight_name,
+        const nonstd::optional<std::string> &bias_name,
+        const std::string &output_name);
+    void AddLayerPool(css &op, css &input_name,
+                      const std::vector<int> &kernel_shape,
+                      const std::vector<int> &pads,
+                      const std::vector<int> &strides, css &output_name);
     void AddLayerRelu(css &input_name, css &output_name);
     void AddLayerAdd(css &input1_name, css &input2_name, css &output_name);
-    void AddLayerAdd(css &input1_name, float input2, css &output_name); 
-    void AddLayerMul(css &input1_name, css &input2_name, css &output_name); 
-    void AddLayerMul(css &input1_name, float input2, css &output_name); 
-    void AddLayerGemm(css &input_name, css &weight_name, nonstd::optional<std::string> bias_name, const int transA, const int transB, const float alpha, const float beta, css &output_name); 
-    void AddLayerSoftmax(css &input_name, css &output_name); 
+    void AddLayerAdd(css &input1_name, float input2, css &output_name);
+    void AddLayerMul(css &input1_name, css &input2_name, css &output_name);
+    void AddLayerMul(css &input1_name, float input2, css &output_name);
+    void AddLayerGemm(css &input_name, css &weight_name,
+                      nonstd::optional<std::string> bias_name, const int transA,
+                      const int transB, const float alpha, const float beta,
+                      css &output_name);
+    void AddLayerSoftmax(css &input_name, css &output_name);
     // axis here is for onnx nchw
-    void AddLayerConcat(const std::vector<std::string> &inputs, css &output_name, const int axis); 
+    void AddLayerConcat(const std::vector<std::string> &inputs,
+                        css &output_name, const int axis);
     void AddLayerDequantize(css &input_name, css &output_name);
     void AddLayerDropout(css &input_name, css &output_name);
 
@@ -114,16 +117,19 @@ private:
         }
         dest.data.resize(Product(src.shape) * elemsize);
         // t for total
-        auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
+        auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
+             w_t = src.shape[3];
         CHECK_EQ(in_t, 1u);
         for (uint32_t out = 0; out < out_t; out++) {
             for (uint32_t in = 0; in < in_t; in++) {
                 for (uint32_t h = 0; h < h_t; h++) {
                     for (uint32_t w = 0; w < w_t; w++) {
-                        auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
+                        auto onnx_idx = out * in_t * h_t * w_t +
+                                        in * h_t * w_t + h * w_t + w;
                         auto nnapi_idx = h * w_t * out_t + w * out_t + out;
                         FORZ(i, elemsize) {
-                            dest.data[elemsize * nnapi_idx + i] = src.data[elemsize * onnx_idx + i];
+                            dest.data[elemsize * nnapi_idx + i] =
+                                src.data[elemsize * onnx_idx + i];
                         }
                     }
                 }
@@ -140,7 +146,7 @@ private:
      * onnx: [filter_out_channel, filter_in_channel, height, width]
      * nnapi: [depth_out, height, width, depth_in]
      */
-    inline Tensor OnnxToNnapiVanilla(const Tensor &src, css &name="") {
+    inline Tensor OnnxToNnapiVanilla(const Tensor &src, css &name = "") {
         Tensor dest = src;
         size_t elemsize = 0;
         if (src.data_type == Tensor::DataType::UINT8) {
@@ -150,15 +156,19 @@ private:
         }
         dest.data.resize(Product(src.shape) * elemsize);
         // t for total
-        auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2], w_t = src.shape[3];
+        auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
+             w_t = src.shape[3];
         for (uint32_t out = 0; out < out_t; out++) {
             for (uint32_t in = 0; in < in_t; in++) {
                 for (uint32_t h = 0; h < h_t; h++) {
                     for (uint32_t w = 0; w < w_t; w++) {
-                        auto onnx_idx = out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
-                        auto nnapi_idx = out * h_t * w_t * in_t + h * w_t * in_t + w * in_t + in;
+                        auto onnx_idx = out * in_t * h_t * w_t +
+                                        in * h_t * w_t + h * w_t + w;
+                        auto nnapi_idx = out * h_t * w_t * in_t +
+                                         h * w_t * in_t + w * in_t + in;
                         FORZ(i, elemsize) {
-                            dest.data[elemsize * nnapi_idx + i] = src.data[elemsize * onnx_idx + i];
+                            dest.data[elemsize * nnapi_idx + i] =
+                                src.data[elemsize * onnx_idx + i];
                         }
                     }
                 }
@@ -171,6 +181,7 @@ private:
         return dest;
     }
 
-public:
-    void Convert(const ONNX_NAMESPACE::ModelProto &model, const std::string &filepath, const css &table_file="");
+   public:
+    void Convert(const ONNX_NAMESPACE::ModelProto &model,
+                 const std::string &filepath, const css &table_file = "");
 };
