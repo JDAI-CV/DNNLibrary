@@ -1,0 +1,59 @@
+-
+    # This appears in function name, like ModelBuilder::AddConv
+    name: Conv
+    base_input_num: 0
+-
+    name: AvePool
+    base_input_num: 0
+-
+    name: MaxPool
+    base_input_num: 0
+-
+    name: ReLU
+    shaper: Relu
+-
+    name: Softmax
+    input:
+        -
+            name: beta
+            nnapi_type: scalar
+            cpp_type: float
+-
+    name: FC
+    base_input_num: 0
+-
+    name: Add
+    base_input_num: 0
+-
+    name: Concat
+    base_input_num: 0
+-
+    name: DepthwiseConv
+    base_input_num: 0
+-
+    name: BatchToSpaceND
+    base_input_num: 0
+-
+    name: SpaceToBatchND
+    base_input_num: 0
+-
+    name: StridedSlice
+    base_input_num: 0
+-
+    name: Mul
+    base_input_num: 0
+-
+    name: Add
+    base_input_num: 0
+-
+    name: Mul
+    input:
+        -
+            name: scalar
+            nnapi_type: tensor
+            cpp_type: float
+            need_by_shaper: false
+    fused: true
+    shaper: Eltwise
+    support_quant_asymm: True
+    api: 27
