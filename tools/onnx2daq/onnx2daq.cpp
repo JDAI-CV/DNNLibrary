@@ -1,16 +1,16 @@
-#include <string>
 #include <fstream>
-#include <numeric>
 #include <map>
+#include <numeric>
+#include <string>
 
-#include <glog/logging.h>
 #include <common/StrKeyMap.h>
-#include "OnnxConverter.h"
+#include <glog/logging.h>
 #include "NodeAttrHelper.h"
+#include "OnnxConverter.h"
 #include "common/log_helper.h"
 
-using std::string; using std::vector;
-
+using std::string;
+using std::vector;
 
 int main(int argc, char **argv) {
     FLAGS_logtostderr = true;

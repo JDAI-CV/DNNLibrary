@@ -6,18 +6,19 @@
 #ifndef NNAPIEXAMPLE_MODEL_H
 #define NNAPIEXAMPLE_MODEL_H
 
-#include <vector>
 #include <memory>
+#include <vector>
 
+#include <NeuralNetworksWrapper.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
-#include <NeuralNetworksWrapper.h>
 
 class Model {
     friend class ModelBuilder;
-private:
-    ANeuralNetworksModel* model_;
-    ANeuralNetworksCompilation* compilation_;
+
+   private:
+    ANeuralNetworksModel *model_;
+    ANeuralNetworksCompilation *compilation_;
     ANeuralNetworksExecution *execution_;
     ANeuralNetworksMemory *memory_;
     unsigned char *data_;
@@ -37,20 +38,25 @@ private:
     void PrepareForExecution();
     bool prepared_for_exe_;
     Model() = default;
-public:
+
+   public:
     template <typename T>
     void Predict(std::vector<T *> inputs) {
         if (!prepared_for_exe_) PrepareForExecution();
         for (size_t i = 0; i < inputs.size(); i++) {
             SetInputBuffer(i, inputs[i]);
         }
-        ANeuralNetworksEvent* event = nullptr;
-        if (int ret = ANeuralNetworksExecution_startCompute(execution_, &event); ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Error in startCompute, return value: " + std::to_string(ret));
+        ANeuralNetworksEvent *event = nullptr;
+        if (int ret = ANeuralNetworksExecution_startCompute(execution_, &event);
+            ret != ANEURALNETWORKS_NO_ERROR) {
+            throw std::invalid_argument(
+                "Error in startCompute, return value: " + std::to_string(ret));
         }
 
-        if (int ret = ANeuralNetworksEvent_wait(event); ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Error in wait, return value: " + std::to_string(ret));
+        if (int ret = ANeuralNetworksEvent_wait(event);
+            ret != ANEURALNETWORKS_NO_ERROR) {
+            throw std::invalid_argument("Error in wait, return value: " +
+                                        std::to_string(ret));
         }
 
         ANeuralNetworksEvent_free(event);
@@ -68,5 +74,4 @@ public:
     size_t GetOutputSize(const int &index);
 };
 
-
-#endif //NNAPIEXAMPLE_MODEL_H
+#endif  // NNAPIEXAMPLE_MODEL_H
