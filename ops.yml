@@ -140,6 +140,7 @@
 -
     name: ReLU
     shaper: Relu
+    api: 27
 -
     name: Softmax
     input:
@@ -161,6 +162,7 @@
     nnapi: FULLY_CONNECTED
     fused: true
     support_quant_asymm: true
+    api: 27
 
 -
     name: Add
@@ -230,13 +232,61 @@
     api: 27
 -
     name: BatchToSpaceND
-    base_input_num: 0
+    input:
+        -
+            name: block_sizes
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+    api: 28
 -
     name: SpaceToBatchND
-    base_input_num: 0
+    input:
+        -
+            name: block_sizes
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: pads
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+    api: 28
 -
     name: StridedSlice
-    base_input_num: 0
+    input:
+        -
+            name: starts
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: ends
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: end_mask
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: shrink_axis_mask
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: begin_mask
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+    api: 28
 -
     name: Mul
     base_input_num: 2

@@ -24,6 +24,10 @@ def get_param(elem: dict) -> Tuple[str, str]:
         return 'const string &', elem['name']
     elif elem['cpp_type'] == 'optional_str':
         return 'const std::optional<string> &', elem['name']
+    elif elem['cpp_type'] == 'str_list':
+        return 'const std::vector<string> &', elem['name']
+    elif elem['cpp_type'] == 'int32_list':
+        return 'const std::vector<int32_t> &', elem['name']
     else:
         return elem['cpp_type'], elem['name']
 
@@ -57,7 +61,10 @@ def add_tensor_operand(operand):
             return '''const auto {0}_idx = operand_indexes_[{0}];
 input_indexes.push_back({0}_idx);'''.format(operand['name'])
     elif operand['cpp_type'] == 'float':
-        return '''const auto {0}_idx = FillOperand("input_{0}_of_" + output_name, {{Type::TENSOR_FLOAT32, {{1}}}}, {0}); 
+        return '''const auto {0}_idx = FillOperand("input_{0}_of_" + output, {{Type::TENSOR_FLOAT32, {{1}}}}, {0}); 
+input_indexes.push_back({0}_idx);'''.format(operand['name'])
+    elif operand['cpp_type'] == 'int32_list':
+        return '''const auto {0}_idx = AddTensorFromBuffer("input_{0}_of_" + output, &{0}[0], {{Type::TENSOR_INT32, Shape{{static_cast<uint32_t>({0}.size())}}}}); 
 input_indexes.push_back({0}_idx);'''.format(operand['name'])
     elif operand['cpp_type'] == 'str_list':
         return '''for (const auto &x : {}) {{
@@ -112,6 +119,7 @@ for i, op in enumerate(cfg):
     infer_cfg(op)
     if len(op['input']) == 0:
         continue
+    cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
     ipt_opt = op['input'] + op['output']
     params = list(map(get_param, ipt_opt))
     if op['support_quant8_asymm']:
@@ -140,6 +148,7 @@ for i, op in enumerate(cfg):
         '''RegisterOperand(output_name, output_index, operand_type);
 return output_index;
 }
-
 '''
     )
+    cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
+
