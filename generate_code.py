@@ -137,7 +137,7 @@ for i, op in enumerate(cfg):
         cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
     cogoutl('shaper_.{}({});'.format(op['shaper'],
                                      ', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])))
-    op_type_params = ['operand_types.at({}).type'.format(op['input'][0]['name']),
+    op_type_params = ['operand_types_.at({}).type'.format(op['input'][0]['name']),
                       'shaper_[{}]'.format(op['output'][0]['name'])]
     if op['support_quant8_asymm']:
         op_type_params.append('output_quant_info')

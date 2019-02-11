@@ -238,6 +238,7 @@
             nnapi_type: tensor
             cpp_type: int32_list
             needed_by_shaper: true
+    nnapi: BATCH_TO_SPACE_ND
     api: 28
 -
     name: SpaceToBatchND
@@ -252,6 +253,7 @@
             nnapi_type: tensor
             cpp_type: int32_list
             needed_by_shaper: true
+    nnapi: SPACE_TO_BATCH_ND
     api: 28
 -
     name: StridedSlice
@@ -272,6 +274,11 @@
             cpp_type: int32_list
             needed_by_shaper: true
         -
+            name: begin_mask
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
             name: end_mask
             nnapi_type: scalar
             cpp_type: int32_t
@@ -281,11 +288,7 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
-        -
-            name: begin_mask
-            nnapi_type: scalar
-            cpp_type: int32_t
-            needed_by_shaper: true
+    nnapi: STRIDED_SLICE
     api: 28
 -
     name: Mul
