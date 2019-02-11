@@ -41,7 +41,7 @@ input_indexes.push_back(operand_indexes_[x]);
         raise Exception('Unknown cpp_type {}'.format(operand['cpp_type']))
 
 
-with open('config.yml') as f:
+with open('ops.yml') as f:
     cfg = yaml.load(f)
 
 
