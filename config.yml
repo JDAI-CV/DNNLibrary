@@ -18,6 +18,7 @@
             name: beta
             nnapi_type: scalar
             cpp_type: float
+    api: 27
 -
     name: FC
     base_input_num: 0
@@ -30,7 +31,15 @@
     api: 27
 -
     name: Concat
-    base_input_num: 0
+    base_input_num: n
+    input:
+        -
+            name: axis
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+    nnapi: CONCATENATION
+    api: 27
 -
     name: DepthwiseConv
     base_input_num: 0

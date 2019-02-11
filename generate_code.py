@@ -28,12 +28,17 @@ def get_param(elem: dict) -> Tuple[str, str]:
 
 def add_tensor_operand(operand):
     if operand['cpp_type'] == 'str':
-        return 'const auto {}_idx = operand_indexes_[{}]'.format(operand['name'], operand['name'])
+        return '''const auto {0}_idx = operand_indexes_[{0}];
+input_indexes.push_back({0}_idx);'''.format(operand['name'])
     elif operand['cpp_type'] == 'float':
-        return 'const auto {}_idx = FillOperand("input_{}_of_" + output_name, {{Type::TENSOR_FLOAT32, {{1}}}}, {}); '.format(
-            operand['name'], operand['name'], operand['name'])
+        return '''const auto {0}_idx = FillOperand("input_{0}_of_" + output_name, {{Type::TENSOR_FLOAT32, {{1}}}}, {0}); 
+input_indexes.push_back({0}_idx);'''.format(operand['name'])
+    elif operand['cpp_type'] == 'str_list':
+        return '''for (const auto &x : {}) {{
+input_indexes.push_back(operand_indexes_[x]);
+}}'''.format(operand['name'])
     else:
-        raise Exception()
+        raise Exception('Unknown cpp_type {}'.format(operand['cpp_type']))
 
 
 with open('config.yml') as f:
@@ -44,20 +49,20 @@ def infer_cfg(op):
     if 'input' not in op:
         op['input'] = []
     if 'base_input_num' not in op or op['base_input_num'] == 1:
-        op['input'].insert(0, {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True})
+        op['input'].insert(0, {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True})
     elif op['base_input_num'] == 2:
-        op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True},
-                       {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True}] \
+        op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True},
+                       {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}] \
                       + op['input']
     elif op['base_input_num'] == 'n':
-        op['input'].insert(0, {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'need_by_shaper': True})
+        op['input'].insert(0, {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'needed_by_shaper': True})
     elif op['base_input_num'] == 0:
         pass
     else:
         raise Exception()
 
     if not 'output' in op:
-        op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'need_by_shaper': True}]
+        op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}]
     if not 'shaper' in op:
         op['shaper'] = op['name']
     if not 'nnapi' in op:
@@ -83,13 +88,14 @@ for i, op in enumerate(cfg):
     tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
     scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
 
+    cogoutl('IndexSeq input_indexes;')
     for x in tensor_input:
         cogoutl(add_tensor_operand(x))
-    cogoutl('IndexSeq input_indexes{{{}}};'.format(', '.join([x['name'] + "_idx" for x in tensor_input])))
+    # cogoutl('IndexSeq input_indexes{{{}}};'.format(', '.join([x['name'] + "_idx" for x in tensor_input])))
     if len(scalar_input) > 0:
         cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
     cogoutl('shaper_.{}({});'.format(op['shaper'],
-                                     ', '.join([x['name'] for x in ipt_opt if x.get('need_by_shaper', False)])))
+                                     ', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])))
     op_type_params = ['operand_types.at({}).type'.format(op['input'][0]['name']),
                       'shaper_[{}]'.format(op['output'][0]['name'])]
     if op['fused']:
