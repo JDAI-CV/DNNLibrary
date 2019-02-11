@@ -22,13 +22,39 @@ def get_param(elem: dict) -> Tuple[str, str]:
     """
     if elem['cpp_type'] == 'str':
         return 'const string &', elem['name']
+    elif elem['cpp_type'] == 'optional_str':
+        return 'const std::optional<string> &', elem['name']
     else:
         return elem['cpp_type'], elem['name']
 
 
+def add_optional_bias():
+    return '''uint32_t bias_idx_val;
+        css bias_val = bias.value_or(weight_name + "_b");
+        if (!bias.has_value()) {
+            const auto weight_dimen = shaper_[weight];
+            const Shape bias_dimen{weight_dimen[0]};
+            const auto &weight_type = operand_types_.at(weight).type;
+            if (weight_type == Type::TENSOR_FLOAT32) {
+                bias_idx_val = FillOperand(bias_val, {Type::TENSOR_FLOAT32, bias_dimen}, 0.f);
+            } else if (weight_type == Type::TENSOR_QUANT8_ASYMM) {
+                const auto input_scale = operand_types_.at(input).operandType.scale;
+                const auto weight_scale = operand_types_.at(weight).operandType.scale;
+                bias_idx_val = FillOperand(bias_val, 
+                        {Type::TENSOR_INT32, bias_dimen, input_scale * weight_scale}, 0);
+            } else {
+                throw std::invalid_argument("Unknown type " + typeToStr(weight_type));
+            }
+        } else {
+            bias_idx_val = operand_indexes_[bias.value()];
+        }'''
+
+
 def add_tensor_operand(operand):
+    if operand['predefined'] == 'optional_bias':
+        return add_optional_bias()
     if operand['cpp_type'] == 'str':
-        return '''const auto {0}_idx = operand_indexes_[{0}];
+            return '''const auto {0}_idx = operand_indexes_[{0}];
 input_indexes.push_back({0}_idx);'''.format(operand['name'])
     elif operand['cpp_type'] == 'float':
         return '''const auto {0}_idx = FillOperand("input_{0}_of_" + output_name, {{Type::TENSOR_FLOAT32, {{1}}}}, {0}); 
@@ -73,6 +99,13 @@ def infer_cfg(op):
         op['input'].append({'name': 'fuse_code', 'nnapi_type': 'scalar', 'cpp_type': 'int'})
     if 'support_quant8_asymm' not in op:
         op['support_quant8_asymm'] = False
+    for ipt in op['input']:
+        if 'predefined' not in ipt:
+            ipt['predefined'] = ''
+        if ipt['predefined'] == 'optional_bias':
+            ipt['name'] = 'bias'
+            ipt['nnapi_type'] = 'tensor'
+            ipt['cpp_type'] = 'optional_str'
 
 
 for i, op in enumerate(cfg):
@@ -81,7 +114,7 @@ for i, op in enumerate(cfg):
         continue
     ipt_opt = op['input'] + op['output']
     params = list(map(get_param, ipt_opt))
-    if op['fused']:
+    if op['support_quant8_asymm']:
         params.append(('const std::optional<QuantInfo> &', 'output_quant_info'))
     params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
     cogoutl("ModelBuilder::Index ModelBuilder::Add{}({}) {{".format(op['name'], params_str))
@@ -98,7 +131,7 @@ for i, op in enumerate(cfg):
                                      ', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])))
     op_type_params = ['operand_types.at({}).type'.format(op['input'][0]['name']),
                       'shaper_[{}]'.format(op['output'][0]['name'])]
-    if op['fused']:
+    if op['support_quant8_asymm']:
         op_type_params.append('output_quant_info')
     cogoutl('const OperandType operand_type({});'.format(', '.join(op_type_params)))
     cogoutl('const auto output_idx = '
