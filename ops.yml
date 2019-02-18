@@ -89,6 +89,7 @@
     nnapi: AVERAGE_POOL_2D
     shaper: Pool
     fused: true
+    support_quant_asymm: true
     api: 27
 -
     name: MaxPool
@@ -136,6 +137,7 @@
     nnapi: MAX_POOL_2D
     shaper: Pool
     fused: true
+    support_quant_asymm: true
     api: 27
 -
     name: ReLU
@@ -238,6 +240,7 @@
             nnapi_type: tensor
             cpp_type: int32_list
             needed_by_shaper: true
+    shaper: BatchToSpace
     nnapi: BATCH_TO_SPACE_ND
     api: 28
 -
@@ -253,6 +256,7 @@
             nnapi_type: tensor
             cpp_type: int32_list
             needed_by_shaper: true
+    shaper: SpaceToBatch
     nnapi: SPACE_TO_BATCH_ND
     api: 28
 -
@@ -318,4 +322,29 @@
             need_by_shaper: false
     fused: true
     shaper: Eltwise
+    api: 27
+-
+    name: LRN
+    input:
+        -
+            name: local_size
+            nnapi_type: scalar
+            cpp_type: int32_t
+            need_by_shaper: false
+        -
+            name: bias
+            nnapi_type: scalar
+            cpp_type: float
+            need_by_shaper: false
+        -
+            name: alpha
+            nnapi_type: scalar
+            cpp_type: float
+            need_by_shaper: false
+        -
+            name: beta
+            nnapi_type: scalar
+            cpp_type: float
+            need_by_shaper: false
+    nnapi: LOCAL_RESPONSE_NORMALIZATION
     api: 27

@@ -15,6 +15,10 @@ void Shaper::Conv(const std::string &input_name, const std::vector<int32_t> stri
     Shaper::Conv(input_name, strides, dilations, paddings, weight_name, output_name);
 }
 
+void Shaper::Conv(const std::string & input, const std::string & weight, int32_t padding_left, int32_t padding_right, int32_t padding_top, int32_t padding_bottom, int32_t stride_x, int32_t stride_y, const std::string & output) {
+    Conv(input, stride_x, stride_y, 1, 1, padding_left, padding_right, padding_top, padding_bottom, weight, output);
+}
+
 void Shaper::Conv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t dilationX, int32_t dilationY, int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom, const std::string &weight_name, const std::string &output_name) {
     Shape weightDimen = shape_map_.at(weight_name);     // num_output, height, width, num_input
     // NHWC
@@ -29,6 +33,10 @@ void Shaper::Conv(const std::string &input_name, int32_t strideX, int32_t stride
 void Shaper::DepthwiseConv(const std::string &input_name, const std::vector<int32_t> strides, const std::vector<int32_t> dilations,
         const std::vector<int32_t> paddings, const std::string &weight_name, const std::string &output_name) {
     Shaper::DepthwiseConv(input_name, strides[1], strides[0], dilations[1], dilations[0], paddings[3], paddings[1], paddings[0], paddings[2], weight_name, output_name);
+}
+
+void Shaper::DepthwiseConv(const std::string &input_name, const std::string &weight_name, int32_t padding_left, int32_t padding_right, int32_t padding_top, int32_t padding_bottom, int32_t stride_x, int32_t stride_y, const std::string &output) {
+    DepthwiseConv(input_name, stride_x, stride_y, 1, 1, padding_left, padding_right, padding_top, padding_bottom, weight_name, output);
 }
 
 void Shaper::DepthwiseConv(const std::string &input_name, int32_t strideX, int32_t strideY, int32_t dilationX, int32_t dilationY, int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop, int32_t paddingBottom, const std::string &weight_name, const std::string &output_name) {
