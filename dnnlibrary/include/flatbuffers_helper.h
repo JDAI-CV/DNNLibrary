@@ -60,6 +60,10 @@ inline uint32_t unpack_fbs(const DNN::FuseCode fbs) {
     throw std::invalid_argument("Invalid fuse_code");
 }
 
+inline float unpack_fbs(const float fbs) {
+    return fbs;
+}
+
 inline uint32_t unpack_fbs(const uint32_t fbs) {
     return fbs;
 }
