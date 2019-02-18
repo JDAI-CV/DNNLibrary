@@ -1,0 +1,350 @@
+-
+    # This appears in function name, like ModelBuilder::AddConv
+    name: Conv
+    nnapi: CONV_2D
+    input:
+        -
+            name: weight
+            nnapi_type: tensor
+            cpp_type: str
+            needed_by_shaper: true
+        -
+            predefined: optional_bias
+        -
+            name: padding_left
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_right
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_top
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_bottom
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_x
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_y
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+    fused: true
+    support_quant_asymm: true
+    api: 27
+-
+    name: AvePool
+    input:
+        -
+            name: padding_left
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_right
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_top
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_bottom
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_x
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_y
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: kernel_width
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: kernel_height
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+    nnapi: AVERAGE_POOL_2D
+    shaper: Pool
+    fused: true
+    support_quant_asymm: true
+    api: 27
+-
+    name: MaxPool
+    input:
+        -
+            name: padding_left
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_right
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_top
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_bottom
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_x
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_y
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: kernel_width
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: kernel_height
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+    nnapi: MAX_POOL_2D
+    shaper: Pool
+    fused: true
+    support_quant_asymm: true
+    api: 27
+-
+    name: ReLU
+    shaper: Relu
+    api: 27
+-
+    name: Softmax
+    input:
+        -
+            name: beta
+            nnapi_type: scalar
+            cpp_type: float
+    api: 27
+-
+    name: FC
+    input:
+        -
+            name: weight
+            nnapi_type: tensor
+            cpp_type: str
+            needed_by_shaper: true
+        -
+            predefined: optional_bias
+    nnapi: FULLY_CONNECTED
+    fused: true
+    support_quant_asymm: true
+    api: 27
+
+-
+    name: Add
+    base_input_num: 2
+    fused: true
+    shaper: Eltwise
+    support_quant_asymm: true
+    api: 27
+-
+    name: Concat
+    base_input_num: n
+    input:
+        -
+            name: axis
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+    nnapi: CONCATENATION
+    api: 27
+-
+    name: DepthwiseConv
+    nnapi: DEPTHWISE_CONV_2D
+    input:
+        -
+            name: weight
+            nnapi_type: tensor
+            cpp_type: str
+            needed_by_shaper: true
+        -
+            predefined: optional_bias
+        -
+            name: padding_left
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_right
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_top
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: padding_bottom
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_x
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: stride_y
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: depth_multiplier
+            nnapi_type: scalar
+            cpp_type: int32_t
+    fused: true
+    support_quant_asymm: true
+    api: 27
+-
+    name: BatchToSpaceND
+    input:
+        -
+            name: block_sizes
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+    shaper: BatchToSpace
+    nnapi: BATCH_TO_SPACE_ND
+    api: 28
+-
+    name: SpaceToBatchND
+    input:
+        -
+            name: block_sizes
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: pads
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+    shaper: SpaceToBatch
+    nnapi: SPACE_TO_BATCH_ND
+    api: 28
+-
+    name: StridedSlice
+    input:
+        -
+            name: starts
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: ends
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            nnapi_type: tensor
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: begin_mask
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: end_mask
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: shrink_axis_mask
+            nnapi_type: scalar
+            cpp_type: int32_t
+            needed_by_shaper: true
+    nnapi: STRIDED_SLICE
+    api: 28
+-
+    name: Mul
+    base_input_num: 2
+    fused: true
+    shaper: Eltwise
+    support_quant_asymm: true
+    api: 27
+-
+    name: Add
+    input:
+        -
+            name: scalar
+            nnapi_type: tensor
+            cpp_type: float
+            need_by_shaper: false
+    fused: true
+    shaper: Eltwise
+    api: 27
+-
+    name: Mul
+    input:
+        -
+            name: scalar
+            nnapi_type: tensor
+            cpp_type: float
+            need_by_shaper: false
+    fused: true
+    shaper: Eltwise
+    api: 27
+-
+    name: LRN
+    input:
+        -
+            name: local_size
+            nnapi_type: scalar
+            cpp_type: int32_t
+            need_by_shaper: false
+        -
+            name: bias
+            nnapi_type: scalar
+            cpp_type: float
+            need_by_shaper: false
+        -
+            name: alpha
+            nnapi_type: scalar
+            cpp_type: float
+            need_by_shaper: false
+        -
+            name: beta
+            nnapi_type: scalar
+            cpp_type: float
+            need_by_shaper: false
+    nnapi: LOCAL_RESPONSE_NORMALIZATION
+    api: 27

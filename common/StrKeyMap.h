@@ -9,19 +9,21 @@
 #include <string>
 
 /**
- * std::map whose key is std::string, so that we can print the key when a std::out_of_range is thrown
+ * std::map whose key is std::string, so that we can print the key when a
+ * std::out_of_range is thrown
  * @tparam V the value typename
  */
 template <typename V>
 class StrKeyMap {
-private:
+   private:
     using map_t = std::map<std::string, V>;
     map_t map_;
-public:
-    inline V& operator[](const std::string &key) {
+
+   public:
+    inline V &operator[](const std::string &key) {
         return map_[key];
     }
-    inline const V& at(const std::string &key) {
+    inline const V &at(const std::string &key) {
         try {
             return map_.at(key);
         } catch (const std::out_of_range &e) {
@@ -47,5 +49,4 @@ public:
     }
 };
 
-
-#endif //DNNLIBRARY_DNN_MAP_H
+#endif  // DNNLIBRARY_DNN_MAP_H
