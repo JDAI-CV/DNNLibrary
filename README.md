@@ -1,6 +1,6 @@
 # DNNLibrary
 
-[![Build Status](https://travis-ci.com/daquexian/DNNLibrary.svg?branch=master)](https://travis-ci.com/daquexian/DNNLibrary)
+[![Build Status](https://travis-ci.com/JDAI-CV/DNNLibrary.svg?branch=master)](https://travis-ci.com/JDAI-CV/DNNLibrary)
 [![Download](https://api.bintray.com/packages/daquexian566/maven/dnnlibrary/images/download.svg) ](https://bintray.com/daquexian566/maven/dnnlibrary/_latestVersion)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
 
@@ -25,7 +25,7 @@ This screenshot is MobileNet v2, both float version and 8-bit quantized version
 Clone this repo and submodules:
 
 ```bash
-git clone --recursive https://github.com/daquexian/DNNLibrary
+git clone --recursive https://github.com/JDAI-CV/DNNLibrary
 ```
 
 Please make sure the Android System on your phone is 8.1+, or you may want to use an 8.1+ emulator.
@@ -70,7 +70,7 @@ For example, if you have a model named "mobilenetv2.onnx" in your current direct
 ./tools/onnx2daq/onnx2daq mobilenetv2.onnx mobilenetv2.daq
 ```
 
-For 8-bit quantization, please check out [our wiki](https://github.com/daquexian/DNNLibrary/wiki/Quantization)
+For 8-bit quantization, please check out [our wiki](https://github.com/JDAI-CV/DNNLibrary/wiki/Quantization)
 
 ## Usage
 
