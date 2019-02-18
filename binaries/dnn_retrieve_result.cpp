@@ -2,21 +2,23 @@
 // Created by daquexian on 5/21/18.
 //
 
-#include <string>
-#include <sstream>
-#include <istream>
+#include <chrono>
 #include <fstream>
 #include <iostream>
-#include <chrono>
+#include <istream>
+#include <sstream>
+#include <string>
 #include <vector>
 
-#include <glog/logging.h>
-#include "android_log_helper.h"
-#include <common/helper.h>
-#include "ModelBuilder.h"
 #include <DaqReader.h>
+#include <common/helper.h>
+#include <glog/logging.h>
+#include "ModelBuilder.h"
+#include "android_log_helper.h"
 
-using std::string; using std::cout; using std::endl;
+using std::cout;
+using std::endl;
+using std::string;
 using Clock = std::chrono::high_resolution_clock;
 
 // ./dnn_retrieve_result daqName outputBlob [input]
@@ -39,11 +41,14 @@ int main(int argc, char **argv) {
     {
         ModelBuilder builder;
         DaqReader daq_reader;
-        // Set the last argument to true to use mmap. It may be more efficient than memory buffer.
+        // Set the last argument to true to use mmap. It may be more efficient
+        // than memory buffer.
         daq_reader.ReadDaq(daqName, builder, false);
-        model = builder.AddOutput(outputBlob).Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+        model = builder.AddOutput(outputBlob)
+                    .Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
     }
-    const auto inputLen = model->GetInputSize(0), outputLen = model->GetOutputSize(0);
+    const auto inputLen = model->GetInputSize(0),
+               outputLen = model->GetOutputSize(0);
     float data[inputLen];
     if (use_external_input) {
         std::ifstream ifs(argv[5]);

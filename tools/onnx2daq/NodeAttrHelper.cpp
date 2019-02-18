@@ -8,15 +8,15 @@
 #include <string>
 #include <vector>
 
-using std::string; using std::vector;
+using std::string;
+using std::vector;
 
-NodeAttrHelper::NodeAttrHelper(ONNX_NAMESPACE::NodeProto proto) : node_(proto){
-
+NodeAttrHelper::NodeAttrHelper(ONNX_NAMESPACE::NodeProto proto) : node_(proto) {
 }
 
 float NodeAttrHelper::get(const std::string &key, float def_val) {
     for (int i = 0; i < node_.attribute_size(); i++) {
-        const ONNX_NAMESPACE::AttributeProto& attr = node_.attribute(i);
+        const ONNX_NAMESPACE::AttributeProto &attr = node_.attribute(i);
         if (attr.name() == key) {
             return attr.f();
         }
@@ -27,7 +27,7 @@ float NodeAttrHelper::get(const std::string &key, float def_val) {
 
 int NodeAttrHelper::get(const std::string &key, int def_val) {
     for (int i = 0; i < node_.attribute_size(); i++) {
-        const ONNX_NAMESPACE::AttributeProto& attr = node_.attribute(i);
+        const ONNX_NAMESPACE::AttributeProto &attr = node_.attribute(i);
         if (attr.name() == key) {
             return static_cast<int>(attr.i());
         }
@@ -38,7 +38,7 @@ int NodeAttrHelper::get(const std::string &key, int def_val) {
 
 string NodeAttrHelper::get(const std::string &key, string def_val) {
     for (int i = 0; i < node_.attribute_size(); i++) {
-        const ONNX_NAMESPACE::AttributeProto& attr = node_.attribute(i);
+        const ONNX_NAMESPACE::AttributeProto &attr = node_.attribute(i);
         if (attr.name() == key) {
             return attr.s();
         }
@@ -54,7 +54,7 @@ vector<int> NodeAttrHelper::get(const std::string &key, vector<int> def_val) {
     std::vector<int> v;
 
     for (int i = 0; i < node_.attribute_size(); i++) {
-        const ONNX_NAMESPACE::AttributeProto& attr = node_.attribute(i);
+        const ONNX_NAMESPACE::AttributeProto &attr = node_.attribute(i);
         if (attr.name() == key) {
             v.reserve(static_cast<size_t>(attr.ints_size()));
             for (int j = 0; j < attr.ints_size(); j++) {
@@ -72,7 +72,8 @@ vector<int> NodeAttrHelper::get(const std::string &key, vector<int> def_val) {
     return v;
 }
 
-vector<float> NodeAttrHelper::get(const std::string &key, vector<float> def_val) {
+vector<float> NodeAttrHelper::get(const std::string &key,
+                                  vector<float> def_val) {
     if (!has_attr(key)) {
         return def_val;
     }

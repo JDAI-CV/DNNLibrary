@@ -1,0 +1,5 @@
+BasedOnStyle: Google
+IndentWidth: 4
+AllowShortBlocksOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: false
