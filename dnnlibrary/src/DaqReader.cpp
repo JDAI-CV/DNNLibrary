@@ -219,19 +219,19 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 break;
             }
             case DNN::LayerType::Add: {
-                ADD_LAYER_QUANT(add, OperationAdd, input1, input2, output);
+                ADD_LAYER_QUANT(add, Add, input1, input2, fuse, output);
                 break;
             }
             case DNN::LayerType::AddScalar: {
-                ADD_LAYER(add, OperationAdd, input1, input2, output);
+                ADD_LAYER(add_scalar, Add, input1, input2, fuse, output);
                 break;
             }
             case DNN::LayerType::Mul: {
-                ADD_LAYER_QUANT(mul, Mul, input1, input2, output);
+                ADD_LAYER_QUANT(mul, Mul, input1, input2, fuse, output);
                 break;
             }
             case DNN::LayerType::MulScalar: {
-                ADD_LAYER(mul, Mul, input1, input2, output);
+                ADD_LAYER(mul_scalar, Mul, input1, input2, fuse, output);
                 break;
             }
             case DNN::LayerType::FC: {

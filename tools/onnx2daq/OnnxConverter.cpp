@@ -387,7 +387,7 @@ void OnnxConverter::AddLayerDequantize(css &input_name, css &output_name) {
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerDropout(css &input_name, css &output_name) {
+void OnnxConverter::SetIdentity(css &input_name, css &output_name) {
     // Dropout does nothing, so the output is the same as the input
     shaper_.Eltwise(input_name, output_name);
     name_map_[output_name] = m(input_name);
@@ -430,8 +430,12 @@ void OnnxConverter::HandleInitializer() {
                 vector<char>(ptr, ptr + Product(shape) * sizeof(int32_t));
             onnx_tensors_[name] = {name, data_vec, shape,
                                    Tensor::DataType::INT32};
+        } else if (tensor.data_type() ==
+                   ONNX_NAMESPACE::TensorProto_DataType_INT64) {
+            // TODO: shape of reshape layer
         } else {
-            LOG(INFO) << "invalid " << tensor.data_type();
+            PNT(tensor.name(), tensor.data_type());
+            DNN_ASSERT(false, "");
         }
         operands_.push_back(name);
     }
@@ -560,10 +564,6 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
 
     bool has_reshape = false;
     for (const auto &node : model_proto_.graph().node()) {
-        if (has_reshape) {
-            throw std::invalid_argument(
-                "Reshape can only be the last layer for now");
-        }
         NodeAttrHelper helper(node);
         const auto &op = node.op_type();
         LOG(INFO) << "Node " << node.name();
@@ -571,6 +571,11 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             skipped_act_.end()) {
             LOG(INFO) << "Skip layer " << node.name();
             continue;
+        }
+        if (has_reshape && op != "Gemm") {
+            throw std::invalid_argument(
+                "Reshape can only be the last layer or precede a gemm layer "
+                "for now");
         }
         if (op == "Conv") {
             LOG(INFO) << "Start converting Conv";
@@ -713,6 +718,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto beta = helper.get("beta", 1.0f);
             AddLayerGemm(input_name, weight_name, bias_name, transA, transB,
                          alpha, beta, output_name);
+            has_reshape = false;
             LOG(INFO) << "Converting Gemm completed";
         } else if (op == "Softmax") {
             LOG(INFO) << "Start converting Softmax";
@@ -732,11 +738,58 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             LOG(INFO) << "Converting Concat completed";
         } else if (op == "Dropout") {
             LOG(INFO) << "Start converting Dropout";
-            AddLayerDropout(node.input(0), node.output(0));
+            SetIdentity(node.input(0), node.output(0));
             LOG(INFO) << "Converting Dropout completed";
+
+        } else if (op == "BatchNormalization") {
+            LOG(INFO) << "Start converting BatchNormalization";
+            DNN_ASSERT(node.output_size() == 1,
+                       "Your onnx model may be in training mode, please export "
+                       "it in test mode.")
+            const auto input_name = m(node.input(0));
+
+            const auto scale_name = m(node.input(1));
+            const auto bias_name = m(node.input(2));
+            const auto mean_name = m(node.input(3));
+            const auto var_name = m(node.input(4));
+
+            const auto scale_tensor = onnx_tensors_.at(scale_name);
+            const auto bias_tensor = onnx_tensors_.at(bias_name);
+            const auto mean_tensor = onnx_tensors_.at(mean_name);
+            const auto var_tensor = onnx_tensors_.at(var_name);
+
+            const auto eps = helper.get("epsilon", 1e-5f);
+
+            const auto output_name = m(node.output(0));
+
+            vector<float> a, b;
+            FORZ(i, scale_tensor.shape[0]) {
+                a.push_back(scale_tensor.float_data()[i] /
+                            sqrt(var_tensor.float_data()[i] + eps));
+                b.push_back((scale_tensor.float_data()[i] *
+                             -mean_tensor.float_data()[i]) /
+                                sqrt(var_tensor.float_data()[i] + eps) +
+                            bias_tensor.float_data()[i]);
+            }
+
+            const auto flat_tensor_a = DNN::CreateTensorDirect(
+                builder_, DNN::DataType::Float32, nullptr, &a,
+                &scale_tensor.shape, (output_name + "_imm_a").c_str());
+            const auto flat_tensor_b = DNN::CreateTensorDirect(
+                builder_, DNN::DataType::Float32, nullptr, &b,
+                &scale_tensor.shape, (output_name + "_imm_b").c_str());
+            tensors_.push_back(flat_tensor_a);
+            tensors_.push_back(flat_tensor_b);
+            AddLayerMul(input_name, output_name + "_imm_a",
+                        output_name + "_imm_mul");
+            AddLayerAdd(output_name + "_imm_mul", output_name + "_imm_b",
+                        output_name);
+
+            LOG(INFO) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
             LOG(INFO) << "Start converting Reshape";
             has_reshape = true;
+            SetIdentity(node.input(0), node.output(0));
             LOG(INFO) << "Converting Reshape completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);

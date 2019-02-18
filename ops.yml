@@ -87,7 +87,7 @@
             cpp_type: int32_t
             needed_by_shaper: true
     nnapi: AVERAGE_POOL_2D
-    shaper: Pool
+    shaper: PoolNew
     fused: true
     support_quant_asymm: true
     api: 27
@@ -135,7 +135,7 @@
             cpp_type: int32_t
             needed_by_shaper: true
     nnapi: MAX_POOL_2D
-    shaper: Pool
+    shaper: PoolNew
     fused: true
     support_quant_asymm: true
     api: 27

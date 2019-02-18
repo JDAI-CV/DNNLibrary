@@ -159,6 +159,28 @@ void Shaper::Pool(const std::string &input_name, int32_t strideX,
     shape_map_[output_name] = outputDimen;
 }
 
+void Shaper::PoolNew(const std::string &input_name, int32_t padding_left,
+                     int32_t padding_right, int32_t padding_top,
+                     int32_t padding_bottom, int32_t stride_x, int32_t stride_y,
+                     int32_t width, int32_t height,
+                     const std::string &output_name) {
+    auto inputDimen = shape_map_.at(input_name);
+
+    Shape outputDimen;
+    if (height == -1 && width == -1) {
+        outputDimen = {inputDimen[0], 1, 1, inputDimen[3]};
+    } else {
+        outputDimen = {
+            inputDimen[0],
+            (inputDimen[1] - height + padding_top + padding_bottom) / stride_y +
+                1,
+            (inputDimen[2] - width + padding_left + padding_right) / stride_x +
+                1,
+            inputDimen[3]};
+    }
+    shape_map_[output_name] = outputDimen;
+}
+
 void Shaper::Softmax(const std::string &input_name,
                      const std::string &output_name) {
     shape_map_[output_name] = shape_map_.at(input_name);

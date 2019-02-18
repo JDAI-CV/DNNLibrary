@@ -101,7 +101,7 @@ class OnnxConverter {
     void AddLayerConcat(const std::vector<std::string> &inputs,
                         css &output_name, const int axis);
     void AddLayerDequantize(css &input_name, css &output_name);
-    void AddLayerDropout(css &input_name, css &output_name);
+    void SetIdentity(css &input_name, css &output_name);
 
     /**
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
