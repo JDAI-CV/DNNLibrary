@@ -2,23 +2,21 @@
 // Created by daquexian on 5/21/18.
 //
 
-#include <chrono>
+#include <string>
+#include <sstream>
+#include <istream>
 #include <fstream>
 #include <iostream>
-#include <istream>
-#include <sstream>
-#include <string>
+#include <chrono>
 #include <vector>
 
-#include <DaqReader.h>
-#include <common/helper.h>
 #include <glog/logging.h>
-#include "ModelBuilder.h"
 #include "android_log_helper.h"
+#include <common/helper.h>
+#include "ModelBuilder.h"
+#include <DaqReader.h>
 
-using std::cout;
-using std::endl;
-using std::string;
+using std::string; using std::cout; using std::endl;
 using Clock = std::chrono::high_resolution_clock;
 
 // ./dnn_retrieve_result daqName outputBlob [input]
@@ -41,14 +39,11 @@ int main(int argc, char **argv) {
     {
         ModelBuilder builder;
         DaqReader daq_reader;
-        // Set the last argument to true to use mmap. It may be more efficient
-        // than memory buffer.
+        // Set the last argument to true to use mmap. It may be more efficient than memory buffer.
         daq_reader.ReadDaq(daqName, builder, false);
-        model = builder.AddOutput(outputBlob)
-                    .Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+        model = builder.AddOutput(outputBlob).Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
     }
-    const auto inputLen = model->GetInputSize(0),
-               outputLen = model->GetOutputSize(0);
+    const auto inputLen = model->GetInputSize(0), outputLen = model->GetOutputSize(0);
     float data[inputLen];
     if (use_external_input) {
         std::ifstream ifs(argv[5]);
@@ -60,7 +55,9 @@ int main(int argc, char **argv) {
             data[i] = element;
         }
     } else {
-        FORZ(i, inputLen) { data[i] = i; }
+        FORZ(i, inputLen) {
+            data[i] = i;
+        }
     }
 
     uint8_t output_uint8[outputLen];
@@ -73,7 +70,9 @@ int main(int argc, char **argv) {
     }
     if (quant_input) {
         uint8_t uint8_data[inputLen];
-        FORZ(i, inputLen) { uint8_data[i] = data[i]; }
+        FORZ(i, inputLen) {
+            uint8_data[i] = data[i];
+        }
         model->Predict(std::vector{uint8_data});
     } else {
         model->Predict(std::vector{data});
@@ -81,8 +80,12 @@ int main(int argc, char **argv) {
     }
     std::ofstream ofs("/data/local/tmp/result");
     if (quant_output) {
-        FORZ(i, outputLen) { ofs << static_cast<int>(output_uint8[i]) << endl; }
+        FORZ(i, outputLen) {
+            ofs << static_cast<int>(output_uint8[i]) << endl;
+        }
     } else {
-        FORZ(i, outputLen) { ofs << output_float[i] << endl; }
+        FORZ(i, outputLen) {
+            ofs << output_float[i] << endl;
+        }
     }
 }

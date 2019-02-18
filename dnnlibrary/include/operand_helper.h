@@ -34,12 +34,18 @@ class DefineOperands {
 
 template <typename... Ts>
 void addOperand2(const std::tuple<Ts...> &tuple) {
-    std::apply([](const auto &item) { std::cout << item << std::endl; }, tuple);
+    std::apply([] (const auto &item) {
+        std::cout << item << std::endl;
+    }, tuple);
 }
 
-template <typename... Ts>
-void print_tuple(const std::tuple<Ts...> &tuple) {
-    std::apply([](const auto &... item) { ((std::cout << item << '\n'), ...); },
-               tuple);
+template<typename... Ts>
+void print_tuple (const std::tuple<Ts...> &tuple)
+{
+    std::apply ([] (const auto &... item)
+                {
+                    ((std::cout << item << '\n'), ...);
+                },
+                tuple);
 }
-#endif  // PROJECT_OPERAND_HELPER_H
+#endif //PROJECT_OPERAND_HELPER_H

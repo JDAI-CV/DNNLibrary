@@ -16,12 +16,12 @@
 // Provides C++ classes to more easily use the Neural Networks API.
 #ifndef ANDROID_ML_NN_RUNTIME_NEURAL_NETWORKS_WRAPPER_H
 #define ANDROID_ML_NN_RUNTIME_NEURAL_NETWORKS_WRAPPER_H
-#include <common/helper.h>
+#include "NeuralNetworksMock.h"
 #include <math.h>
 #include <optional>
 #include <string>
 #include <vector>
-#include "NeuralNetworksMock.h"
+#include <common/helper.h>
 
 namespace android {
 namespace nn {
@@ -38,8 +38,7 @@ enum class Type {
     TENSOR_FLOAT16 = ANEURALNETWORKS_TENSOR_FLOAT16,
     TENSOR_BOOL8 = ANEURALNETWORKS_TENSOR_BOOL8,
     FLOAT16 = ANEURALNETWORKS_FLOAT16,
-    TENSOR_QUANT8_SYMM_PER_CHANNEL =
-        ANEURALNETWORKS_TENSOR_QUANT8_SYMM_PER_CHANNEL,
+    TENSOR_QUANT8_SYMM_PER_CHANNEL = ANEURALNETWORKS_TENSOR_QUANT8_SYMM_PER_CHANNEL,
     TENSOR_QUANT16_ASYMM = ANEURALNETWORKS_TENSOR_QUANT16_ASYMM,
 };
 enum class ExecutePreference {
@@ -65,20 +64,19 @@ struct SymmPerChannelQuantParams {
     SymmPerChannelQuantParams(std::vector<float> scalesVec, uint32_t channelDim)
         : scales(std::move(scalesVec)) {
         params = {
-            .channelDim = channelDim,
-            .scaleCount = static_cast<uint32_t>(scales.size()),
-            .scales = scales.size() > 0 ? scales.data() : nullptr,
+                .channelDim = channelDim,
+                .scaleCount = static_cast<uint32_t>(scales.size()),
+                .scales = scales.size() > 0 ? scales.data() : nullptr,
         };
     }
 };
 
 // A helper function
-inline bool isScalarType(const Type& type) {
-    return type == Type::FLOAT16 || type == Type::FLOAT32 ||
-           type == Type::INT32 || type == Type::BOOL || type == Type::UINT32;
+inline bool isScalarType(const Type &type) {
+    return type == Type::FLOAT16 || type == Type::FLOAT32 || type == Type::INT32 || type == Type::BOOL || type == Type::UINT32;
 }
 
-inline std::string typeToStr(const Type& type) {
+inline std::string typeToStr(const Type &type) {
     if (type == Type::FLOAT32) {
         return "FLOAT32";
     } else if (type == Type::INT32) {
@@ -117,8 +115,7 @@ struct OperandType {
     Type type;
     std::vector<uint32_t> dimensions;
     std::optional<SymmPerChannelQuantParams> channelQuant;
-    OperandType(Type type, std::vector<uint32_t> d = {}, float scale = 0.0f,
-                int32_t zeroPoint = 0)
+    OperandType(Type type, std::vector<uint32_t> d = {}, float scale = 0.0f, int32_t zeroPoint = 0)
         : type(type), dimensions(std::move(d)), channelQuant(std::nullopt) {
         if (dimensions.empty()) {
             DNN_ASSERT(isScalarType(type), typeToStr(type));
@@ -126,49 +123,43 @@ struct OperandType {
             DNN_ASSERT(!isScalarType(type), typeToStr(type));
         }
         operandType = {
-            .type = static_cast<int32_t>(type),
-            .dimensionCount = static_cast<uint32_t>(dimensions.size()),
-            .dimensions = dimensions.size() > 0 ? dimensions.data() : nullptr,
-            .scale = scale,
-            .zeroPoint = zeroPoint,
+                .type = static_cast<int32_t>(type),
+                .dimensionCount = static_cast<uint32_t>(dimensions.size()),
+                .dimensions = dimensions.size() > 0 ? dimensions.data() : nullptr,
+                .scale = scale,
+                .zeroPoint = zeroPoint,
         };
     }
-    OperandType(Type type, std::vector<uint32_t> data, float scale,
-                int32_t zeroPoint, SymmPerChannelQuantParams&& channelQuant)
-        : type(type),
-          dimensions(std::move(data)),
-          channelQuant(std::move(channelQuant)) {
+    OperandType(Type type, std::vector<uint32_t> data, float scale, int32_t zeroPoint,
+                SymmPerChannelQuantParams&& channelQuant)
+        : type(type), dimensions(std::move(data)), channelQuant(std::move(channelQuant)) {
         if (dimensions.empty()) {
             DNN_ASSERT(isScalarType(type), "");
         } else {
             DNN_ASSERT(!isScalarType(type), "");
         }
         operandType = {
-            .type = static_cast<int32_t>(type),
-            .dimensionCount = static_cast<uint32_t>(dimensions.size()),
-            .dimensions = dimensions.size() > 0 ? dimensions.data() : nullptr,
-            .scale = scale,
-            .zeroPoint = zeroPoint,
+                .type = static_cast<int32_t>(type),
+                .dimensionCount = static_cast<uint32_t>(dimensions.size()),
+                .dimensions = dimensions.size() > 0 ? dimensions.data() : nullptr,
+                .scale = scale,
+                .zeroPoint = zeroPoint,
         };
     }
     bool isQuant() const {
-        return type == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL ||
-               type == Type::TENSOR_QUANT16_SYMM ||
-               type == Type::TENSOR_QUANT16_ASYMM ||
-               type == Type::TENSOR_QUANT8_ASYMM || type == Type::TENSOR_INT32;
+        return type == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL || type == Type::TENSOR_QUANT16_SYMM || type == Type::TENSOR_QUANT16_ASYMM || type == Type::TENSOR_QUANT8_ASYMM || type == Type::TENSOR_INT32;
     }
-    operator ANeuralNetworksOperandType() const { return operandType; }
+    operator ANeuralNetworksOperandType() const {return operandType; }
 };
 class Memory {
-   public:
+public:
     Memory(size_t size, int protect, int fd, size_t offset) {
-        mValid = ANeuralNetworksMemory_createFromFd(size, protect, fd, offset,
-                                                    &mMemory) ==
+        mValid = ANeuralNetworksMemory_createFromFd(size, protect, fd, offset, &mMemory) ==
                  ANEURALNETWORKS_NO_ERROR;
     }
     Memory(AHardwareBuffer* buffer) {
-        mValid = ANeuralNetworksMemory_createFromAHardwareBuffer(
-                     buffer, &mMemory) == ANEURALNETWORKS_NO_ERROR;
+        mValid = ANeuralNetworksMemory_createFromAHardwareBuffer(buffer, &mMemory) ==
+                 ANEURALNETWORKS_NO_ERROR;
     }
     ~Memory() { ANeuralNetworksMemory_free(mMemory); }
     // Disallow copy semantics to ensure the runtime object can only be freed
@@ -192,13 +183,12 @@ class Memory {
     }
     ANeuralNetworksMemory* get() const { return mMemory; }
     bool isValid() const { return mValid; }
-
-   private:
+private:
     ANeuralNetworksMemory* mMemory = nullptr;
     bool mValid = true;
 };
 class Event {
-   public:
+public:
     Event() {}
     ~Event() { ANeuralNetworksEvent_free(mEvent); }
     // Disallow copy semantics to ensure the runtime object can only be freed
@@ -218,16 +208,13 @@ class Event {
         }
         return *this;
     }
-    Result wait() {
-        return static_cast<Result>(ANeuralNetworksEvent_wait(mEvent));
-    }
+    Result wait() { return static_cast<Result>(ANeuralNetworksEvent_wait(mEvent)); }
     // Only for use by Execution
     void set(ANeuralNetworksEvent* newEvent) {
         ANeuralNetworksEvent_free(mEvent);
         mEvent = newEvent;
     }
-
-   private:
+private:
     ANeuralNetworksEvent* mEvent = nullptr;
 };
 }  // namespace wrapper

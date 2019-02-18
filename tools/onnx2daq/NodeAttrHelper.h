@@ -5,14 +5,14 @@
 #ifndef PROJECT_NODE_H
 #define PROJECT_NODE_H
 
-#include <onnx/onnx_pb.h>
 #include <string>
+#include <onnx/onnx_pb.h>
 
 /**
  * Wrapping onnx::NodeProto for retrieving attribute values
  */
 class NodeAttrHelper {
-   public:
+public:
     NodeAttrHelper(ONNX_NAMESPACE::NodeProto proto);
 
     float get(const std::string &key, float def_val);
@@ -22,9 +22,10 @@ class NodeAttrHelper {
     std::string get(const std::string &key, std::string def_val);
 
     bool has_attr(const std::string &key);
-
-   private:
+private:
     ONNX_NAMESPACE::NodeProto node_;
 };
 
-#endif  // PROJECT_ATTRIBUTE_H
+
+#endif //PROJECT_ATTRIBUTE_H
+
