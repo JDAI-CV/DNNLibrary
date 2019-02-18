@@ -10,32 +10,32 @@
 
 #include <flatbuffers/flatbuffers.h>
 
+#include <common/daq_generated.h>
 #include <common/helper.h>
 
 #define UNPACK(name) const auto name = unpack_fbs(param->name());
 
 #define UNPACK_LAYER(name, ...)                \
     const auto *param = layer->name##_param(); \
-    FOR_EACH(UNPACK, __VA_ARGS__)
+    FOR_EACH(UNPACK, __VA_ARGS__)              \
+    VLOG(5) << "Layer: " << XSTR(name);        \
+    PNT(__VA_ARGS__);
 
-#define ADD_LAYER(name, shape_func, ...)                                      \
-    const auto *param = layer->name##_param();                                \
-    FOR_EACH(UNPACK, __VA_ARGS__)                                             \
-    if (mat_map_.find(LAST_ARG(__VA_ARGS__)) == mat_map_.end()) {             \
-        shaper.shape_func(__VA_ARGS__);                                       \
-        const auto &output_shape = shaper[LAST_ARG(__VA_ARGS__)];             \
-        const auto &input_mat = *mat_map_[get_input(FIRST_ARG(__VA_ARGS__))]; \
-        add_mat(LAST_ARG(__VA_ARGS__),                                        \
-                std::make_shared<Mat>(output_shape[1], output_shape[2],       \
-                                      output_shape[3], input_mat.data_type,   \
-                                      LAST_ARG(__VA_ARGS__)));                \
-    }
+#define UNPACK_LAYER_QUANT(name, ...)                         \
+    const auto *param = layer->name##_param();                \
+    FOR_EACH(UNPACK, __VA_ARGS__)                             \
+    VLOG(5) << "Layer: " << XSTR(name);                       \
+    PNT(__VA_ARGS__);                                         \
+    const auto *daq_quant_info = GetQuantInfo(model, output); \
+    const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
 
-#define ADD_INPLACE_LAYER(name, shape_func, ...)                      \
-    const auto *param = layer->name##_param();                        \
-    FOR_EACH(UNPACK, __VA_ARGS__)                                     \
-    add_mat(LAST_ARG(__VA_ARGS__), mat_map_[FIRST_ARG(__VA_ARGS__)]); \
-    shaper.shape_func(__VA_ARGS__);
+#define ADD_LAYER(param_name, layer_name, ...) \
+    UNPACK_LAYER(param_name, __VA_ARGS__);     \
+    builder.Add##layer_name(__VA_ARGS__);
+
+#define ADD_LAYER_QUANT(param_name, layer_name, ...) \
+    UNPACK_LAYER_QUANT(param_name, __VA_ARGS__);     \
+    builder.Add##layer_name(__VA_ARGS__, quant_info);
 
 // quick fix
 inline const std::string get_input(const std::vector<std::string> inputs) {
@@ -44,6 +44,20 @@ inline const std::string get_input(const std::vector<std::string> inputs) {
 
 inline const std::string get_input(const std::string input) {
     return input;
+}
+
+inline uint32_t unpack_fbs(const DNN::FuseCode fbs) {
+    switch (fbs) {
+        case DNN::FuseCode::None:
+            return 0;  // FuseCode::ANEURALNETWORKS_FUSED_NONE;
+        case DNN::FuseCode::Relu:
+            return 1;  // FuseCode::ANEURALNETWORKS_FUSED_RELU;
+        case DNN::FuseCode::Relu1:
+            return 2;  // FuseCode::ANEURALNETWORKS_FUSED_RELU1;
+        case DNN::FuseCode::Relu6:
+            return 3;  // FuseCode::ANEURALNETWORKS_FUSED_RELU6;
+    }
+    throw std::invalid_argument("Invalid fuse_code");
 }
 
 inline uint32_t unpack_fbs(const uint32_t fbs) {

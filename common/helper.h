@@ -21,11 +21,14 @@ using css = const std::string;
 #define FE_5(WHAT, X, ...) WHAT(X) FE_4(WHAT, __VA_ARGS__)
 #define FE_6(WHAT, X, ...) WHAT(X) FE_5(WHAT, __VA_ARGS__)
 #define FE_7(WHAT, X, ...) WHAT(X) FE_6(WHAT, __VA_ARGS__)
+#define FE_8(WHAT, X, ...) WHAT(X) FE_7(WHAT, __VA_ARGS__)
+#define FE_9(WHAT, X, ...) WHAT(X) FE_8(WHAT, __VA_ARGS__)
 //... repeat as needed
 
-#define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, NAME, ...) NAME
-#define FOR_EACH(action, ...)                                        \
-    GET_MACRO(__VA_ARGS__, FE_7, FE_6, FE_5, FE_4, FE_3, FE_2, FE_1) \
+#define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, NAME, ...) NAME
+#define FOR_EACH(action, ...)                                              \
+    GET_MACRO(__VA_ARGS__, FE_9, FE_8, FE_7, FE_6, FE_5, FE_4, FE_3, FE_2, \
+              FE_1)                                                        \
     (action, __VA_ARGS__)
 
 #define FORZS(var, end, step) \

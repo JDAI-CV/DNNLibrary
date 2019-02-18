@@ -174,260 +174,106 @@ void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
 }
 
 void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
-    for (auto layer : *model.layers()) {
+    for (const auto layer : *model.layers()) {
         switch (layer->type()) {
             case DNN::LayerType::Conv2D: {
-                auto param = layer->conv2d_param();
-                auto strides = param->strides();
-                auto pads = param->pads();
-                auto fuse = param->fuse();
-                auto input_name = param->input()->str();
-                auto weight_name = param->weight()->str();
-                auto bias = param->bias();
-                auto output_name = param->output()->str();
-                const auto *daq_quant_info = GetQuantInfo(model, output_name);
-                const auto quant_info =
-                    DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
-                VLOG(5) << "Conv, input: " << input_name
-                        << ", weight: " << weight_name
-                        << ", output: " << output_name;
+                UNPACK_LAYER_QUANT(conv2d, strides, pads, fuse, input, weight,
+                                   bias, output);
                 builder.AddConv(
-                    input_name, strides->Get(1), strides->Get(0), pads->Get(2),
-                    pads->Get(3), pads->Get(0), pads->Get(1),
-                    convert_fuse_code_to_nnapi(fuse), weight_name,
-                    (bias ? std::make_optional(bias->str()) : std::nullopt),
-                    output_name, quant_info);
+                    input, strides[1], strides[0], pads[2], pads[3], pads[0],
+                    pads[1], fuse, weight,
+                    (bias != "" ? std::make_optional(bias) : std::nullopt),
+                    output, quant_info);
                 break;
             }
             case DNN::LayerType::DepthwiseConv2D: {
-                auto param = layer->depthwise_conv2d_param();
-                auto strides = param->strides();
-                auto pads = param->pads();
-                auto multiplier = param->multiplier();
-                auto fuse = param->fuse();
-                auto input_name = param->input()->str();
-                auto weight_name = param->weight()->str();
-                auto bias = param->bias();
-                auto output_name = param->output()->str();
-                const auto *daq_quant_info = GetQuantInfo(model, output_name);
-                const auto quant_info =
-                    DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
-                VLOG(5) << "Depthwise Conv, input: " << input_name
-                        << ", weight: " << weight_name
-                        << ", output: " << output_name;
+                UNPACK_LAYER_QUANT(depthwise_conv2d, strides, pads, multiplier,
+                                   fuse, input, weight, bias, output);
                 builder.AddDepthWiseConv(
-                    input_name, strides->Get(1), strides->Get(0), pads->Get(2),
-                    pads->Get(3), pads->Get(1), pads->Get(0),
-                    convert_fuse_code_to_nnapi(fuse), multiplier, weight_name,
-                    (bias ? std::make_optional(bias->str()) : std::nullopt),
-                    output_name, quant_info);
+                    input, strides[1], strides[0], pads[2], pads[3], pads[1],
+                    pads[0], fuse, multiplier, weight,
+                    (bias != "" ? std::make_optional(bias) : std::nullopt),
+                    output, quant_info);
                 break;
             }
             case DNN::LayerType::AvePool: {
-                auto param = layer->avepool_param();
-                auto strides = param->strides();
-                auto pads = param->pads();
-                auto kernel_shape = param->kernel_shape();
-                auto fuse = param->fuse();
-                auto input_name = param->input()->str();
-                auto output_name = param->output()->str();
-                const auto *daq_quant_info = GetQuantInfo(model, output_name);
-                const auto quant_info =
-                    DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
-                VLOG(5) << "Average pool, input: " << input_name
-                        << ", output: " << output_name;
-                builder.AddPool(input_name, strides->Get(1), strides->Get(0),
-                                pads->Get(2), pads->Get(3), pads->Get(0),
-                                pads->Get(1), kernel_shape->Get(0),
-                                kernel_shape->Get(1),
-                                convert_fuse_code_to_nnapi(fuse),
-                                ModelBuilder::PoolingType::AVE_POOL,
-                                output_name, quant_info);
+                UNPACK_LAYER_QUANT(avepool, strides, pads, kernel_shape, fuse,
+                                   input, output);
+                builder.AddPool(
+                    input, strides[1], strides[0], pads[2], pads[3], pads[0],
+                    pads[1], kernel_shape[0], kernel_shape[1], fuse,
+                    ModelBuilder::PoolingType::AVE_POOL, output, quant_info);
                 break;
             }
             case DNN::LayerType::MaxPool: {
-                auto param = layer->maxpool_param();
-                auto strides = param->strides();
-                auto pads = param->pads();
-                auto kernel_shape = param->kernel_shape();
-                auto fuse = param->fuse();
-                auto input_name = param->input()->str();
-                auto output_name = param->output()->str();
-                const auto *daq_quant_info = GetQuantInfo(model, output_name);
-                const auto quant_info =
-                    DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
-                VLOG(5) << "Max pool, input: " << input_name
-                        << ", output: " << output_name;
-                builder.AddPool(input_name, strides->Get(1), strides->Get(0),
-                                pads->Get(2), pads->Get(3), pads->Get(0),
-                                pads->Get(1), kernel_shape->Get(0),
-                                kernel_shape->Get(1),
-                                convert_fuse_code_to_nnapi(fuse),
-                                ModelBuilder::PoolingType::MAX_POOL,
-                                output_name, quant_info);
+                UNPACK_LAYER_QUANT(maxpool, strides, pads, kernel_shape, fuse,
+                                   input, output);
+                builder.AddPool(
+                    input, strides[1], strides[0], pads[2], pads[3], pads[0],
+                    pads[1], kernel_shape[0], kernel_shape[1], fuse,
+                    ModelBuilder::PoolingType::MAX_POOL, output, quant_info);
                 break;
             }
             case DNN::LayerType::Relu: {
-                auto param = layer->relu_param();
-                auto input_name = param->input()->str();
-                auto output_name = param->output()->str();
-                VLOG(5) << "Relu, input " << input_name
-                        << ", output: " << output_name;
-                builder.AddReLU(input_name, output_name);
+                ADD_LAYER(relu, ReLU, input, output);
                 break;
             }
             case DNN::LayerType::Add: {
-                auto param = layer->add_param();
-                auto input1_name = param->input1()->str();
-                auto input2_name = param->input2()->str();
-                auto output_name = param->output()->str();
-                const auto *daq_quant_info = GetQuantInfo(model, output_name);
-                const auto quant_info =
-                    DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
-                VLOG(5) << "Add, input1 " << input1_name << ", input2 "
-                        << input2_name << ", output: " << output_name;
-                builder.AddOperationAdd(input1_name, input2_name, output_name,
-                                        quant_info);
+                ADD_LAYER_QUANT(add, OperationAdd, input1, input2, output);
                 break;
             }
             case DNN::LayerType::AddScalar: {
-                auto param = layer->add_scalar_param();
-                auto input1_name = param->input1()->str();
-                auto input2 = param->input2();
-                auto output_name = param->output()->str();
-                VLOG(5) << "Add, input1 " << input1_name << ", input2 "
-                        << input2 << ", output: " << output_name;
-                builder.AddOperationAdd(input1_name, input2, output_name);
+                ADD_LAYER(add, OperationAdd, input1, input2, output);
                 break;
             }
             case DNN::LayerType::Mul: {
-                auto param = layer->mul_param();
-                auto input1_name = param->input1()->str();
-                auto input2_name = param->input2()->str();
-                auto output_name = param->output()->str();
-                const auto *daq_quant_info = GetQuantInfo(model, output_name);
-                const auto quant_info =
-                    DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
-                VLOG(5) << "Mul, input1 " << input1_name << ", input2 "
-                        << input2_name << ", output: " << output_name;
-                builder.AddMul(input1_name, input2_name, output_name,
-                               quant_info);
+                ADD_LAYER_QUANT(mul, Mul, input1, input2, output);
                 break;
             }
             case DNN::LayerType::MulScalar: {
-                auto param = layer->mul_scalar_param();
-                auto input1_name = param->input1()->str();
-                auto input2 = param->input2();
-                auto output_name = param->output()->str();
-                VLOG(5) << "Mul, input1 " << input1_name << ", input2 "
-                        << input2 << ", output: " << output_name;
-                builder.AddMul(input1_name, input2, output_name);
+                ADD_LAYER(mul, Mul, input1, input2, output);
                 break;
             }
             case DNN::LayerType::FC: {
-                auto param = layer->fc_param();
-                auto fuse = param->fuse();
-                auto weight_name = param->weight()->str();
-                auto bias_name = param->bias()->str();
-                auto input_name = param->input()->str();
-                auto output_name = param->output()->str();
-                const auto *daq_quant_info = GetQuantInfo(model, output_name);
-                const auto quant_info =
-                    DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
-                VLOG(5) << "FC, input " << input_name
-                        << ", output: " << output_name;
-                builder.AddFC(input_name, convert_fuse_code_to_nnapi(fuse),
-                              weight_name, bias_name, output_name, quant_info);
+                UNPACK_LAYER_QUANT(fc, input, weight, bias, fuse, output);
+                builder.AddFC(
+                    input, fuse, weight,
+                    (bias != "" ? std::make_optional(bias) : std::nullopt),
+                    output, quant_info);
                 break;
             }
             case DNN::LayerType::Softmax: {
-                auto param = layer->softmax_param();
-                auto input_name = param->input()->str();
-                auto output_name = param->output()->str();
-                VLOG(5) << "Softmax, input " << input_name
-                        << ", output: " << output_name;
-                builder.AddSoftMax(input_name, 1.f, output_name);
+                UNPACK_LAYER(softmax, input, output);
+                builder.AddSoftMax(input, 1.f, output);
                 break;
             }
             case DNN::LayerType::Concat: {
-                auto param = layer->concat_param();
-                auto axis = param->axis();
-                auto inputs = param->inputs();
-                auto output_name = param->output()->str();
-                std::vector<std::string> input_names;
-                for (size_t i = 0; i < inputs->size(); i++) {
-                    input_names.push_back(
-                        inputs->Get(static_cast<flatbuffers::uoffset_t>(i))
-                            ->str());
-                }
-                VLOG(5) << "Concat, input " << input_names
-                        << ", output: " << output_name;
-                builder.AddConcat(input_names, axis, output_name);
+                ADD_LAYER(concat, Concat, inputs, axis, output)
                 break;
             }
             case DNN::LayerType::Dequantize: {
-                const auto param = layer->dequantize_param();
-                const auto input_name = param->input()->str();
-                const auto output_name = param->output()->str();
-                VLOG(5) << "Dequantize, input " << input_name
-                        << ", output: " << output_name;
-                builder.AddDequantize(input_name, output_name);
+                ADD_LAYER(dequantize, Dequantize, input, output);
                 break;
             }
             case DNN::LayerType::BatchToSpace: {
 #if __ANDROID_API__ >= __ANDROID_API_P__
-                auto param = layer->batch_to_space_param();
-                auto input_name = param->input()->str();
-                auto block_sizes_fbs = param->block_sizes();
-                auto output_name = param->output()->str();
-                std::vector<int> block_sizes;
-                for (size_t i = 0; i < block_sizes_fbs->size(); i++) {
-                    block_sizes.push_back(block_sizes_fbs->Get(
-                        static_cast<flatbuffers::uoffset_t>(i)));
-                }
-                VLOG(5) << "BatchToSpaceND, input " << input_name
-                        << ", block sizes " << block_sizes
-                        << ", output: " << output_name;
-                builder.AddBatchToSpaceND(input_name, block_sizes, output_name);
+                ADD_LAYER(batch_to_space, BatchToSpaceND, input, block_sizes,
+                          output);
                 break;
 #endif
             }
             case DNN::LayerType::SpaceToBatch: {
 #if __ANDROID_API__ >= __ANDROID_API_P__
-                auto param = layer->space_to_batch_param();
-                auto input_name = param->input()->str();
-                auto block_sizes_fbs = param->block_sizes();
-                auto pads_fbs = param->pads();
-                auto output_name = param->output()->str();
-                std::vector<int> block_sizes = unpack_fbs(block_sizes_fbs);
-                std::vector<int> pads = unpack_fbs(pads_fbs);
-                VLOG(5) << "SpaceToBatchND, input " << input_name
-                        << ", block sizes " << block_sizes << ", pads " << pads
-                        << "output: " << output_name;
-                builder.AddSpaceToBatchND(input_name, block_sizes, pads,
-                                          output_name);
+                ADD_LAYER(space_to_batch, SpaceToBatchND, input, block_sizes,
+                          pads, output);
                 break;
 #endif
             }
             case DNN::LayerType::StridedSlice: {
 #if __ANDROID_API__ >= __ANDROID_API_P__
-                auto param = layer->strided_slice_param();
-                auto input_name = param->input()->str();
-                auto starts = unpack_fbs(param->starts());
-                auto ends = unpack_fbs(param->ends());
-                auto strides = unpack_fbs(param->strides());
-                int32_t begin_mask = param->begin_mask();
-                int32_t end_mask = param->end_mask();
-                int32_t shrink_axis_mask = param->shrink_axis_mask();
-                auto output_name = param->output()->str();
-                VLOG(5) << "StridedSlice, input " << input_name << ", starts "
-                        << starts << ", ends " << ends << ", strides "
-                        << strides << ", begin_mask " << begin_mask
-                        << ", end_mask " << end_mask << ", shrink_axis_mask "
-                        << shrink_axis_mask;
-                builder.AddStridedSlice(input_name, starts, ends, strides,
-                                        begin_mask, end_mask, shrink_axis_mask,
-                                        output_name);
+                ADD_LAYER(strided_slice, StridedSlice, input, starts, ends,
+                          strides, begin_mask, end_mask, shrink_axis_mask,
+                          output);
 #else
                 throw std::invalid_argument("Unsupported layer " +
                                             layer_type_to_str(layer->type()) +
