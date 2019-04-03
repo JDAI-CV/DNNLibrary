@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_logtostderr = true;
     FLAGS_logbuflevel = -1;
+    FLAGS_v = 0;
     if (argc != 5) {
         return -1;
     }

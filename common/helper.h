@@ -43,7 +43,8 @@ using css = const std::string;
 #define XSTR(a) STR(a)
 
 #define PNT_STR(var) << XSTR(var) << " = " << (var) << ", "
-#define PNT(...) LOG(INFO) FOR_EACH(PNT_STR, __VA_ARGS__);
+#define PNT_TO(stream, ...) stream FOR_EACH(PNT_STR, __VA_ARGS__);
+#define PNT(...) PNT_TO(LOG(INFO), __VA_ARGS__)
 
 #define DNN_ASSERT(condition, note)                                            \
     if (!(condition)) {                                                        \
