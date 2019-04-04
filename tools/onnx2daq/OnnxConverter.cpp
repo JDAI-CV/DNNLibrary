@@ -548,11 +548,18 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                             const css &table_file) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    model_proto_ = ONNX_NAMESPACE::optimization::Optimize(
+    model_proto_ = ONNX_NAMESPACE::optimization::OptimizeFixed(
         model_proto,
-        vector<string>{"extract_constant_to_initializer", "eliminate_identity",
-                       "eliminate_nop_transpose", "eliminate_nop_pad",
-                       "fuse_bn_into_conv"});
+        vector<string>{
+            "eliminate_deadend", "eliminate_identity", "eliminate_nop_dropout",
+            "eliminate_nop_monotone_argmax", "eliminate_nop_pad",
+            "extract_constant_to_initializer", "eliminate_unused_initializer",
+            "eliminate_nop_transpose", "fuse_add_bias_into_conv",
+            "fuse_bn_into_conv", "fuse_consecutive_concats",
+            "fuse_consecutive_log_softmax", "fuse_consecutive_reduce_unsqueeze",
+            "fuse_consecutive_squeezes", "fuse_consecutive_transposes",
+            "fuse_matmul_add_bias_into_gemm", "fuse_pad_into_conv",
+            "fuse_transpose_into_gemm"});
 
     if (!table_file.empty()) {
         ReadTableFile(table_file);
