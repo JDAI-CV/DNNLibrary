@@ -6,6 +6,8 @@
         -
             name: weight
             nnapi_type: tensor
+            # "learnable" stands for the tensor is read from serialized model file
+            learnable: true
             cpp_type: str
             needed_by_shaper: true
         -
@@ -91,6 +93,7 @@
     fused: true
     support_quant_asymm: true
     api: 27
+
 -
     name: MaxPool
     input:
@@ -157,6 +160,7 @@
         -
             name: weight
             nnapi_type: tensor
+            learnable: true
             cpp_type: str
             needed_by_shaper: true
         -
@@ -191,6 +195,7 @@
         -
             name: weight
             nnapi_type: tensor
+            learnable: true
             cpp_type: str
             needed_by_shaper: true
         -

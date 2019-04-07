@@ -1,9 +1,14 @@
 import io
 import yaml
+from enum import Enum
 from typing import Tuple
 
-
 str_io = io.StringIO()
+
+
+class Target(Enum):
+    ModelBuilder = 1
+    OnnxConverter = 2
 
 
 def cogout(txt):
@@ -79,50 +84,80 @@ input_indexes.push_back(operand_indexes_.at(x));
         raise Exception('Unknown cpp_type {}'.format(operand['cpp_type']))
 
 
-def infer_cfg(op):
-    if 'input' not in op:
-        op['input'] = []
-    if 'base_input_num' not in op or op['base_input_num'] == 1:
-        op['input'].insert(0, {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True})
-    elif op['base_input_num'] == 2:
-        op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True},
-                       {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}] \
-                      + op['input']
-    elif op['base_input_num'] == 'n':
-        op['input'].insert(0,
-                           {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'needed_by_shaper': True})
-    elif op['base_input_num'] == 0:
-        pass
-    else:
-        raise Exception()
+def infer_cfg(cfg, target: Target):
+    next_pos = 0
+    for i, op in enumerate(cfg):
+        if 'input' not in op:
+            op['input'] = []
+        if 'base_input_num' not in op or op['base_input_num'] == 1:
+            op['input'].insert(0,
+                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True})
+        elif op['base_input_num'] == 2:
+            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True},
+                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}] \
+                          + op['input']
+        elif op['base_input_num'] == 'n':
+            op['input'].insert(0,
+                               {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list',
+                                'needed_by_shaper': True})
+        elif op['base_input_num'] == 0:
+            pass
+        else:
+            raise Exception()
 
-    if not 'output' in op:
-        op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}]
-    if not 'shaper' in op:
-        op['shaper'] = op['name']
-    if not 'nnapi' in op:
-        op['nnapi'] = op['name'].upper()
-    if 'fused' not in op:
-        op['fused'] = False
-    if op['fused']:
-        op['input'].append({'name': 'fuse_code', 'nnapi_type': 'scalar', 'cpp_type': 'int32_t'})
-    if 'support_quant_asymm' not in op:
-        op['support_quant_asymm'] = False
-    for ipt in op['input']:
-        if 'predefined' not in ipt:
-            ipt['predefined'] = ''
-        if ipt['predefined'] == 'optional_bias':
-            ipt['name'] = 'bias'
-            ipt['nnapi_type'] = 'tensor'
-            ipt['cpp_type'] = 'optional_str'
+        if not 'pos' in op:
+            op['pos'] = next_pos
+        next_pos = op['pos'] + 1
+
+        if not 'output' in op:
+            op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}]
+        if not 'shaper' in op:
+            op['shaper'] = op['name']
+        if not 'nnapi' in op:
+            op['nnapi'] = op['name'].upper()
+        if 'fused' not in op:
+            op['fused'] = False
+        if op['fused'] and target == Target.ModelBuilder:
+            op['input'].append({'name': 'fuse_code', 'nnapi_type': 'scalar', 'cpp_type': 'int32_t'})
+        if 'support_quant_asymm' not in op:
+            op['support_quant_asymm'] = False
+        for ipt in op['input']:
+            if 'learnable' not in ipt:
+                ipt['learnable'] = False
+            if 'predefined' not in ipt:
+                ipt['predefined'] = ''
+            if ipt['predefined'] == 'optional_bias':
+                ipt['name'] = 'bias'
+                ipt['nnapi_type'] = 'tensor'
+                ipt['cpp_type'] = 'optional_str'
+
+
+def update_code(file: str, label: str) -> None:
+    """
+    replace the text surrounded by "label start" and "label end" to new_code
+    :param file: the .cpp or .h file
+    :param label: the label surrounds the text to be replaced
+    """
+    global str_io
+    with open(file, 'r') as f:
+        s = f.read()
+        start = '// {} start\n'.format(label)
+        idx1 = s.find(start) + len(start)
+        end = '// {} end'.format(label)
+        idx2 = s.find(end)
+    with open(file, 'w') as f:
+        new_s = s[:idx1] + str_io.getvalue() + s[idx2:]
+        f.write(new_s)
+    str_io = io.StringIO()
 
 
 def main():
+    """
     with open('ops.yml') as f:
         cfg = yaml.load(f)
 
     for i, op in enumerate(cfg):
-        infer_cfg(op)
+        infer_cfg(op, Target.ModelBuilder)
         if len(op['input']) == 0:
             continue
         cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
@@ -177,25 +212,49 @@ def main():
         cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
 
     update_code('dnnlibrary/include/ModelBuilder.h', 'ModelBuilder auto generated methods')
-
-
-def update_code(file: str, label: str) -> None:
     """
-    replace the text surrounded by "label start" and "label end" to new_code
-    :param file: the .cpp or .h file
-    :param label: the label surrounds the text to be replaced
-    """
+
     global str_io
-    with open(file, 'r') as f:
-        s = f.read()
-        start = '// {} start\n'.format(label)
-        idx1 = s.find(start) + len(start)
-        end = '// {} end'.format(label)
-        idx2 = s.find(end)
-    with open(file, 'w') as f:
-        new_s = s[:idx1] + str_io.getvalue() + s[idx2:]
-        f.write(new_s)
-    str_io = io.StringIO()
+    str_io = None
+    with open('ops.yml') as f:
+        cfg = yaml.load(f)
+
+    infer_cfg(cfg, Target.OnnxConverter)
+    for i, op in enumerate(cfg):
+        ipt_opt = op['input'] + op['output']
+        params = list(map(get_param, ipt_opt))
+        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+        cogoutl(f'void OnnxConverter::AddLayer{op["name"]}({params_str}) {{')
+        cogoutl(
+            f"shaper_.{op['shaper']}({', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])});")
+
+        if op['fused']:
+            cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
+            cogoutl("if (activation.first.has_value()) {")
+            cogoutl("skipped_act_.push_back(activation.first.value());")
+            cogoutl("name_map_[activation.first.value()] = output;")
+            cogoutl(")}")
+        cogout(f"const auto param = DNN::Create{op['name']}Direct(builder_, ")
+
+        def get_input_param(x):
+            if x['cpp_type'] == 'str':
+                return f"m({x['name']}).c_str()"
+            elif x['cpp_type'] == 'optional_str':
+                return f"bias_name.has_value() ? bias_name.value().c_str() : nullptr"
+            else:
+                return x['name']
+
+        cogout(', '.join(list(map(get_input_param, op['input']))))
+        if op['fused']:
+            cogout(', ConvertFuseCodeType(activation.second)')
+        cogout(', ')
+        cogout(', '.join(list(map(lambda x: f"{x['name']}.c_str()", op['output']))))
+        cogoutl(');')
+        cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['name']}, ")
+        cogout(', '.join(['0'] * (op['pos'])))
+        cogoutl(', param);')
+        cogoutl('layers_.push_back(layer);')
+        cogoutl('}')
 
 
 if __name__ == '__main__':
