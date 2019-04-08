@@ -57,6 +57,35 @@ OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
     return activation;
 }
 
+void OnnxConverter::CreateTensorFb(const Tensor &tensor, const DNN::DataType &data_type) {
+    CreateTensorFb(tensor.name, tensor, data_type);
+}
+
+void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor, const DNN::DataType &data_type) {
+    flatbuffers::Offset<DNN::Tensor> fb_tensor;
+    switch (tensor.data_type) {
+        case Tensor::DataType::FLOAT32:
+        {
+            const auto data = tensor.float_data();
+            fb_tensor = DNN::CreateTensorDirect(builder_, data_type, nullptr, &data, &tensor.shape, name.c_str(), nullptr, nullptr, nullptr);
+            break;
+        }
+        case Tensor::DataType::INT32:
+        {
+            const auto data = tensor.int32_data();
+            fb_tensor = DNN::CreateTensorDirect(builder_, data_type, nullptr, nullptr, &tensor.shape, name.c_str(), nullptr, nullptr, &data);
+            break;
+        }
+        case Tensor::DataType::UINT8:
+        {
+            const auto data = tensor.uint8_data();
+            fb_tensor = DNN::CreateTensorDirect(builder_, data_type, &data, nullptr, &tensor.shape, name.c_str(), nullptr, nullptr, nullptr);
+            break;
+        }
+    }
+    tensors_.push_back(fb_tensor);
+}
+
 void OnnxConverter::AddConv(
     const string &input_name, const std::vector<int> &strides,
     const std::vector<int> &pads, const std::vector<int> &dilations, int group,
@@ -171,13 +200,9 @@ void OnnxConverter::AddConv(
     }
     flatbuffers::Offset<DNN::Tensor> flat_tensor;
     if (weight_tensor.data_type == Tensor::DataType::FLOAT32) {
-        const auto weight_data = weight_tensor.float_data();
-        flat_tensor = DNN::CreateTensorDirect(
-            builder_, DNN::DataType::Float32, nullptr, &weight_data,
-            &weight_tensor.shape, weight_name.c_str());
+        CreateTensorFb(weight_name, weight_tensor, DNN::DataType::Float32);
     } else if (weight_tensor.data_type == Tensor::DataType::UINT8) {
         const auto quant_info = quant_infos_.at(weight_tensor.name);
-        const auto weight_data = weight_tensor.uint8_data();
         DNN::DataType daq_data_type;
         if (quant_info.scales.size() == 1 &&
             quant_info.zero_point.has_value()) {
@@ -188,13 +213,10 @@ void OnnxConverter::AddConv(
         } else {
             daq_data_type = DNN::DataType::QUANT8_SYMM_PER_CHANNEL;
         }
-        flat_tensor = DNN::CreateTensorDirect(
-            builder_, daq_data_type, &weight_data, nullptr,
-            &weight_tensor.shape, weight_name.c_str());
+        CreateTensorFb(weight_name, weight_tensor, daq_data_type);
     } else {
         DNN_ASSERT(false, "Unknown data type of tensor");
     }
-    tensors_.push_back(flat_tensor);
     layers_.push_back(layer);
 }
 
@@ -310,22 +332,14 @@ void OnnxConverter::AddLayerGemm(css &input_name, css &weight_name,
         {
             nnapi_tensors_[weight_name] = onnx_tensors_.at(weight_name);
             const auto &weight_tensor = nnapi_tensors_[weight_name];
-            const auto weight_data = weight_tensor.float_data();
             shaper_.AddShape(weight_name, weight_tensor.shape);
-            const auto flat_tensor = DNN::CreateTensorDirect(
-                builder_, DNN::DataType::Float32, nullptr, &weight_data,
-                &weight_tensor.shape, weight_name.c_str());
-            tensors_.push_back(flat_tensor);
+            CreateTensorFb(weight_name, weight_tensor, DNN::DataType::Float32);
         }
         if (bias_name.has_value()) {
             nnapi_tensors_[bias_name.value()] =
                 onnx_tensors_.at(bias_name.value());
             const auto &bias_tensor = nnapi_tensors_[bias_name.value()];
-            const auto bias_data = bias_tensor.float_data();
-            const auto flat_tensor = DNN::CreateTensorDirect(
-                builder_, DNN::DataType::Float32, nullptr, &bias_data,
-                &bias_tensor.shape, bias_name.value().c_str());
-            tensors_.push_back(flat_tensor);
+            CreateTensorFb(bias_name.value(), bias_tensor, DNN::DataType::Float32);
         }
         const auto activation = FindActivation(model_proto_, output_name);
         if (activation.first.has_value()) {
@@ -606,27 +620,15 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 nnapi_tensors_[bias_name.value()] =
                     onnx_tensors_.at(ori_bias_name);
                 flatbuffers::Offset<DNN::Tensor> flat_tensor;
-                if (nnapi_tensors_[bias_name.value()].data_type ==
-                    Tensor::DataType::FLOAT32) {
-                    const auto bias_data =
-                        nnapi_tensors_.at(bias_name.value()).float_data();
-                    flat_tensor = DNN::CreateTensorDirect(
-                        builder_, DNN::DataType::Float32, nullptr, &bias_data,
-                        &nnapi_tensors_.at(bias_name.value()).shape,
-                        bias_name.value().c_str());
-                } else if (nnapi_tensors_[bias_name.value()].data_type ==
-                           Tensor::DataType::INT32) {
-                    const auto bias_data =
-                        nnapi_tensors_.at(bias_name.value()).int32_data();
-                    flat_tensor = DNN::CreateTensorDirect(
-                        builder_, DNN::DataType::Int32, nullptr, nullptr,
-                        &nnapi_tensors_.at(bias_name.value()).shape,
-                        bias_name.value().c_str(), nullptr, nullptr,
-                        &bias_data);
+                const auto bias_name_str = bias_name.value();
+                const auto &bias_tensor = nnapi_tensors_[bias_name_str];
+                if (bias_tensor.data_type == Tensor::DataType::FLOAT32) {
+                    CreateTensorFb(bias_name_str, bias_tensor, DNN::DataType::Float32);
+                } else if (bias_tensor.data_type == Tensor::DataType::INT32) {
+                    CreateTensorFb(bias_name_str, bias_tensor, DNN::DataType::Int32);
                 } else {
                     std::invalid_argument("Unknown data type");
                 }
-                tensors_.push_back(flat_tensor);
             }
 
             const auto ori_weight_name = m(node.input(1));
