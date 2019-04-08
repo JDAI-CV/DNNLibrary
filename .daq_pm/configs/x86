@@ -1,6 +1,0 @@
-name DNNLibrary
-type cpp
-target onnx2daq
-build_dir build_x86
-cmake_options ""
-program_arguments ""
