@@ -198,7 +198,6 @@ void OnnxConverter::AddConv(
         // TODO: Support it
         throw std::invalid_argument("group != 1 is not supported");
     }
-    flatbuffers::Offset<DNN::Tensor> flat_tensor;
     if (weight_tensor.data_type == Tensor::DataType::FLOAT32) {
         CreateTensorFb(weight_name, weight_tensor, DNN::DataType::Float32);
     } else if (weight_tensor.data_type == Tensor::DataType::UINT8) {

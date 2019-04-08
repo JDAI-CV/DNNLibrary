@@ -225,9 +225,6 @@ def main():
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl(f'void OnnxConverter::AddLayer{op["name"]}({params_str}) {{')
-        cogoutl(
-            f"shaper_.{op['shaper']}({', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])});")
-
         if op['fused']:
             cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
             cogoutl("if (activation.first.has_value()) {")
@@ -236,11 +233,60 @@ def main():
             cogoutl(")}")
         cogout(f"const auto param = DNN::Create{op['name']}Direct(builder_, ")
 
+        for x in op['input']:
+            if x['learnable']:
+                cogoutl("{")
+                assert x['cpp_type'] in ['str', 'optional_str']
+                if x['cpp_type'] == 'str':
+                    cogout(f"""
+const auto std::string old_name = {x['name']};
+                    """)
+                elif x['cpp_type'] == 'optional_str':
+                    cogout(f"""
+if ({x['name']}.has_value()) {{
+const auto std::string old_name = {x['name']}.value();
+                    """)
+                cogout("""
+const auto &onnx_tensor = onnx_tensors_.at(old_name);
+const auto tuple = {x['convert_func']}(onnx_tensor);
+Tensor new_tensor = std.get<0>(tuple);
+Tensor new_name = std.get<1>(tuple);
+shaper_.AddShape(new_name, new_tensor.shape); 
+nnapi_tensors_[new_name] = new_tensor;
+                """)
+                if x['cpp_type'] == 'optional_str':
+                    cogoutl("}")
+
+                cogout("""
+if (new_tensor.data_type == Tensor::DataType::FLOAT32) {
+    CreateTensorFb(new_name, new_tensor, DNN::DataType::Float32);
+} else if (new_tensor.data_type == Tensor::DataType::UINT8) {
+    const auto quant_info = quant_infos_.at(new_name);
+    DNN::DataType daq_data_type;
+    if (quant_info.scales.size() == 1 &&
+        quant_info.zero_point.has_value()) {
+        daq_data_type = DNN::DataType::QUANT8_ASYMM;
+    } else if (quant_info.scales.size() == 1 &&
+               !quant_info.zero_point.has_value()) {
+        daq_data_type = DNN::DataType::QUANT8_SYMM;
+    } else {
+        daq_data_type = DNN::DataType::QUANT8_SYMM_PER_CHANNEL;
+    }
+    CreateTensorFb(new_name, new_tensor, daq_data_type);
+} else {
+    DNN_ASSERT(false, "Unknown data type of tensor");
+}
+                """)
+                cogoutl("}")
+
+        cogoutl(
+            f"shaper_.{op['shaper']}({', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])});")
+
         def get_input_param(x):
             if x['cpp_type'] == 'str':
                 return f"m({x['name']}).c_str()"
             elif x['cpp_type'] == 'optional_str':
-                return f"bias_name.has_value() ? bias_name.value().c_str() : nullptr"
+                return f"{x['name']}.has_value() ? {x['name']}.value().c_str() : nullptr"
             else:
                 return x['name']
 

@@ -8,6 +8,7 @@
             nnapi_type: tensor
             # "learnable" stands for the tensor is read from serialized model file
             learnable: true
+            convert_func: ConvertConvWeight
             cpp_type: str
             needed_by_shaper: true
         -
