@@ -340,84 +340,12 @@ void OnnxConverter::AddLayerPool(css &op, css &input_name,
                                  const std::vector<int> &strides,
                                  css &output_name) {
     if (op == "AveragePool" || op == "GlobalAveragePool") {
-        AddLayerAvePoolImpl(input_name, kernel_shape, pads, strides, output_name);
+        AddLayerAvePoolImpl(input_name, kernel_shape, pads, strides,
+                            output_name);
     } else {
-        AddLayerMaxPoolImpl(input_name, kernel_shape, pads, strides, output_name);
-}
-
-void OnnxConverter::AddLayerRelu(css &input_name, css &output_name) {
-    shaper_.Relu(input_name, output_name);
-    const auto param = DNN::CreateReluDirect(builder_, m(input_name).c_str(),
-                                             output_name.c_str());
-    const auto layer =
-        DNN::CreateLayer(builder_, DNN::LayerType::Relu, 0, 0, 0, param);
-    layers_.push_back(layer);
-}
-
-void OnnxConverter::AddLayerAdd(css &input1_name, css &input2_name,
-                                css &output_name) {
-    shaper_.Eltwise(input1_name, output_name);
-    const auto activation = FindActivation(model_proto_, output_name);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output_name;
+        AddLayerMaxPoolImpl(input_name, kernel_shape, pads, strides,
+                            output_name);
     }
-    const auto param = DNN::CreateAddDirect(
-        builder_, m(input1_name).c_str(), m(input2_name).c_str(),
-        ConvertFuseCodeType(activation.second), output_name.c_str());
-    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Add, 0, 0, 0,
-                                        0, 0, 0, param);
-    layers_.push_back(layer);
-}
-
-void OnnxConverter::AddLayerAdd(css &input1_name, float input2,
-                                css &output_name) {
-    shaper_.Eltwise(input1_name, output_name);
-    const auto activation = FindActivation(model_proto_, output_name);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output_name;
-    }
-    const auto param = DNN::CreateAddScalarDirect(
-        builder_, m(input1_name).c_str(), input2,
-        ConvertFuseCodeType(activation.second), output_name.c_str());
-    const auto layer =
-        DNN::CreateLayer(builder_, DNN::LayerType::AddScalar, 0, 0, 0, 0, 0, 0,
-                         0, 0, 0, 0, 0, 0, 0, param, 0);
-    layers_.push_back(layer);
-}
-
-void OnnxConverter::AddLayerMul(css &input1_name, css &input2_name,
-                                css &output_name) {
-    shaper_.Eltwise(input1_name, output_name);
-    const auto activation = FindActivation(model_proto_, output_name);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output_name;
-    }
-    const auto param = DNN::CreateMulDirect(
-        builder_, m(input1_name).c_str(), m(input2_name).c_str(),
-        ConvertFuseCodeType(activation.second), output_name.c_str());
-    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Mul, 0, 0, 0,
-                                        0, 0, 0, 0, 0, 0, 0, 0, 0, param);
-    layers_.push_back(layer);
-}
-
-void OnnxConverter::AddLayerMul(css &input1_name, float input2,
-                                css &output_name) {
-    shaper_.Eltwise(input1_name, output_name);
-    const auto activation = FindActivation(model_proto_, output_name);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output_name;
-    }
-    const auto param = DNN::CreateMulScalarDirect(
-        builder_, m(input1_name).c_str(), input2,
-        ConvertFuseCodeType(activation.second), output_name.c_str());
-    const auto layer =
-        DNN::CreateLayer(builder_, DNN::LayerType::MulScalar, 0, 0, 0, 0, 0, 0,
-                         0, 0, 0, 0, 0, 0, 0, 0, param);
-    layers_.push_back(layer);
 }
 
 void OnnxConverter::AddLayerGemm(css &input_name, css &weight_name,
@@ -426,47 +354,12 @@ void OnnxConverter::AddLayerGemm(css &input_name, css &weight_name,
                                  const float alpha, const float beta,
                                  css &output_name) {
     if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
-        {
-            nnapi_tensors_[weight_name] = onnx_tensors_.at(weight_name);
-            const auto &weight_tensor = nnapi_tensors_[weight_name];
-            shaper_.AddShape(weight_name, weight_tensor.shape);
-            CreateTensorFb(weight_name, weight_tensor, DNN::DataType::Float32);
-        }
-        if (bias_name.has_value()) {
-            nnapi_tensors_[bias_name.value()] =
-                onnx_tensors_.at(bias_name.value());
-            const auto &bias_tensor = nnapi_tensors_[bias_name.value()];
-            CreateTensorFb(bias_name.value(), bias_tensor, DNN::DataType::Float32);
-        }
-        const auto activation = FindActivation(model_proto_, output_name);
-        if (activation.first.has_value()) {
-            skipped_act_.push_back(activation.first.value());
-            name_map_[activation.first.value()] = output_name;
-        }
-        shaper_.FC(input_name, weight_name, output_name);
-        const auto param = DNN::CreateFCDirect(
-            builder_, m(input_name).c_str(), weight_name.c_str(),
-            bias_name.has_value() ? bias_name.value().c_str() : nullptr,
-            ConvertFuseCodeType(activation.second), output_name.c_str());
-        const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::FC, 0, 0,
-                                            0, 0, 0, param, 0);
-        layers_.push_back(layer);
+        AddLayerFC(input_name, weight_name, bias_name, output_name);
     } else {
         throw std::invalid_argument(
             "Only transA == 0, transB == 1, alpha == 1.0 and beta == 1.0 is "
             "supported.");
     }
-}
-
-void OnnxConverter::AddLayerSoftmax(css &input_name, css &output_name) {
-    shaper_.Softmax(input_name, output_name);
-    // simply ignore attribute "axis", because nnapi softmax didn't has this
-    // attr, and we will check the equality of the two ops in DaqReader.cpp
-    const auto param = DNN::CreateSoftmaxDirect(builder_, m(input_name).c_str(),
-                                                output_name.c_str());
-    const auto layer =
-        DNN::CreateLayer(builder_, DNN::LayerType::Softmax, 0, 0, 0, 0, param);
-    layers_.push_back(layer);
 }
 
 // axis here is for onnx nchw
@@ -492,6 +385,313 @@ void OnnxConverter::AddLayerDequantize(css &input_name, css &output_name) {
                          0, 0, 0, 0, 0, 0, 0, 0, 0, param);
     layers_.push_back(layer);
 }
+
+// OnnxConverter auto generated methods start
+void OnnxConverter::AddLayerConvImpl(const std::string &input,
+                                     const std::string &weight,
+                                     const nonstd::optional<std::string> &bias,
+                                     const std::vector<int32_t> &pads,
+                                     const std::vector<int32_t> &strides,
+                                     const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    {
+        const auto old_name = weight;
+        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto new_tensor = OnnxToNnapiVanillaConvWeight(onnx_tensor);
+        const auto new_name = new_tensor.name;
+        shaper_.AddShape(new_name, new_tensor.shape);
+        nnapi_tensors_[new_name] = new_tensor;
+        CreateTensorFb(new_name, new_tensor);
+    }
+    if (bias.has_value()) {
+        const auto old_name = bias.value();
+        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+        const auto new_name = new_tensor.name;
+        shaper_.AddShape(new_name, new_tensor.shape);
+        nnapi_tensors_[new_name] = new_tensor;
+        CreateTensorFb(new_name, new_tensor);
+    }
+    shaper_.Conv(input, weight, pads, strides, output);
+    const auto param = DNN::CreateConv2DDirect(
+        builder_, m(input).c_str(), m(weight).c_str(),
+        bias.has_value() ? bias.value().c_str() : nullptr, &pads, &strides,
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Conv2D, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerAvePoolImpl(
+    const std::string &input, const std::vector<int32_t> &kernel_shape,
+    const std::vector<int32_t> &pads, const std::vector<int32_t> &strides,
+    const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    shaper_.PoolNew(input, kernel_shape, pads, strides, output);
+    const auto param = DNN::CreateAvePoolDirect(
+        builder_, m(input).c_str(), &kernel_shape, &pads, &strides,
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::AvePool, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerMaxPoolImpl(
+    const std::string &input, const std::vector<int32_t> &kernel_shape,
+    const std::vector<int32_t> &pads, const std::vector<int32_t> &strides,
+    const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    shaper_.PoolNew(input, kernel_shape, pads, strides, output);
+    const auto param = DNN::CreateMaxPoolDirect(
+        builder_, m(input).c_str(), &kernel_shape, &pads, &strides,
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::MaxPool, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerReLU(const std::string &input,
+                                 const std::string &output) {
+    shaper_.Relu(input, output);
+    const auto param =
+        DNN::CreateReluDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Relu, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerSoftmax(const std::string &input,
+                                    const std::string &output) {
+    shaper_.Softmax(input, output);
+    const auto param =
+        DNN::CreateSoftmaxDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Softmax, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerFC(const std::string &input,
+                               const std::string &weight,
+                               const nonstd::optional<std::string> &bias,
+                               const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    {
+        const auto old_name = weight;
+        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+        const auto new_name = new_tensor.name;
+        shaper_.AddShape(new_name, new_tensor.shape);
+        nnapi_tensors_[new_name] = new_tensor;
+        CreateTensorFb(new_name, new_tensor);
+    }
+    if (bias.has_value()) {
+        const auto old_name = bias.value();
+        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+        const auto new_name = new_tensor.name;
+        shaper_.AddShape(new_name, new_tensor.shape);
+        nnapi_tensors_[new_name] = new_tensor;
+        CreateTensorFb(new_name, new_tensor);
+    }
+    shaper_.FC(input, weight, output);
+    const auto param = DNN::CreateFCDirect(
+        builder_, m(input).c_str(), m(weight).c_str(),
+        bias.has_value() ? bias.value().c_str() : nullptr,
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::FC, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerAdd(const std::string &input1,
+                                const std::string &input2,
+                                const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    shaper_.Eltwise(input1, input2, output);
+    const auto param = DNN::CreateAddDirect(
+        builder_, m(input1).c_str(), m(input2).c_str(),
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Add, 0, 0, 0,
+                                        0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerConcatImpl(const std::vector<std::string> &inputs,
+                                       int32_t axis,
+                                       const std::string &output) {
+    const auto inputs_fb = FbStrVector(inputs);
+    shaper_.Concat(inputs, axis, output);
+    const auto param =
+        DNN::CreateConcatDirect(builder_, &inputs_fb, axis, output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Concat, 0, 0,
+                                        0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerDepthwiseConvImpl(
+    const std::string &input, const std::string &weight,
+    const nonstd::optional<std::string> &bias, const std::vector<int32_t> &pads,
+    const std::vector<int32_t> &strides, int32_t depth_multiplier,
+    const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    {
+        const auto old_name = weight;
+        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto new_tensor = OnnxToNnapiDwConvWeight(onnx_tensor);
+        const auto new_name = new_tensor.name;
+        shaper_.AddShape(new_name, new_tensor.shape);
+        nnapi_tensors_[new_name] = new_tensor;
+        CreateTensorFb(new_name, new_tensor);
+    }
+    if (bias.has_value()) {
+        const auto old_name = bias.value();
+        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+        const auto new_name = new_tensor.name;
+        shaper_.AddShape(new_name, new_tensor.shape);
+        nnapi_tensors_[new_name] = new_tensor;
+        CreateTensorFb(new_name, new_tensor);
+    }
+    shaper_.DepthwiseConv(input, weight, pads, strides, output);
+    const auto param = DNN::CreateDepthwiseConv2DDirect(
+        builder_, m(input).c_str(), m(weight).c_str(),
+        bias.has_value() ? bias.value().c_str() : nullptr, &pads, &strides,
+        depth_multiplier, ConvertFuseCodeType(activation.second),
+        output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::DepthwiseConv2D, 0, 0, 0, 0,
+                         0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerBatchToSpaceND(
+    const std::string &input, const std::vector<int32_t> &block_sizes,
+    const std::string &output) {
+    shaper_.BatchToSpace(input, block_sizes, output);
+    const auto param = DNN::CreateBatchToSpaceDirect(
+        builder_, m(input).c_str(), &block_sizes, output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::BatchToSpace,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerSpaceToBatchND(
+    const std::string &input, const std::vector<int32_t> &block_sizes,
+    const std::vector<int32_t> &pads, const std::string &output) {
+    shaper_.SpaceToBatch(input, block_sizes, pads, output);
+    const auto param = DNN::CreateSpaceToBatchDirect(
+        builder_, m(input).c_str(), &block_sizes, &pads, output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::SpaceToBatch,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerStridedSlice(const std::string &input,
+                                         const std::vector<int32_t> &starts,
+                                         const std::vector<int32_t> &ends,
+                                         const std::vector<int32_t> &strides,
+                                         int32_t begin_mask, int32_t end_mask,
+                                         int32_t shrink_axis_mask,
+                                         const std::string &output) {
+    shaper_.StridedSlice(input, starts, ends, strides, begin_mask, end_mask,
+                         shrink_axis_mask, output);
+    const auto param = DNN::CreateStridedSliceDirect(
+        builder_, m(input).c_str(), &starts, &ends, &strides, begin_mask,
+        end_mask, shrink_axis_mask, output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::StridedSlice,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerMul(const std::string &input1,
+                                const std::string &input2,
+                                const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    shaper_.Eltwise(input1, input2, output);
+    const auto param = DNN::CreateMulDirect(
+        builder_, m(input1).c_str(), m(input2).c_str(),
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Mul, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerAdd(const std::string &input, float scalar,
+                                const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    shaper_.Eltwise(input, output);
+    const auto param = DNN::CreateAddScalarDirect(
+        builder_, m(input).c_str(), scalar,
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::AddScalar, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerMul(const std::string &input, float scalar,
+                                const std::string &output) {
+    const auto activation = FindActivation(model_proto_, output);
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value());
+        name_map_[activation.first.value()] = output;
+    }
+    shaper_.Eltwise(input, output);
+    const auto param = DNN::CreateMulScalarDirect(
+        builder_, m(input).c_str(), scalar,
+        ConvertFuseCodeType(activation.second), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::MulScalar, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerLRN(const std::string &input, int32_t size,
+                                float bias, float alpha, float beta,
+                                int32_t dim, const std::string &output) {
+    shaper_.Identity(input, output);
+    const auto param =
+        DNN::CreateLRNDirect(builder_, m(input).c_str(), size, bias, alpha,
+                             beta, dim, output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::LRN, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+// OnnxConverter auto generated methods end
 
 void OnnxConverter::SetIdentity(css &input_name, css &output_name) {
     // Dropout does nothing, so the output is the same as the input
@@ -766,7 +966,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             LOG(INFO) << "Start converting Relu";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerRelu(input_name, output_name);
+            AddLayerReLU(input_name, output_name);
             LOG(INFO) << "Converting Relu completed";
 
         } else if (op == "PRelu") {
@@ -782,10 +982,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 // TODO: support it
                 throw std::invalid_argument("Only support one element slope.");
             }
-            AddLayerRelu(input_name, imm1_name);
+            AddLayerReLU(input_name, imm1_name);
             AddLayerMul(input_name, -onnx_tensors_[slope_name].data[0],
                         imm2_name);
-            AddLayerRelu(imm2_name, imm3_name);
+            AddLayerReLU(imm2_name, imm3_name);
             AddLayerMul(imm3_name, -1.f, imm4_name);
             AddLayerAdd(imm1_name, imm4_name, output_name);
             // TODO:

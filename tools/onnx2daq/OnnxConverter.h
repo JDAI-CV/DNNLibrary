@@ -92,20 +92,71 @@ class OnnxConverter {
                       const std::vector<int> &pads,
                       const std::vector<int> &strides, css &output_name);
     void AddLayerRelu(css &input_name, css &output_name);
-    void AddLayerAdd(css &input1_name, css &input2_name, css &output_name);
-    void AddLayerAdd(css &input1_name, float input2, css &output_name);
-    void AddLayerMul(css &input1_name, css &input2_name, css &output_name);
-    void AddLayerMul(css &input1_name, float input2, css &output_name);
     void AddLayerGemm(css &input_name, css &weight_name,
                       nonstd::optional<std::string> bias_name, const int transA,
                       const int transB, const float alpha, const float beta,
                       css &output_name);
-    void AddLayerSoftmax(css &input_name, css &output_name);
     // axis here is for onnx nchw
     void AddLayerConcat(const std::vector<std::string> &inputs,
                         css &output_name, const int axis);
     void AddLayerDequantize(css &input_name, css &output_name);
     void SetIdentity(css &input_name, css &output_name);
+    // OnnxConverter auto generated methods start
+    void AddLayerConvImpl(const std::string &input, const std::string &weight,
+                          const nonstd::optional<std::string> &bias,
+                          const std::vector<int32_t> &pads,
+                          const std::vector<int32_t> &strides,
+                          const std::string &output);
+    void AddLayerAvePoolImpl(const std::string &input,
+                             const std::vector<int32_t> &kernel_shape,
+                             const std::vector<int32_t> &pads,
+                             const std::vector<int32_t> &strides,
+                             const std::string &output);
+    void AddLayerMaxPoolImpl(const std::string &input,
+                             const std::vector<int32_t> &kernel_shape,
+                             const std::vector<int32_t> &pads,
+                             const std::vector<int32_t> &strides,
+                             const std::string &output);
+    void AddLayerReLU(const std::string &input, const std::string &output);
+    void AddLayerSoftmax(const std::string &input, const std::string &output);
+    void AddLayerFC(const std::string &input, const std::string &weight,
+                    const nonstd::optional<std::string> &bias,
+                    const std::string &output);
+    void AddLayerAdd(const std::string &input1, const std::string &input2,
+                     const std::string &output);
+    void AddLayerConcatImpl(const std::vector<std::string> &inputs,
+                            int32_t axis, const std::string &output);
+    void AddLayerDepthwiseConvImpl(const std::string &input,
+                                   const std::string &weight,
+                                   const nonstd::optional<std::string> &bias,
+                                   const std::vector<int32_t> &pads,
+                                   const std::vector<int32_t> &strides,
+                                   int32_t depth_multiplier,
+                                   const std::string &output);
+    void AddLayerBatchToSpaceND(const std::string &input,
+                                const std::vector<int32_t> &block_sizes,
+                                const std::string &output);
+    void AddLayerSpaceToBatchND(const std::string &input,
+                                const std::vector<int32_t> &block_sizes,
+                                const std::vector<int32_t> &pads,
+                                const std::string &output);
+    void AddLayerStridedSlice(const std::string &input,
+                              const std::vector<int32_t> &starts,
+                              const std::vector<int32_t> &ends,
+                              const std::vector<int32_t> &strides,
+                              int32_t begin_mask, int32_t end_mask,
+                              int32_t shrink_axis_mask,
+                              const std::string &output);
+    void AddLayerMul(const std::string &input1, const std::string &input2,
+                     const std::string &output);
+    void AddLayerAdd(const std::string &input, float scalar,
+                     const std::string &output);
+    void AddLayerMul(const std::string &input, float scalar,
+                     const std::string &output);
+    void AddLayerLRN(const std::string &input, int32_t size, float bias,
+                     float alpha, float beta, int32_t dim,
+                     const std::string &output);
+    // OnnxConverter auto generated methods end
 
     /**
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
