@@ -70,6 +70,7 @@ class OnnxConverter {
     std::pair<nonstd::optional<std::string>, FuseCode> FindActivation(
         const ONNX_NAMESPACE::ModelProto &model_proto, css &output_name);
     void CreateTensorFb(const Tensor &tensor, const DNN::DataType &data_type);
+    void CreateTensorFb(const std::string &name, const Tensor &tensor);
     void CreateTensorFb(const std::string &name, const Tensor &tensor, const DNN::DataType &data_type);
 
     void HandleInitializer();

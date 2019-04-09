@@ -61,6 +61,37 @@ void OnnxConverter::CreateTensorFb(const Tensor &tensor, const DNN::DataType &da
     CreateTensorFb(tensor.name, tensor, data_type);
 }
 
+void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor) {
+    switch (tensor.data_type) {
+        case Tensor::DataType::FLOAT32:
+        {
+            CreateTensorFb(name, tensor, DNN::DataType::Float32);
+            break;
+        }
+        case Tensor::DataType::INT32:
+        {
+            CreateTensorFb(name, tensor, DNN::DataType::Int32);
+            break;
+        }
+        case Tensor::DataType::UINT8:
+        {
+            const auto quant_info = quant_infos_.at(tensor.name);
+            DNN::DataType daq_data_type;
+            if (quant_info.scales.size() == 1 &&
+                quant_info.zero_point.has_value()) {
+                daq_data_type = DNN::DataType::QUANT8_ASYMM;
+            } else if (quant_info.scales.size() == 1 &&
+                       !quant_info.zero_point.has_value()) {
+                daq_data_type = DNN::DataType::QUANT8_SYMM;
+            } else {
+                daq_data_type = DNN::DataType::QUANT8_SYMM_PER_CHANNEL;
+            }
+            CreateTensorFb(name, tensor, daq_data_type);
+            break;
+        }
+    }
+}
+
 void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor, const DNN::DataType &data_type) {
     flatbuffers::Offset<DNN::Tensor> fb_tensor;
     switch (tensor.data_type) {
