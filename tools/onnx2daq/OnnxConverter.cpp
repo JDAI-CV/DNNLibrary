@@ -131,7 +131,7 @@ std::vector<flatbuffers::Offset<flatbuffers::String>> OnnxConverter::FbStrVector
  * onnx: [filter_out_channel, filter_in_channel / group, height, width]
  * nnapi: [1, height, width, depth_out]
  */
-OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(const Tensor &src, css &name) {
+OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(const Tensor &src) {
     Tensor dest = src;
     size_t elemsize = 0;
     if (src.data_type == Tensor::DataType::UINT8) {
@@ -160,13 +160,11 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(const Tensor &src, 
         }
     }
     dest.shape = {in_t, h_t, w_t, out_t};
-    if (name != "") {
-        dest.name = name;
-    }
+    dest.name = src.name + "_conv_w";
     return dest;
 }
 
-OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(const Tensor &src, css &name) {
+OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(const Tensor &src) {
     Tensor dest = src;
     size_t elemsize = 0;
     if (src.data_type == Tensor::DataType::UINT8) {
@@ -195,9 +193,7 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(const Tensor &
         }
     }
     dest.shape = {out_t, h_t, w_t, in_t};
-    if (name != "") {
-        dest.name = name;
-    }
+    dest.name = src.name + "_conv_w";
     return dest;
 }
 
@@ -280,8 +276,8 @@ void OnnxConverter::AddConv(
     Tensor weight_tensor;
     if (group == 1) {
         LOG(INFO) << "Vanilla conv";
-        weight_name = ori_weight_name + "_conv_w";
-        weight_tensor = OnnxToNnapiVanillaConvWeight(onnx_weight, weight_name);
+        weight_tensor = OnnxToNnapiVanillaConvWeight(onnx_weight);
+        weight_name = weight_tensor.name;
         shaper_.AddShape(weight_name, weight_tensor.shape);
         shaper_.Conv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3],
                      pads[0], pads[1], weight_name, output_name);
@@ -294,8 +290,8 @@ void OnnxConverter::AddConv(
         layer = DNN::CreateLayer(builder_, DNN::LayerType::Conv2D, param);
     } else if (onnx_weight.shape[1] == 1) {  // depthwise
         LOG(INFO) << "Depthwise conv";
-        weight_name = ori_weight_name + "_conv_w";
-        weight_tensor = OnnxToNnapiDwConvWeight(onnx_weight, weight_name);
+        weight_tensor = OnnxToNnapiDwConvWeight(onnx_weight);
+        weight_name = weight_tensor.name;
         shaper_.AddShape(weight_name, weight_tensor.shape);
         shaper_.DepthwiseConv(input_name, strides[1], strides[0], 1, 1, pads[2],
                               pads[3], pads[0], pads[1], weight_name,

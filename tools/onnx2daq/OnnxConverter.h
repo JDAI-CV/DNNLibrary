@@ -111,13 +111,13 @@ class OnnxConverter {
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
      * nnapi: [1, height, width, depth_out]
      */
-    Tensor OnnxToNnapiDwConvWeight(const Tensor &src, css &name);
+    Tensor OnnxToNnapiDwConvWeight(const Tensor &src);
 
     /**
      * onnx: [filter_out_channel, filter_in_channel, height, width]
      * nnapi: [depth_out, height, width, depth_in]
      */
-    Tensor OnnxToNnapiVanillaConvWeight(const Tensor &src, css &name); 
+    Tensor OnnxToNnapiVanillaConvWeight(const Tensor &src); 
 
    public:
     void Convert(const ONNX_NAMESPACE::ModelProto &model,

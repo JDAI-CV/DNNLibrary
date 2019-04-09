@@ -246,9 +246,8 @@ const auto std::string old_name = {x['name']};""")
                     cogoutl(f"""if ({x['name']}.has_value()) {{
 const auto std::string old_name = {x['name']}.value();""")
                 cogoutl(f"""const auto &onnx_tensor = onnx_tensors_.at(old_name);
-const auto tuple = {x['convert_func']}(onnx_tensor);
-Tensor new_tensor = std.get<0>(tuple);
-Tensor new_name = std.get<1>(tuple);
+const auto new_tensor = {x['convert_func']}(onnx_tensor);
+const auto new_name = new_tensor.name;
 shaper_.AddShape(new_name, new_tensor.shape); 
 nnapi_tensors_[new_name] = new_tensor;
 CreateTensorFb(new_name, new_tensor);""")
