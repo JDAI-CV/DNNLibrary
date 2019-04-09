@@ -163,7 +163,6 @@ def update_code(file: str, label: str) -> None:
 
 
 def main():
-    """
     with open('ops.yml') as f:
         cfg = yaml.load(f)
 
@@ -223,10 +222,7 @@ def main():
         cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
 
     update_code('dnnlibrary/include/ModelBuilder.h', 'ModelBuilder auto generated methods')
-    """
 
-    global str_io
-    str_io = None
     with open('ops.yml') as f:
         cfg = yaml.load(f)
 
@@ -289,6 +285,16 @@ CreateTensorFb(new_name, new_tensor);""")
         cogoutl('layers_.push_back(layer);')
         cogoutl('}')
         cogoutl('')
+
+    update_code('tools/onnx2daq/OnnxConverter.cpp', 'OnnxConverter auto generated methods')
+
+    for i, op in enumerate(cfg):
+        ipt_opt = op['input'] + op['output']
+        params = list(map(get_param, ipt_opt))
+        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+        cogoutl(f"void AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str});")
+
+    update_code('tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
 
 
 if __name__ == '__main__':
