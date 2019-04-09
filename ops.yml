@@ -46,11 +46,11 @@
             needed_by_shaper: true
     dnn_input:
         -
-            name: strides
+            name: pads
             cpp_type: int32_list
             needed_by_shaper: true
         -
-            name: pads
+            name: strides
             cpp_type: int32_list
             needed_by_shaper: true
     fused: true
@@ -105,11 +105,11 @@
             cpp_type: int32_list
             needed_by_shaper: true
         -
-            name: strides
+            name: pads
             cpp_type: int32_list
             needed_by_shaper: true
         -
-            name: pads
+            name: strides
             cpp_type: int32_list
             needed_by_shaper: true
     nnapi: AVERAGE_POOL_2D
@@ -167,11 +167,11 @@
             cpp_type: int32_list
             needed_by_shaper: true
         -
-            name: strides
+            name: pads
             cpp_type: int32_list
             needed_by_shaper: true
         -
-            name: pads
+            name: strides
             cpp_type: int32_list
             needed_by_shaper: true
     nnapi: MAX_POOL_2D

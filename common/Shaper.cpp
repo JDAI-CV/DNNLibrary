@@ -8,8 +8,8 @@ using std::vector;
 
 void Shaper::Conv(const std::string &input_name,
                   const std::string &weight_name,
-                  const std::vector<int32_t> strides,
                   const std::vector<int32_t> paddings,
+                  const std::vector<int32_t> strides,
                   const std::string &output_name) {
     Shaper::Conv(input_name, strides[1], strides[0], 1, 1,
                  paddings[3], paddings[1], paddings[0], paddings[2],
@@ -17,9 +17,9 @@ void Shaper::Conv(const std::string &input_name,
 }
 
 void Shaper::Conv(const std::string &input_name,
+                  const std::vector<int32_t> paddings,
                   const std::vector<int32_t> strides,
                   const std::vector<int32_t> dilations,
-                  const std::vector<int32_t> paddings,
                   const std::string &weight_name,
                   const std::string &output_name) {
     Shaper::Conv(input_name, strides[1], strides[0], dilations[1], dilations[0],
@@ -28,9 +28,9 @@ void Shaper::Conv(const std::string &input_name,
 }
 
 void Shaper::Conv(const std::string &input_name,
+                  const std::vector<int32_t> paddings,
                   const std::vector<int32_t> strides,
                   const std::vector<int32_t> dilations,
-                  const std::vector<int32_t> paddings,
                   const std::string &weight_name, const std::string &bias_name,
                   const std::string &output_name) {
     (void)bias_name;
@@ -69,9 +69,9 @@ void Shaper::Conv(const std::string &input_name, int32_t strideX,
 }
 
 void Shaper::DepthwiseConv(const std::string &input_name,
+                           const std::vector<int32_t> paddings,
                            const std::vector<int32_t> strides,
                            const std::vector<int32_t> dilations,
-                           const std::vector<int32_t> paddings,
                            const std::string &weight_name,
                            const std::string &output_name) {
     Shaper::DepthwiseConv(input_name, strides[1], strides[0], dilations[1],
@@ -205,8 +205,8 @@ void Shaper::PoolNew(const std::string &input_name, int32_t padding_left,
  *  pads: [top, right, bottom, left]
  */
 void Shaper::PoolNew(const std::string &input_name, const std::vector<int32_t> kernel_shape,
-          const std::vector<int32_t> strides,
           const std::vector<int32_t> pads,
+          const std::vector<int32_t> strides,
           const std::string &output_name) {
     Shaper::PoolNew(input_name, pads[3], pads[1], pads[0], pads[2], strides[1], strides[0], kernel_shape[1], kernel_shape[0], output_name);
 }

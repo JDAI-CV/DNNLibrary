@@ -335,27 +335,10 @@ void OnnxConverter::AddLayerPool(css &op, css &input_name,
                                  const std::vector<int> &pads,
                                  const std::vector<int> &strides,
                                  css &output_name) {
-    const auto activation = FindActivation(model_proto_, output_name);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output_name;
-    }
-    shaper_.Pool(input_name, strides[1], strides[0], pads[2], pads[3], pads[0],
-                 pads[1], kernel_shape[0], kernel_shape[1], output_name);
-    flatbuffers::Offset<DNN::Layer> layer;
     if (op == "AveragePool" || op == "GlobalAveragePool") {
-        const auto param = DNN::CreateAvePoolDirect(
-            builder_, m(input_name).c_str(), &kernel_shape, &pads, &strides,
-            ConvertFuseCodeType(activation.second), output_name.c_str());
-        layer = DNN::CreateLayer(builder_, DNN::LayerType::AvePool, 0, param);
+        AddLayerAvePoolImpl(input_name, kernel_shape, pads, strides, output_name);
     } else {
-        const auto param = DNN::CreateMaxPoolDirect(
-            builder_, m(input_name).c_str(), &kernel_shape, &pads, &strides,
-            ConvertFuseCodeType(activation.second), output_name.c_str());
-        layer =
-            DNN::CreateLayer(builder_, DNN::LayerType::MaxPool, 0, 0, param);
-    }
-    layers_.push_back(layer);
+        AddLayerMaxPoolImpl(input_name, kernel_shape, pads, strides, output_name);
 }
 
 void OnnxConverter::AddLayerRelu(css &input_name, css &output_name) {
