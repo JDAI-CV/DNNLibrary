@@ -117,6 +117,16 @@ void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor
     tensors_.push_back(fb_tensor);
 }
 
+std::vector<flatbuffers::Offset<flatbuffers::String>> OnnxConverter::FbStrVector(const std::vector<std::string> &std_str_vector) {
+    std::vector<flatbuffers::Offset<flatbuffers::String>> fb_str_vector;
+    for (const auto &onnx_input : std_str_vector) {
+        const auto flat_input =
+            builder_.CreateString(m(onnx_input).c_str(), m(onnx_input).size());
+        fb_str_vector.push_back(flat_input);
+    }
+    return fb_str_vector;
+}
+
 /**
  * onnx: [filter_out_channel, filter_in_channel / group, height, width]
  * nnapi: [1, height, width, depth_out]
@@ -479,12 +489,7 @@ void OnnxConverter::AddLayerSoftmax(css &input_name, css &output_name) {
 // axis here is for onnx nchw
 void OnnxConverter::AddLayerConcat(const std::vector<std::string> &inputs,
                                    css &output_name, const int axis) {
-    std::vector<flatbuffers::Offset<flatbuffers::String>> concat_inputs;
-    for (const auto &onnx_input : inputs) {
-        const auto flat_input =
-            builder_.CreateString(m(onnx_input).c_str(), m(onnx_input).size());
-        concat_inputs.push_back(flat_input);
-    }
+    const auto concat_inputs = FbStrVector(inputs);
     DNN_ASSERT(axis < 4, axis);
     const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
     shaper_.Concat(inputs, axis, output_name);

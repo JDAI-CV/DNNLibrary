@@ -72,6 +72,7 @@ class OnnxConverter {
     void CreateTensorFb(const Tensor &tensor, const DNN::DataType &data_type);
     void CreateTensorFb(const std::string &name, const Tensor &tensor);
     void CreateTensorFb(const std::string &name, const Tensor &tensor, const DNN::DataType &data_type);
+    std::vector<flatbuffers::Offset<flatbuffers::String>> FbStrVector(const std::vector<std::string> &std_str_vector);
 
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
