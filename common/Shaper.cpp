@@ -7,6 +7,16 @@ using std::string;
 using std::vector;
 
 void Shaper::Conv(const std::string &input_name,
+                  const std::string &weight_name,
+                  const std::vector<int32_t> strides,
+                  const std::vector<int32_t> paddings,
+                  const std::string &output_name) {
+    Shaper::Conv(input_name, strides[1], strides[0], 1, 1,
+                 paddings[3], paddings[1], paddings[0], paddings[2],
+                 weight_name, output_name);
+}
+
+void Shaper::Conv(const std::string &input_name,
                   const std::vector<int32_t> strides,
                   const std::vector<int32_t> dilations,
                   const std::vector<int32_t> paddings,
@@ -101,6 +111,14 @@ void Shaper::DepthwiseConv(const std::string &input_name, int32_t strideX,
                           1,
                       weightDimen[3]};
     shape_map_[output_name] = outputDimen;
+}
+
+void Shaper::DepthwiseConv(const std::string &input_name,
+                   const std::string &weight_name,
+                   const std::vector<int32_t> paddings,
+                   const std::vector<int32_t> strides,
+                   const std::string &output_name) {
+    DepthwiseConv(input_name, weight_name, paddings[3], paddings[1], paddings[0], paddings[2], strides[1], strides[0], output_name);
 }
 
 void Shaper::StridedSlice(const std::string &input_name,

@@ -18,6 +18,11 @@ class Shaper {
         return Product(shape);
     }
 
+    void Conv(const std::string &input_name,
+                  const std::string &weight_name,
+                  const std::vector<int32_t> strides,
+                  const std::vector<int32_t> paddings,
+                  const std::string &output_name);
     void Conv(const std::string &input_name, const std::vector<int32_t> strides,
               const std::vector<int32_t> dilations,
               const std::vector<int32_t> paddings,
@@ -51,6 +56,11 @@ class Shaper {
                        int32_t paddingLeft, int32_t paddingRight,
                        int32_t paddingTop, int32_t paddingBottom,
                        const std::string &weight_name,
+                       const std::string &output_name);
+    void DepthwiseConv(const std::string &input_name,
+                       const std::string &weight_name,
+                       const std::vector<int32_t> paddings,
+                       const std::vector<int32_t> strides,
                        const std::string &output_name);
     void StridedSlice(const std::string &input_name,
                       const std::vector<int32_t> &starts,
