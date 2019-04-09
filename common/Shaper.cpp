@@ -181,6 +181,18 @@ void Shaper::PoolNew(const std::string &input_name, int32_t padding_left,
     shape_map_[output_name] = outputDimen;
 }
 
+/**
+ *  kernel_shape: [height, width]
+ *  strides: [stride_y, stride_x]
+ *  pads: [top, right, bottom, left]
+ */
+void Shaper::PoolNew(const std::string &input_name, const std::vector<int32_t> kernel_shape,
+          const std::vector<int32_t> strides,
+          const std::vector<int32_t> pads,
+          const std::string &output_name) {
+    Shaper::PoolNew(input_name, pads[3], pads[1], pads[0], pads[2], strides[1], strides[0], kernel_shape[1], kernel_shape[0], output_name);
+}
+
 void Shaper::Softmax(const std::string &input_name,
                      const std::string &output_name) {
     shape_map_[output_name] = shape_map_.at(input_name);

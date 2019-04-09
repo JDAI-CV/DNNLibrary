@@ -70,6 +70,10 @@ class Shaper {
                  int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
                  int32_t paddingTop, int32_t paddingBottom, int32_t height,
                  int32_t width, const std::string &output_name);
+    void PoolNew(const std::string &input_name, const std::vector<int32_t> kernel_shape,
+              const std::vector<int32_t> strides,
+              const std::vector<int32_t> pads,
+              const std::string &output_name);
     void Softmax(const std::string &input_name, const std::string &output_name);
     void Relu(const std::string &input_name, const std::string &output_name);
     void Concat(const std::vector<std::string> &input_names, uint32_t axis,
