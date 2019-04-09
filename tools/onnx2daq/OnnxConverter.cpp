@@ -57,24 +57,23 @@ OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
     return activation;
 }
 
-void OnnxConverter::CreateTensorFb(const Tensor &tensor, const DNN::DataType &data_type) {
+void OnnxConverter::CreateTensorFb(const Tensor &tensor,
+                                   const DNN::DataType &data_type) {
     CreateTensorFb(tensor.name, tensor, data_type);
 }
 
-void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor) {
+void OnnxConverter::CreateTensorFb(const std::string &name,
+                                   const Tensor &tensor) {
     switch (tensor.data_type) {
-        case Tensor::DataType::FLOAT32:
-        {
+        case Tensor::DataType::FLOAT32: {
             CreateTensorFb(name, tensor, DNN::DataType::Float32);
             break;
         }
-        case Tensor::DataType::INT32:
-        {
+        case Tensor::DataType::INT32: {
             CreateTensorFb(name, tensor, DNN::DataType::Int32);
             break;
         }
-        case Tensor::DataType::UINT8:
-        {
+        case Tensor::DataType::UINT8: {
             const auto quant_info = quant_infos_.at(tensor.name);
             DNN::DataType daq_data_type;
             if (quant_info.scales.size() == 1 &&
@@ -92,32 +91,38 @@ void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor
     }
 }
 
-void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor, const DNN::DataType &data_type) {
+void OnnxConverter::CreateTensorFb(const std::string &name,
+                                   const Tensor &tensor,
+                                   const DNN::DataType &data_type) {
     flatbuffers::Offset<DNN::Tensor> fb_tensor;
     switch (tensor.data_type) {
-        case Tensor::DataType::FLOAT32:
-        {
+        case Tensor::DataType::FLOAT32: {
             const auto data = tensor.float_data();
-            fb_tensor = DNN::CreateTensorDirect(builder_, data_type, nullptr, &data, &tensor.shape, name.c_str(), nullptr, nullptr, nullptr);
+            fb_tensor = DNN::CreateTensorDirect(
+                builder_, data_type, nullptr, &data, &tensor.shape,
+                name.c_str(), nullptr, nullptr, nullptr);
             break;
         }
-        case Tensor::DataType::INT32:
-        {
+        case Tensor::DataType::INT32: {
             const auto data = tensor.int32_data();
-            fb_tensor = DNN::CreateTensorDirect(builder_, data_type, nullptr, nullptr, &tensor.shape, name.c_str(), nullptr, nullptr, &data);
+            fb_tensor = DNN::CreateTensorDirect(
+                builder_, data_type, nullptr, nullptr, &tensor.shape,
+                name.c_str(), nullptr, nullptr, &data);
             break;
         }
-        case Tensor::DataType::UINT8:
-        {
+        case Tensor::DataType::UINT8: {
             const auto data = tensor.uint8_data();
-            fb_tensor = DNN::CreateTensorDirect(builder_, data_type, &data, nullptr, &tensor.shape, name.c_str(), nullptr, nullptr, nullptr);
+            fb_tensor = DNN::CreateTensorDirect(
+                builder_, data_type, &data, nullptr, &tensor.shape,
+                name.c_str(), nullptr, nullptr, nullptr);
             break;
         }
     }
     tensors_.push_back(fb_tensor);
 }
 
-std::vector<flatbuffers::Offset<flatbuffers::String>> OnnxConverter::FbStrVector(const std::vector<std::string> &std_str_vector) {
+std::vector<flatbuffers::Offset<flatbuffers::String>>
+OnnxConverter::FbStrVector(const std::vector<std::string> &std_str_vector) {
     std::vector<flatbuffers::Offset<flatbuffers::String>> fb_str_vector;
     for (const auto &onnx_input : std_str_vector) {
         const auto flat_input =
@@ -131,7 +136,8 @@ std::vector<flatbuffers::Offset<flatbuffers::String>> OnnxConverter::FbStrVector
  * onnx: [filter_out_channel, filter_in_channel / group, height, width]
  * nnapi: [1, height, width, depth_out]
  */
-OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(const Tensor &src) {
+OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(
+    const Tensor &src) {
     Tensor dest = src;
     size_t elemsize = 0;
     if (src.data_type == Tensor::DataType::UINT8) {
@@ -148,8 +154,8 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(const Tensor &src) 
         for (uint32_t in = 0; in < in_t; in++) {
             for (uint32_t h = 0; h < h_t; h++) {
                 for (uint32_t w = 0; w < w_t; w++) {
-                    auto onnx_idx = out * in_t * h_t * w_t +
-                                    in * h_t * w_t + h * w_t + w;
+                    auto onnx_idx =
+                        out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
                     auto nnapi_idx = h * w_t * out_t + w * out_t + out;
                     FORZ(i, elemsize) {
                         dest.data[elemsize * nnapi_idx + i] =
@@ -164,7 +170,8 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(const Tensor &src) 
     return dest;
 }
 
-OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(const Tensor &src) {
+OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(
+    const Tensor &src) {
     Tensor dest = src;
     size_t elemsize = 0;
     if (src.data_type == Tensor::DataType::UINT8) {
@@ -180,10 +187,10 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(const Tensor &
         for (uint32_t in = 0; in < in_t; in++) {
             for (uint32_t h = 0; h < h_t; h++) {
                 for (uint32_t w = 0; w < w_t; w++) {
-                    auto onnx_idx = out * in_t * h_t * w_t +
-                                    in * h_t * w_t + h * w_t + w;
-                    auto nnapi_idx = out * h_t * w_t * in_t +
-                                     h * w_t * in_t + w * in_t + in;
+                    auto onnx_idx =
+                        out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
+                    auto nnapi_idx =
+                        out * h_t * w_t * in_t + h * w_t * in_t + w * in_t + in;
                     FORZ(i, elemsize) {
                         dest.data[elemsize * nnapi_idx + i] =
                             src.data[elemsize * onnx_idx + i];
@@ -915,9 +922,11 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 const auto bias_name_str = bias_name.value();
                 const auto &bias_tensor = nnapi_tensors_[bias_name_str];
                 if (bias_tensor.data_type == Tensor::DataType::FLOAT32) {
-                    CreateTensorFb(bias_name_str, bias_tensor, DNN::DataType::Float32);
+                    CreateTensorFb(bias_name_str, bias_tensor,
+                                   DNN::DataType::Float32);
                 } else if (bias_tensor.data_type == Tensor::DataType::INT32) {
-                    CreateTensorFb(bias_name_str, bias_tensor, DNN::DataType::Int32);
+                    CreateTensorFb(bias_name_str, bias_tensor,
+                                   DNN::DataType::Int32);
                 } else {
                     std::invalid_argument("Unknown data type");
                 }
