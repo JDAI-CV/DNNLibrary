@@ -98,6 +98,7 @@ class Shaper {
     void Affine(const std::string &input_name, const std::string &output_name);
     void Affine(const std::string &input_name, const std::string &a,
                 const std::string &b, const std::string &output_name);
+    void Identity(const std::string &input_name, const std::string &output_name);
     void BatchToSpace(const std::string &input_name,
                       const std::vector<int32_t> &block_sizes,
                       const std::string &output_name);

@@ -305,6 +305,11 @@ void Shaper::Affine(const std::string &input_name, const std::string &a,
     Shaper::Affine(input_name, output_name);
 }
 
+void Shaper::Identity(const std::string &input_name,
+                    const std::string &output_name) {
+    shape_map_[output_name] = shape_map_.at(input_name);
+}
+
 void Shaper::AddShape(const std::string &name, const Shape &shape) {
     shape_map_[name] = shape;
 }

@@ -138,7 +138,7 @@ def infer_cfg(cfg, target: Target):
             if 'learnable' not in ipt:
                 ipt['learnable'] = False
             if ipt['learnable'] and 'convert_func' not in ipt:
-                ipt['convert_func'] = 'ConvertIdentity'
+                ipt['convert_func'] = 'OnnxToNnapiIdentity'
 
 
 def update_code(file: str, label: str) -> None:
