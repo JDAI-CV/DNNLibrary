@@ -197,6 +197,10 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(const Tensor &
     return dest;
 }
 
+OnnxConverter::Tensor OnnxConverter::OnnxToNnapiIdentity(const Tensor &src) {
+    return src;
+}
+
 void OnnxConverter::AddConv(
     const string &input_name, const std::vector<int> &strides,
     const std::vector<int> &pads, const std::vector<int> &dilations, int group,
