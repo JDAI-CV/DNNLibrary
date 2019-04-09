@@ -162,70 +162,9 @@ def update_code(file: str, label: str) -> None:
     str_io = io.StringIO()
 
 
-def main():
+def generate_onnx_converter():
     with open('ops.yml') as f:
         cfg = yaml.load(f)
-
-    for i, op in enumerate(cfg):
-        infer_cfg(op, Target.ModelBuilder)
-        if len(op['input']) == 0:
-            continue
-        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
-        ipt_opt = op['input'] + op['output']
-        params = list(map(get_param, ipt_opt))
-        if op['support_quant_asymm']:
-            params.append(('const std::optional<QuantInfo> &', 'output_quant_info'))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index ModelBuilder::Add{}({}) {{".format(op['name'], params_str))
-        tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
-        scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
-
-        cogoutl('IndexSeq input_indexes;')
-        for x in tensor_input:
-            cogoutl(add_tensor_operand(x))
-        # cogoutl('IndexSeq input_indexes{{{}}};'.format(', '.join([x['name'] + "_idx" for x in tensor_input])))
-        if len(scalar_input) > 0:
-            cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
-        cogoutl('shaper_.{}({});'.format(op['shaper'],
-                                         ', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])))
-        if op['input'][0]['cpp_type'] == 'str_list':
-            op_type_params = ['operand_types_.at({}[0]).type'.format(op['input'][0]['name']),
-                              'shaper_[{}]'.format(op['output'][0]['name'])]
-        else:
-            op_type_params = ['operand_types_.at({}).type'.format(op['input'][0]['name']),
-                              'shaper_[{}]'.format(op['output'][0]['name'])]
-        if op['support_quant_asymm']:
-            op_type_params.append('output_quant_info')
-        cogoutl('const OperandType operand_type = GetOperandType({});'.format(', '.join(op_type_params)))
-        cogoutl('const auto output_idx = '
-                'AddOperation(ANEURALNETWORKS_{}, input_indexes, operand_type)[0];'.format(op['nnapi']))
-        cogout(
-            '''RegisterOperand(output, output_idx, operand_type);
-    return output_idx;
-    }
-    '''
-        )
-        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
-
-    update_code('dnnlibrary/src/ModelBuilder.cpp', 'ModelBuilder auto generated methods')
-
-    for i, op in enumerate(cfg):
-        if len(op['input']) == 0:
-            continue
-        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
-        ipt_opt = op['input'] + op['output']
-        params = list(map(get_param, ipt_opt))
-        if op['support_quant_asymm']:
-            params.append(('const std::optional<QuantInfo> &', 'output_quant_info'))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index Add{}({});".format(op['name'], params_str))
-        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
-
-    update_code('dnnlibrary/include/ModelBuilder.h', 'ModelBuilder auto generated methods')
-
-    with open('ops.yml') as f:
-        cfg = yaml.load(f)
-
     infer_cfg(cfg, Target.OnnxConverter)
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
@@ -285,16 +224,76 @@ CreateTensorFb(new_name, new_tensor);""")
         cogoutl('layers_.push_back(layer);')
         cogoutl('}')
         cogoutl('')
-
     update_code('tools/onnx2daq/OnnxConverter.cpp', 'OnnxConverter auto generated methods')
-
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl(f"void AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str});")
-
     update_code('tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
+
+
+def generate_model_builder():
+    with open('ops.yml') as f:
+        cfg = yaml.load(f)
+    for i, op in enumerate(cfg):
+        infer_cfg(op, Target.ModelBuilder)
+        if len(op['input']) == 0:
+            continue
+        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
+        ipt_opt = op['input'] + op['output']
+        params = list(map(get_param, ipt_opt))
+        if op['support_quant_asymm']:
+            params.append(('const std::optional<QuantInfo> &', 'output_quant_info'))
+        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+        cogoutl("ModelBuilder::Index ModelBuilder::Add{}({}) {{".format(op['name'], params_str))
+        tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
+        scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
+
+        cogoutl('IndexSeq input_indexes;')
+        for x in tensor_input:
+            cogoutl(add_tensor_operand(x))
+        # cogoutl('IndexSeq input_indexes{{{}}};'.format(', '.join([x['name'] + "_idx" for x in tensor_input])))
+        if len(scalar_input) > 0:
+            cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
+        cogoutl('shaper_.{}({});'.format(op['shaper'],
+                                         ', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])))
+        if op['input'][0]['cpp_type'] == 'str_list':
+            op_type_params = ['operand_types_.at({}[0]).type'.format(op['input'][0]['name']),
+                              'shaper_[{}]'.format(op['output'][0]['name'])]
+        else:
+            op_type_params = ['operand_types_.at({}).type'.format(op['input'][0]['name']),
+                              'shaper_[{}]'.format(op['output'][0]['name'])]
+        if op['support_quant_asymm']:
+            op_type_params.append('output_quant_info')
+        cogoutl('const OperandType operand_type = GetOperandType({});'.format(', '.join(op_type_params)))
+        cogoutl('const auto output_idx = '
+                'AddOperation(ANEURALNETWORKS_{}, input_indexes, operand_type)[0];'.format(op['nnapi']))
+        cogout(
+            '''RegisterOperand(output, output_idx, operand_type);
+    return output_idx;
+    }
+    '''
+        )
+        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
+    update_code('dnnlibrary/src/ModelBuilder.cpp', 'ModelBuilder auto generated methods')
+    for i, op in enumerate(cfg):
+        if len(op['input']) == 0:
+            continue
+        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
+        ipt_opt = op['input'] + op['output']
+        params = list(map(get_param, ipt_opt))
+        if op['support_quant_asymm']:
+            params.append(('const std::optional<QuantInfo> &', 'output_quant_info'))
+        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+        cogoutl("ModelBuilder::Index Add{}({});".format(op['name'], params_str))
+        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
+    update_code('dnnlibrary/include/ModelBuilder.h', 'ModelBuilder auto generated methods')
+
+
+def main():
+    generate_model_builder()
+    generate_onnx_converter()
 
 
 if __name__ == '__main__':
