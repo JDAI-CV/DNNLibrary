@@ -13,6 +13,7 @@
             needed_by_shaper: true
         -
             predefined: optional_bias
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -43,12 +44,21 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
+    dnn_input:
+        -
+            name: strides
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: pads
+            cpp_type: int32_list
+            needed_by_shaper: true
     fused: true
     support_quant_asymm: true
     api: 27
 -
     name: AvePool
-    input:
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -88,6 +98,19 @@
             name: kernel_height
             nnapi_type: scalar
             cpp_type: int32_t
+            needed_by_shaper: true
+    dnn_input:
+        -
+            name: kernel_shape
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: pads
+            cpp_type: int32_list
             needed_by_shaper: true
     nnapi: AVERAGE_POOL_2D
     shaper: PoolNew
@@ -97,7 +120,7 @@
 
 -
     name: MaxPool
-    input:
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -137,6 +160,19 @@
             name: kernel_height
             nnapi_type: scalar
             cpp_type: int32_t
+            needed_by_shaper: true
+    dnn_input:
+        -
+            name: kernel_shape
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: pads
+            cpp_type: int32_list
             needed_by_shaper: true
     nnapi: MAX_POOL_2D
     shaper: PoolNew
@@ -149,7 +185,7 @@
     api: 27
 -
     name: Softmax
-    input:
+    nnapi_input:
         -
             name: beta
             nnapi_type: scalar
@@ -203,6 +239,7 @@
             needed_by_shaper: true
         -
             predefined: optional_bias
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -232,6 +269,19 @@
             name: stride_y
             nnapi_type: scalar
             cpp_type: int32_t
+            needed_by_shaper: true
+        -
+            name: depth_multiplier
+            nnapi_type: scalar
+            cpp_type: int32_t
+    dnn_input:
+        -
+            name: pads
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            cpp_type: int32_list
             needed_by_shaper: true
         -
             name: depth_multiplier

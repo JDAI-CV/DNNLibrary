@@ -117,6 +117,10 @@ def infer_cfg(cfg, target: Target):
             op['nnapi'] = op['name'].upper()
         if 'fused' not in op:
             op['fused'] = False
+        if target == Target.ModelBuilder and 'nnapi_input' in op:
+            op['input'].extend(op['nnapi_input'])
+        elif target == Target.OnnxConverter and 'dnn_input' in op:
+            op['input'].extend(op['dnn_input'])
         if op['fused'] and target == Target.ModelBuilder:
             op['input'].append({'name': 'fuse_code', 'nnapi_type': 'scalar', 'cpp_type': 'int32_t'})
         if 'support_quant_asymm' not in op:
