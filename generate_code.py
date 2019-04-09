@@ -32,7 +32,7 @@ def get_param(elem: dict) -> Tuple[str, str]:
     if elem['cpp_type'] == 'str':
         return 'const std::string &', elem['name']
     elif elem['cpp_type'] == 'optional_str':
-        return 'const std::optional<std::string> &', elem['name']
+        return 'const nonstd::optional<std::string> &', elem['name']
     elif elem['cpp_type'] == 'str_list':
         return 'const std::vector<std::string> &', elem['name']
     elif elem['cpp_type'] == 'int32_list':
@@ -115,6 +115,8 @@ def infer_cfg(cfg, target: Target):
             op['shaper'] = op['name']
         if not 'nnapi' in op:
             op['nnapi'] = op['name'].upper()
+        if 'dnn' not in op:
+            op['dnn'] = op['name']
         if 'fused' not in op:
             op['fused'] = False
         if target == Target.ModelBuilder and 'nnapi_input' in op:
@@ -245,10 +247,10 @@ def main():
                 assert x['cpp_type'] in ['str', 'optional_str']
                 if x['cpp_type'] == 'str':
                     cogoutl(f"""{{
-const auto std::string old_name = {x['name']};""")
+const auto old_name = {x['name']};""")
                 elif x['cpp_type'] == 'optional_str':
                     cogoutl(f"""if ({x['name']}.has_value()) {{
-const auto std::string old_name = {x['name']}.value();""")
+const auto old_name = {x['name']}.value();""")
                 cogoutl(f"""const auto &onnx_tensor = onnx_tensors_.at(old_name);
 const auto new_tensor = {x['convert_func']}(onnx_tensor);
 const auto new_name = new_tensor.name;
@@ -269,19 +271,21 @@ CreateTensorFb(new_name, new_tensor);""")
                 return f"{x['name']}.has_value() ? {x['name']}.value().c_str() : nullptr"
             elif x['cpp_type'] == 'str_list':
                 return f"&{x['name']}_fb"
+            elif x['cpp_type'] == 'int32_list':
+                return f"&{x['name']}"
             else:
                 return x['name']
 
-        cogout(f"const auto param = DNN::Create{op['name']}Direct(builder_, ")
+        cogout(f"const auto param = DNN::Create{op['dnn']}Direct(builder_, ")
         cogout(', '.join(list(map(get_input_param, op['input']))))
         if op['fused']:
             cogout(', ConvertFuseCodeType(activation.second)')
         cogout(', ')
         cogout(', '.join(list(map(lambda x: f"{x['name']}.c_str()", op['output']))))
         cogoutl(');')
-        cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['name']}, ")
-        cogout(', '.join(['0'] * (op['pos'])))
-        cogoutl(', param);')
+        cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['dnn']}, ")
+        cogout(''.join(['0, '] * (op['pos'])))
+        cogoutl('param);')
         cogoutl('layers_.push_back(layer);')
         cogoutl('}')
         cogoutl('')
