@@ -86,6 +86,80 @@ void OnnxConverter::CreateTensorFb(const std::string &name, const Tensor &tensor
     tensors_.push_back(fb_tensor);
 }
 
+/**
+ * onnx: [filter_out_channel, filter_in_channel / group, height, width]
+ * nnapi: [1, height, width, depth_out]
+ */
+OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(const Tensor &src, css &name) {
+    Tensor dest = src;
+    size_t elemsize = 0;
+    if (src.data_type == Tensor::DataType::UINT8) {
+        elemsize = 1;
+    } else if (src.data_type == Tensor::DataType::FLOAT32) {
+        elemsize = 4;
+    }
+    dest.data.resize(Product(src.shape) * elemsize);
+    // t for total
+    auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
+         w_t = src.shape[3];
+    CHECK_EQ(in_t, 1u);
+    for (uint32_t out = 0; out < out_t; out++) {
+        for (uint32_t in = 0; in < in_t; in++) {
+            for (uint32_t h = 0; h < h_t; h++) {
+                for (uint32_t w = 0; w < w_t; w++) {
+                    auto onnx_idx = out * in_t * h_t * w_t +
+                                    in * h_t * w_t + h * w_t + w;
+                    auto nnapi_idx = h * w_t * out_t + w * out_t + out;
+                    FORZ(i, elemsize) {
+                        dest.data[elemsize * nnapi_idx + i] =
+                            src.data[elemsize * onnx_idx + i];
+                    }
+                }
+            }
+        }
+    }
+    dest.shape = {in_t, h_t, w_t, out_t};
+    if (name != "") {
+        dest.name = name;
+    }
+    return dest;
+}
+
+OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(const Tensor &src, css &name) {
+    Tensor dest = src;
+    size_t elemsize = 0;
+    if (src.data_type == Tensor::DataType::UINT8) {
+        elemsize = 1;
+    } else if (src.data_type == Tensor::DataType::FLOAT32) {
+        elemsize = 4;
+    }
+    dest.data.resize(Product(src.shape) * elemsize);
+    // t for total
+    auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
+         w_t = src.shape[3];
+    for (uint32_t out = 0; out < out_t; out++) {
+        for (uint32_t in = 0; in < in_t; in++) {
+            for (uint32_t h = 0; h < h_t; h++) {
+                for (uint32_t w = 0; w < w_t; w++) {
+                    auto onnx_idx = out * in_t * h_t * w_t +
+                                    in * h_t * w_t + h * w_t + w;
+                    auto nnapi_idx = out * h_t * w_t * in_t +
+                                     h * w_t * in_t + w * in_t + in;
+                    FORZ(i, elemsize) {
+                        dest.data[elemsize * nnapi_idx + i] =
+                            src.data[elemsize * onnx_idx + i];
+                    }
+                }
+            }
+        }
+    }
+    dest.shape = {out_t, h_t, w_t, in_t};
+    if (name != "") {
+        dest.name = name;
+    }
+    return dest;
+}
+
 void OnnxConverter::AddConv(
     const string &input_name, const std::vector<int> &strides,
     const std::vector<int> &pads, const std::vector<int> &dilations, int group,
@@ -166,7 +240,7 @@ void OnnxConverter::AddConv(
     if (group == 1) {
         LOG(INFO) << "Vanilla conv";
         weight_name = ori_weight_name + "_conv_w";
-        weight_tensor = OnnxToNnapiVanilla(onnx_weight, weight_name);
+        weight_tensor = OnnxToNnapiVanillaConvWeight(onnx_weight, weight_name);
         shaper_.AddShape(weight_name, weight_tensor.shape);
         shaper_.Conv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3],
                      pads[0], pads[1], weight_name, output_name);
@@ -180,7 +254,7 @@ void OnnxConverter::AddConv(
     } else if (onnx_weight.shape[1] == 1) {  // depthwise
         LOG(INFO) << "Depthwise conv";
         weight_name = ori_weight_name + "_conv_w";
-        weight_tensor = OnnxToNnapiDw(onnx_weight, weight_name);
+        weight_tensor = OnnxToNnapiDwConvWeight(onnx_weight, weight_name);
         shaper_.AddShape(weight_name, weight_tensor.shape);
         shaper_.DepthwiseConv(input_name, strides[1], strides[0], 1, 1, pads[2],
                               pads[3], pads[0], pads[1], weight_name,
