@@ -50,6 +50,8 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "addscalar";
         case DNN::LayerType::Dequantize:
             return "dequantize";
+        case DNN::LayerType::LRN:
+            return "LRN";
     }
 }
 

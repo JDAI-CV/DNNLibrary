@@ -396,7 +396,7 @@
     name: LRN
     input:
         -
-            name: local_size
+            name: size
             nnapi_type: scalar
             cpp_type: int32_t
             need_by_shaper: false
@@ -415,5 +415,12 @@
             nnapi_type: scalar
             cpp_type: float
             need_by_shaper: false
+        -
+            name: dim
+            nnapi_type: scalar
+            cpp_type: int32_t
+            need_by_shaper: false
     nnapi: LOCAL_RESPONSE_NORMALIZATION
+    shaper: Identity
+    pos: 16
     api: 27

@@ -1101,6 +1101,20 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             has_reshape = true;
             SetIdentity(node.input(0), node.output(0));
             LOG(INFO) << "Converting Reshape completed";
+        } else if (op == "LRN") {
+            LOG(INFO) << "Start converting LRN";
+            if (!helper.has_attr("size")) {
+                throw std::invalid_argument(
+                    "Invalid ONNX model, attribute \"size\" is required in "
+                    "LRN");
+            }
+            const auto size = helper.get("size", 1);
+            const auto alpha = helper.get("alpha", 0.0001f);
+            const auto beta = helper.get("beta", 0.75f);
+            const auto bias = helper.get("bias", 1.f);
+            AddLayerLRN(node.input(0), size, bias, alpha, beta, -1,
+                        node.output(0));
+            LOG(INFO) << "Converting LRN completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
         }
