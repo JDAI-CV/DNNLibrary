@@ -81,14 +81,12 @@ class OnnxConverter {
     void ReadTableFile(css &table_file);
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
 
-    void AddConv(
-        const std::string &input_name, const std::vector<int> &strides,
-        const std::vector<int> &pads, const std::vector<int> &dilations,
-        int group,
-        const std::pair<nonstd::optional<std::string>, FuseCode> &activation,
-        const std::string &ori_weight_name,
-        const nonstd::optional<std::string> &bias_name,
-        const std::string &output_name);
+    void AddConv(const std::string &input_name, const std::vector<int> &strides,
+                 const std::vector<int> &pads,
+                 const std::vector<int> &dilations, int group,
+                 const std::string &ori_weight_name,
+                 const nonstd::optional<std::string> &bias_name,
+                 const std::string &output_name);
     void AddLayerPool(css &op, css &input_name,
                       const std::vector<int> &kernel_shape,
                       const std::vector<int> &pads,

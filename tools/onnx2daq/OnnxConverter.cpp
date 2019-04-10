@@ -206,12 +206,13 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiIdentity(const Tensor &src) {
     return src;
 }
 
-void OnnxConverter::AddConv(
-    const string &input_name, const std::vector<int> &strides,
-    const std::vector<int> &pads, const std::vector<int> &dilations, int group,
-    const std::pair<nonstd::optional<std::string>, FuseCode> &activation,
-    const string &ori_weight_name,
-    const nonstd::optional<std::string> &bias_name, const string &output_name) {
+void OnnxConverter::AddConv(const string &input_name,
+                            const std::vector<int> &strides,
+                            const std::vector<int> &pads,
+                            const std::vector<int> &dilations, int group,
+                            const string &ori_weight_name,
+                            const nonstd::optional<std::string> &bias_name,
+                            const string &output_name) {
     flatbuffers::Offset<DNN::Layer> layer;
     if (dilations != vector<int>{1, 1}) {
         if (strides != vector<int>{1, 1}) {
@@ -244,8 +245,8 @@ void OnnxConverter::AddConv(
         {
             // paddings are applied in spacetobatch
             AddConv(s2b_name, strides, vector<int>{0, 0, 0, 0},
-                    vector<int>{1, 1}, group, activation, ori_weight_name,
-                    bias_name, im_name);
+                    vector<int>{1, 1}, group, ori_weight_name, bias_name,
+                    im_name);
         }
         {
             shaper_.BatchToSpace(im_name, dilations, b2s_name);
@@ -281,62 +282,18 @@ void OnnxConverter::AddConv(
     }
 
     const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
-    string weight_name;
-    Tensor weight_tensor;
     if (group == 1) {
         LOG(INFO) << "Vanilla conv";
-        weight_tensor = OnnxToNnapiVanillaConvWeight(onnx_weight);
-        weight_name = weight_tensor.name;
-        shaper_.AddShape(weight_name, weight_tensor.shape);
-        shaper_.Conv(input_name, strides[1], strides[0], 1, 1, pads[2], pads[3],
-                     pads[0], pads[1], weight_name, output_name);
-        nnapi_tensors_[weight_name] = weight_tensor;
-
-        const auto param = DNN::CreateConv2DDirect(
-            builder_, m(input_name).c_str(), weight_name.c_str(),
-            bias_name ? bias_name.value().c_str() : nullptr, &pads, &strides,
-            ConvertFuseCodeType(activation.second), output_name.c_str());
-        layer = DNN::CreateLayer(builder_, DNN::LayerType::Conv2D, param);
+        AddLayerConvImpl(input_name, ori_weight_name, bias_name, pads, strides,
+                         output_name);
     } else if (onnx_weight.shape[1] == 1) {  // depthwise
         LOG(INFO) << "Depthwise conv";
-        weight_tensor = OnnxToNnapiDwConvWeight(onnx_weight);
-        weight_name = weight_tensor.name;
-        shaper_.AddShape(weight_name, weight_tensor.shape);
-        shaper_.DepthwiseConv(input_name, strides[1], strides[0], 1, 1, pads[2],
-                              pads[3], pads[0], pads[1], weight_name,
-                              output_name);
-        nnapi_tensors_[weight_name] = weight_tensor;
-        const auto multiplier = nnapi_tensors_.at(weight_name).shape[3] / group;
-        const auto param = DNN::CreateDepthwiseConv2DDirect(
-            builder_, m(input_name).c_str(), weight_name.c_str(),
-            bias_name ? bias_name.value().c_str() : nullptr, &pads, &strides,
-            multiplier, ConvertFuseCodeType(activation.second),
-            output_name.c_str());
-        layer = DNN::CreateLayer(builder_, DNN::LayerType::DepthwiseConv2D, 0,
-                                 0, 0, 0, 0, 0, 0, 0, param);
+        AddLayerDepthwiseConvImpl(input_name, ori_weight_name, bias_name, pads,
+                                  strides, 1, output_name);
     } else {
         // TODO: Support it
         throw std::invalid_argument("group != 1 is not supported");
     }
-    if (weight_tensor.data_type == Tensor::DataType::FLOAT32) {
-        CreateTensorFb(weight_name, weight_tensor, DNN::DataType::Float32);
-    } else if (weight_tensor.data_type == Tensor::DataType::UINT8) {
-        const auto quant_info = quant_infos_.at(weight_tensor.name);
-        DNN::DataType daq_data_type;
-        if (quant_info.scales.size() == 1 &&
-            quant_info.zero_point.has_value()) {
-            daq_data_type = DNN::DataType::QUANT8_ASYMM;
-        } else if (quant_info.scales.size() == 1 &&
-                   !quant_info.zero_point.has_value()) {
-            daq_data_type = DNN::DataType::QUANT8_SYMM;
-        } else {
-            daq_data_type = DNN::DataType::QUANT8_SYMM_PER_CHANNEL;
-        }
-        CreateTensorFb(weight_name, weight_tensor, daq_data_type);
-    } else {
-        DNN_ASSERT(false, "Unknown data type of tensor");
-    }
-    layers_.push_back(layer);
 }
 
 void OnnxConverter::AddLayerPool(css &op, css &input_name,
@@ -898,35 +855,14 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             CHECK_EQ(strides.size(), 2ul);
             CHECK_EQ(dilations.size(), 2ul);
             const auto group = helper.get("group", 1);
-            const auto activation =
-                FindActivation(model_proto_, node.output(0));
-            if (activation.first.has_value()) {
-                skipped_act_.push_back(activation.first.value());
-                name_map_[activation.first.value()] = node.name();
-            }
             nonstd::optional<string> bias_name;
             if (node.input_size() >= 3) {
-                const auto ori_bias_name = m(node.input(2));
-                bias_name = ori_bias_name + "_conv_b";
-                nnapi_tensors_[bias_name.value()] =
-                    onnx_tensors_.at(ori_bias_name);
-                flatbuffers::Offset<DNN::Tensor> flat_tensor;
-                const auto bias_name_str = bias_name.value();
-                const auto &bias_tensor = nnapi_tensors_[bias_name_str];
-                if (bias_tensor.data_type == Tensor::DataType::FLOAT32) {
-                    CreateTensorFb(bias_name_str, bias_tensor,
-                                   DNN::DataType::Float32);
-                } else if (bias_tensor.data_type == Tensor::DataType::INT32) {
-                    CreateTensorFb(bias_name_str, bias_tensor,
-                                   DNN::DataType::Int32);
-                } else {
-                    std::invalid_argument("Unknown data type");
-                }
+                bias_name = m(node.input(2));
             }
 
             const auto ori_weight_name = m(node.input(1));
             AddConv(m(node.input(0)), strides, pads, dilations, group,
-                    activation, ori_weight_name, bias_name, m(node.output(0)));
+                    ori_weight_name, bias_name, m(node.output(0)));
             LOG(INFO) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" ||
                    op == "GlobalAveragePool" || op == "GlobalMaxPool") {
