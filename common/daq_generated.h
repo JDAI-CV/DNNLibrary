@@ -46,6 +46,8 @@ struct MulScalar;
 
 struct Dequantize;
 
+struct LRN;
+
 struct Layer;
 
 struct Model;
@@ -156,11 +158,12 @@ enum class LayerType : int8_t {
   AddScalar = 13,
   MulScalar = 14,
   Dequantize = 15,
+  LRN = 16,
   MIN = Conv2D,
-  MAX = Dequantize
+  MAX = LRN
 };
 
-inline const LayerType (&EnumValuesLayerType())[16] {
+inline const LayerType (&EnumValuesLayerType())[17] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -177,7 +180,8 @@ inline const LayerType (&EnumValuesLayerType())[16] {
     LayerType::Mul,
     LayerType::AddScalar,
     LayerType::MulScalar,
-    LayerType::Dequantize
+    LayerType::Dequantize,
+    LayerType::LRN
   };
   return values;
 }
@@ -200,6 +204,7 @@ inline const char * const *EnumNamesLayerType() {
     "AddScalar",
     "MulScalar",
     "Dequantize",
+    "LRN",
     nullptr
   };
   return names;
@@ -1997,6 +2002,128 @@ inline flatbuffers::Offset<Dequantize> CreateDequantizeDirect(
       output ? _fbb.CreateString(output) : 0);
 }
 
+struct LRN FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum {
+    VT_INPUT = 4,
+    VT_SIZE = 6,
+    VT_BIAS = 8,
+    VT_ALPHA = 10,
+    VT_BETA = 12,
+    VT_DIM = 14,
+    VT_OUTPUT = 16
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  int32_t size() const {
+    return GetField<int32_t>(VT_SIZE, 0);
+  }
+  float bias() const {
+    return GetField<float>(VT_BIAS, 0.0f);
+  }
+  float alpha() const {
+    return GetField<float>(VT_ALPHA, 0.0f);
+  }
+  float beta() const {
+    return GetField<float>(VT_BETA, 0.0f);
+  }
+  int32_t dim() const {
+    return GetField<int32_t>(VT_DIM, 0);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyField<int32_t>(verifier, VT_SIZE) &&
+           VerifyField<float>(verifier, VT_BIAS) &&
+           VerifyField<float>(verifier, VT_ALPHA) &&
+           VerifyField<float>(verifier, VT_BETA) &&
+           VerifyField<int32_t>(verifier, VT_DIM) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct LRNBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(LRN::VT_INPUT, input);
+  }
+  void add_size(int32_t size) {
+    fbb_.AddElement<int32_t>(LRN::VT_SIZE, size, 0);
+  }
+  void add_bias(float bias) {
+    fbb_.AddElement<float>(LRN::VT_BIAS, bias, 0.0f);
+  }
+  void add_alpha(float alpha) {
+    fbb_.AddElement<float>(LRN::VT_ALPHA, alpha, 0.0f);
+  }
+  void add_beta(float beta) {
+    fbb_.AddElement<float>(LRN::VT_BETA, beta, 0.0f);
+  }
+  void add_dim(int32_t dim) {
+    fbb_.AddElement<int32_t>(LRN::VT_DIM, dim, 0);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(LRN::VT_OUTPUT, output);
+  }
+  explicit LRNBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LRNBuilder &operator=(const LRNBuilder &);
+  flatbuffers::Offset<LRN> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<LRN>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<LRN> CreateLRN(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    int32_t size = 0,
+    float bias = 0.0f,
+    float alpha = 0.0f,
+    float beta = 0.0f,
+    int32_t dim = 0,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  LRNBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_dim(dim);
+  builder_.add_beta(beta);
+  builder_.add_alpha(alpha);
+  builder_.add_bias(bias);
+  builder_.add_size(size);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<LRN> CreateLRNDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    int32_t size = 0,
+    float bias = 0.0f,
+    float alpha = 0.0f,
+    float beta = 0.0f,
+    int32_t dim = 0,
+    const char *output = nullptr) {
+  return DNN::CreateLRN(
+      _fbb,
+      input ? _fbb.CreateString(input) : 0,
+      size,
+      bias,
+      alpha,
+      beta,
+      dim,
+      output ? _fbb.CreateString(output) : 0);
+}
+
 struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_TYPE = 4,
@@ -2015,7 +2142,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_MUL_PARAM = 30,
     VT_ADD_SCALAR_PARAM = 32,
     VT_MUL_SCALAR_PARAM = 34,
-    VT_DEQUANTIZE_PARAM = 36
+    VT_DEQUANTIZE_PARAM = 36,
+    VT_LRN_PARAM = 38
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -2068,6 +2196,9 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const Dequantize *dequantize_param() const {
     return GetPointer<const Dequantize *>(VT_DEQUANTIZE_PARAM);
   }
+  const LRN *lrn_param() const {
+    return GetPointer<const LRN *>(VT_LRN_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -2103,6 +2234,8 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(mul_scalar_param()) &&
            VerifyOffset(verifier, VT_DEQUANTIZE_PARAM) &&
            verifier.VerifyTable(dequantize_param()) &&
+           VerifyOffset(verifier, VT_LRN_PARAM) &&
+           verifier.VerifyTable(lrn_param()) &&
            verifier.EndTable();
   }
 };
@@ -2161,6 +2294,9 @@ struct LayerBuilder {
   void add_dequantize_param(flatbuffers::Offset<Dequantize> dequantize_param) {
     fbb_.AddOffset(Layer::VT_DEQUANTIZE_PARAM, dequantize_param);
   }
+  void add_lrn_param(flatbuffers::Offset<LRN> lrn_param) {
+    fbb_.AddOffset(Layer::VT_LRN_PARAM, lrn_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -2191,8 +2327,10 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<Mul> mul_param = 0,
     flatbuffers::Offset<AddScalar> add_scalar_param = 0,
     flatbuffers::Offset<MulScalar> mul_scalar_param = 0,
-    flatbuffers::Offset<Dequantize> dequantize_param = 0) {
+    flatbuffers::Offset<Dequantize> dequantize_param = 0,
+    flatbuffers::Offset<LRN> lrn_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_lrn_param(lrn_param);
   builder_.add_dequantize_param(dequantize_param);
   builder_.add_mul_scalar_param(mul_scalar_param);
   builder_.add_add_scalar_param(add_scalar_param);

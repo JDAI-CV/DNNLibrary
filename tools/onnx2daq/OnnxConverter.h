@@ -70,118 +70,110 @@ class OnnxConverter {
     std::pair<nonstd::optional<std::string>, FuseCode> FindActivation(
         const ONNX_NAMESPACE::ModelProto &model_proto, css &output_name);
     void CreateTensorFb(const Tensor &tensor, const DNN::DataType &data_type);
-    void CreateTensorFb(const std::string &name, const Tensor &tensor, const DNN::DataType &data_type);
+    void CreateTensorFb(const std::string &name, const Tensor &tensor);
+    void CreateTensorFb(const std::string &name, const Tensor &tensor,
+                        const DNN::DataType &data_type);
+    std::vector<flatbuffers::Offset<flatbuffers::String>> FbStrVector(
+        const std::vector<std::string> &std_str_vector);
 
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
     void ReadTableFile(css &table_file);
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
 
-    void AddConv(
-        const std::string &input_name, const std::vector<int> &strides,
-        const std::vector<int> &pads, const std::vector<int> &dilations,
-        int group,
-        const std::pair<nonstd::optional<std::string>, FuseCode> &activation,
-        const std::string &ori_weight_name,
-        const nonstd::optional<std::string> &bias_name,
-        const std::string &output_name);
+    void AddConv(const std::string &input_name, const std::vector<int> &strides,
+                 const std::vector<int> &pads,
+                 const std::vector<int> &dilations, int group,
+                 const std::string &ori_weight_name,
+                 const nonstd::optional<std::string> &bias_name,
+                 const std::string &output_name);
     void AddLayerPool(css &op, css &input_name,
                       const std::vector<int> &kernel_shape,
                       const std::vector<int> &pads,
                       const std::vector<int> &strides, css &output_name);
     void AddLayerRelu(css &input_name, css &output_name);
-    void AddLayerAdd(css &input1_name, css &input2_name, css &output_name);
-    void AddLayerAdd(css &input1_name, float input2, css &output_name);
-    void AddLayerMul(css &input1_name, css &input2_name, css &output_name);
-    void AddLayerMul(css &input1_name, float input2, css &output_name);
     void AddLayerGemm(css &input_name, css &weight_name,
                       nonstd::optional<std::string> bias_name, const int transA,
                       const int transB, const float alpha, const float beta,
                       css &output_name);
-    void AddLayerSoftmax(css &input_name, css &output_name);
     // axis here is for onnx nchw
     void AddLayerConcat(const std::vector<std::string> &inputs,
                         css &output_name, const int axis);
     void AddLayerDequantize(css &input_name, css &output_name);
     void SetIdentity(css &input_name, css &output_name);
+    // OnnxConverter auto generated methods start
+    void AddLayerConvImpl(const std::string &input, const std::string &weight,
+                          const nonstd::optional<std::string> &bias,
+                          const std::vector<int32_t> &pads,
+                          const std::vector<int32_t> &strides,
+                          const std::string &output);
+    void AddLayerAvePoolImpl(const std::string &input,
+                             const std::vector<int32_t> &kernel_shape,
+                             const std::vector<int32_t> &pads,
+                             const std::vector<int32_t> &strides,
+                             const std::string &output);
+    void AddLayerMaxPoolImpl(const std::string &input,
+                             const std::vector<int32_t> &kernel_shape,
+                             const std::vector<int32_t> &pads,
+                             const std::vector<int32_t> &strides,
+                             const std::string &output);
+    void AddLayerReLU(const std::string &input, const std::string &output);
+    void AddLayerSoftmax(const std::string &input, const std::string &output);
+    void AddLayerFC(const std::string &input, const std::string &weight,
+                    const nonstd::optional<std::string> &bias,
+                    const std::string &output);
+    void AddLayerAdd(const std::string &input1, const std::string &input2,
+                     const std::string &output);
+    void AddLayerConcatImpl(const std::vector<std::string> &inputs,
+                            int32_t axis, const std::string &output);
+    void AddLayerDepthwiseConvImpl(const std::string &input,
+                                   const std::string &weight,
+                                   const nonstd::optional<std::string> &bias,
+                                   const std::vector<int32_t> &pads,
+                                   const std::vector<int32_t> &strides,
+                                   int32_t depth_multiplier,
+                                   const std::string &output);
+    void AddLayerBatchToSpaceND(const std::string &input,
+                                const std::vector<int32_t> &block_sizes,
+                                const std::string &output);
+    void AddLayerSpaceToBatchND(const std::string &input,
+                                const std::vector<int32_t> &block_sizes,
+                                const std::vector<int32_t> &pads,
+                                const std::string &output);
+    void AddLayerStridedSlice(const std::string &input,
+                              const std::vector<int32_t> &starts,
+                              const std::vector<int32_t> &ends,
+                              const std::vector<int32_t> &strides,
+                              int32_t begin_mask, int32_t end_mask,
+                              int32_t shrink_axis_mask,
+                              const std::string &output);
+    void AddLayerMul(const std::string &input1, const std::string &input2,
+                     const std::string &output);
+    void AddLayerAdd(const std::string &input, float scalar,
+                     const std::string &output);
+    void AddLayerMul(const std::string &input, float scalar,
+                     const std::string &output);
+    void AddLayerLRN(const std::string &input, int32_t size, float bias,
+                     float alpha, float beta, int32_t dim,
+                     const std::string &output);
+    // OnnxConverter auto generated methods end
 
     /**
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
      * nnapi: [1, height, width, depth_out]
      */
-    inline Tensor OnnxToNnapiDw(const Tensor &src, css &name) {
-        Tensor dest = src;
-        size_t elemsize = 0;
-        if (src.data_type == Tensor::DataType::UINT8) {
-            elemsize = 1;
-        } else if (src.data_type == Tensor::DataType::FLOAT32) {
-            elemsize = 4;
-        }
-        dest.data.resize(Product(src.shape) * elemsize);
-        // t for total
-        auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
-             w_t = src.shape[3];
-        CHECK_EQ(in_t, 1u);
-        for (uint32_t out = 0; out < out_t; out++) {
-            for (uint32_t in = 0; in < in_t; in++) {
-                for (uint32_t h = 0; h < h_t; h++) {
-                    for (uint32_t w = 0; w < w_t; w++) {
-                        auto onnx_idx = out * in_t * h_t * w_t +
-                                        in * h_t * w_t + h * w_t + w;
-                        auto nnapi_idx = h * w_t * out_t + w * out_t + out;
-                        FORZ(i, elemsize) {
-                            dest.data[elemsize * nnapi_idx + i] =
-                                src.data[elemsize * onnx_idx + i];
-                        }
-                    }
-                }
-            }
-        }
-        dest.shape = {in_t, h_t, w_t, out_t};
-        if (name != "") {
-            dest.name = name;
-        }
-        return dest;
-    }
+    Tensor OnnxToNnapiDwConvWeight(const Tensor &src);
 
     /**
      * onnx: [filter_out_channel, filter_in_channel, height, width]
      * nnapi: [depth_out, height, width, depth_in]
      */
-    inline Tensor OnnxToNnapiVanilla(const Tensor &src, css &name = "") {
-        Tensor dest = src;
-        size_t elemsize = 0;
-        if (src.data_type == Tensor::DataType::UINT8) {
-            elemsize = 1;
-        } else if (src.data_type == Tensor::DataType::FLOAT32) {
-            elemsize = 4;
-        }
-        dest.data.resize(Product(src.shape) * elemsize);
-        // t for total
-        auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
-             w_t = src.shape[3];
-        for (uint32_t out = 0; out < out_t; out++) {
-            for (uint32_t in = 0; in < in_t; in++) {
-                for (uint32_t h = 0; h < h_t; h++) {
-                    for (uint32_t w = 0; w < w_t; w++) {
-                        auto onnx_idx = out * in_t * h_t * w_t +
-                                        in * h_t * w_t + h * w_t + w;
-                        auto nnapi_idx = out * h_t * w_t * in_t +
-                                         h * w_t * in_t + w * in_t + in;
-                        FORZ(i, elemsize) {
-                            dest.data[elemsize * nnapi_idx + i] =
-                                src.data[elemsize * onnx_idx + i];
-                        }
-                    }
-                }
-            }
-        }
-        dest.shape = {out_t, h_t, w_t, in_t};
-        if (name != "") {
-            dest.name = name;
-        }
-        return dest;
-    }
+    Tensor OnnxToNnapiVanillaConvWeight(const Tensor &src);
+
+    /**
+     * Just return the same tensor
+     */
+    Tensor OnnxToNnapiIdentity(const Tensor &src);
 
    public:
     void Convert(const ONNX_NAMESPACE::ModelProto &model,

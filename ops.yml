@@ -2,14 +2,19 @@
     # This appears in function name, like ModelBuilder::AddConv
     name: Conv
     nnapi: CONV_2D
+    dnn: Conv2D
     input:
         -
             name: weight
             nnapi_type: tensor
+            # "learnable" stands for the tensor is read from serialized model file
+            learnable: true
+            convert_func: OnnxToNnapiVanillaConvWeight
             cpp_type: str
             needed_by_shaper: true
         -
             predefined: optional_bias
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -40,12 +45,22 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
+    dnn_input:
+        -
+            name: pads
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            cpp_type: int32_list
+            needed_by_shaper: true
     fused: true
     support_quant_asymm: true
+    converter: false
     api: 27
 -
     name: AvePool
-    input:
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -85,15 +100,30 @@
             name: kernel_height
             nnapi_type: scalar
             cpp_type: int32_t
+            needed_by_shaper: true
+    dnn_input:
+        -
+            name: kernel_shape
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: pads
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            cpp_type: int32_list
             needed_by_shaper: true
     nnapi: AVERAGE_POOL_2D
-    shaper: PoolNew
+    shaper: Pool
     fused: true
+    converter: false
     support_quant_asymm: true
     api: 27
+
 -
     name: MaxPool
-    input:
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -134,18 +164,33 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
+    dnn_input:
+        -
+            name: kernel_shape
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: pads
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            cpp_type: int32_list
+            needed_by_shaper: true
     nnapi: MAX_POOL_2D
-    shaper: PoolNew
+    shaper: Pool
     fused: true
+    converter: false
     support_quant_asymm: true
     api: 27
 -
     name: ReLU
     shaper: Relu
+    dnn: Relu
     api: 27
 -
     name: Softmax
-    input:
+    nnapi_input:
         -
             name: beta
             nnapi_type: scalar
@@ -157,6 +202,7 @@
         -
             name: weight
             nnapi_type: tensor
+            learnable: true
             cpp_type: str
             needed_by_shaper: true
         -
@@ -183,18 +229,23 @@
             cpp_type: int32_t
             needed_by_shaper: true
     nnapi: CONCATENATION
+    converter: false
     api: 27
 -
     name: DepthwiseConv
     nnapi: DEPTHWISE_CONV_2D
+    dnn: DepthwiseConv2D
     input:
         -
             name: weight
             nnapi_type: tensor
+            learnable: true
+            convert_func: OnnxToNnapiDwConvWeight
             cpp_type: str
             needed_by_shaper: true
         -
             predefined: optional_bias
+    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -229,8 +280,22 @@
             name: depth_multiplier
             nnapi_type: scalar
             cpp_type: int32_t
+    dnn_input:
+        -
+            name: pads
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: strides
+            cpp_type: int32_list
+            needed_by_shaper: true
+        -
+            name: depth_multiplier
+            nnapi_type: scalar
+            cpp_type: int32_t
     fused: true
     support_quant_asymm: true
+    converter: false
     api: 27
 -
     name: BatchToSpaceND
@@ -242,6 +307,7 @@
             needed_by_shaper: true
     shaper: BatchToSpace
     nnapi: BATCH_TO_SPACE_ND
+    dnn: BatchToSpace
     api: 28
 -
     name: SpaceToBatchND
@@ -258,6 +324,7 @@
             needed_by_shaper: true
     shaper: SpaceToBatch
     nnapi: SPACE_TO_BATCH_ND
+    dnn: SpaceToBatch
     api: 28
 -
     name: StridedSlice
@@ -303,6 +370,7 @@
     api: 27
 -
     name: Add
+    dnn: AddScalar
     input:
         -
             name: scalar
@@ -314,6 +382,7 @@
     api: 27
 -
     name: Mul
+    dnn: MulScalar
     input:
         -
             name: scalar
@@ -327,7 +396,7 @@
     name: LRN
     input:
         -
-            name: local_size
+            name: size
             nnapi_type: scalar
             cpp_type: int32_t
             need_by_shaper: false
@@ -346,5 +415,12 @@
             nnapi_type: scalar
             cpp_type: float
             need_by_shaper: false
+        -
+            name: dim
+            nnapi_type: scalar
+            cpp_type: int32_t
+            need_by_shaper: false
     nnapi: LOCAL_RESPONSE_NORMALIZATION
+    shaper: Identity
+    pos: 16
     api: 27
