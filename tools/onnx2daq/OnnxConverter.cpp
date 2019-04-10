@@ -166,7 +166,6 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(
         }
     }
     dest.shape = {in_t, h_t, w_t, out_t};
-    dest.name = src.name + "_conv_w";
     return dest;
 }
 
@@ -200,7 +199,6 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(
         }
     }
     dest.shape = {out_t, h_t, w_t, in_t};
-    dest.name = src.name + "_conv_w";
     return dest;
 }
 
@@ -406,22 +404,20 @@ void OnnxConverter::AddLayerConvImpl(const std::string &input,
         name_map_[activation.first.value()] = output;
     }
     {
-        const auto old_name = weight;
-        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto name = weight;
+        const auto &onnx_tensor = onnx_tensors_.at(name);
         const auto new_tensor = OnnxToNnapiVanillaConvWeight(onnx_tensor);
-        const auto new_name = new_tensor.name;
-        shaper_.AddShape(new_name, new_tensor.shape);
-        nnapi_tensors_[new_name] = new_tensor;
-        CreateTensorFb(new_name, new_tensor);
+        shaper_.AddShape(name, new_tensor.shape);
+        nnapi_tensors_[name] = new_tensor;
+        CreateTensorFb(name, new_tensor);
     }
     if (bias.has_value()) {
-        const auto old_name = bias.value();
-        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto name = bias.value();
+        const auto &onnx_tensor = onnx_tensors_.at(name);
         const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        const auto new_name = new_tensor.name;
-        shaper_.AddShape(new_name, new_tensor.shape);
-        nnapi_tensors_[new_name] = new_tensor;
-        CreateTensorFb(new_name, new_tensor);
+        shaper_.AddShape(name, new_tensor.shape);
+        nnapi_tensors_[name] = new_tensor;
+        CreateTensorFb(name, new_tensor);
     }
     shaper_.Conv(input, weight, pads, strides, output);
     const auto param = DNN::CreateConv2DDirect(
@@ -499,22 +495,20 @@ void OnnxConverter::AddLayerFC(const std::string &input,
         name_map_[activation.first.value()] = output;
     }
     {
-        const auto old_name = weight;
-        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto name = weight;
+        const auto &onnx_tensor = onnx_tensors_.at(name);
         const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        const auto new_name = new_tensor.name;
-        shaper_.AddShape(new_name, new_tensor.shape);
-        nnapi_tensors_[new_name] = new_tensor;
-        CreateTensorFb(new_name, new_tensor);
+        shaper_.AddShape(name, new_tensor.shape);
+        nnapi_tensors_[name] = new_tensor;
+        CreateTensorFb(name, new_tensor);
     }
     if (bias.has_value()) {
-        const auto old_name = bias.value();
-        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto name = bias.value();
+        const auto &onnx_tensor = onnx_tensors_.at(name);
         const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        const auto new_name = new_tensor.name;
-        shaper_.AddShape(new_name, new_tensor.shape);
-        nnapi_tensors_[new_name] = new_tensor;
-        CreateTensorFb(new_name, new_tensor);
+        shaper_.AddShape(name, new_tensor.shape);
+        nnapi_tensors_[name] = new_tensor;
+        CreateTensorFb(name, new_tensor);
     }
     shaper_.FC(input, weight, output);
     const auto param = DNN::CreateFCDirect(
@@ -566,22 +560,20 @@ void OnnxConverter::AddLayerDepthwiseConvImpl(
         name_map_[activation.first.value()] = output;
     }
     {
-        const auto old_name = weight;
-        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto name = weight;
+        const auto &onnx_tensor = onnx_tensors_.at(name);
         const auto new_tensor = OnnxToNnapiDwConvWeight(onnx_tensor);
-        const auto new_name = new_tensor.name;
-        shaper_.AddShape(new_name, new_tensor.shape);
-        nnapi_tensors_[new_name] = new_tensor;
-        CreateTensorFb(new_name, new_tensor);
+        shaper_.AddShape(name, new_tensor.shape);
+        nnapi_tensors_[name] = new_tensor;
+        CreateTensorFb(name, new_tensor);
     }
     if (bias.has_value()) {
-        const auto old_name = bias.value();
-        const auto &onnx_tensor = onnx_tensors_.at(old_name);
+        const auto name = bias.value();
+        const auto &onnx_tensor = onnx_tensors_.at(name);
         const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        const auto new_name = new_tensor.name;
-        shaper_.AddShape(new_name, new_tensor.shape);
-        nnapi_tensors_[new_name] = new_tensor;
-        CreateTensorFb(new_name, new_tensor);
+        shaper_.AddShape(name, new_tensor.shape);
+        nnapi_tensors_[name] = new_tensor;
+        CreateTensorFb(name, new_tensor);
     }
     shaper_.DepthwiseConv(input, weight, pads, strides, output);
     const auto param = DNN::CreateDepthwiseConv2DDirect(

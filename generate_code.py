@@ -182,16 +182,15 @@ def generate_onnx_converter():
                 assert x['cpp_type'] in ['str', 'optional_str']
                 if x['cpp_type'] == 'str':
                     cogoutl(f"""{{
-const auto old_name = {x['name']};""")
+const auto name = {x['name']};""")
                 elif x['cpp_type'] == 'optional_str':
                     cogoutl(f"""if ({x['name']}.has_value()) {{
-const auto old_name = {x['name']}.value();""")
-                cogoutl(f"""const auto &onnx_tensor = onnx_tensors_.at(old_name);
+const auto name = {x['name']}.value();""")
+                cogoutl(f"""const auto &onnx_tensor = onnx_tensors_.at(name);
 const auto new_tensor = {x['convert_func']}(onnx_tensor);
-const auto new_name = new_tensor.name;
-shaper_.AddShape(new_name, new_tensor.shape); 
-nnapi_tensors_[new_name] = new_tensor;
-CreateTensorFb(new_name, new_tensor);""")
+shaper_.AddShape(name, new_tensor.shape); 
+nnapi_tensors_[name] = new_tensor;
+CreateTensorFb(name, new_tensor);""")
                 cogoutl("}")
             if x['cpp_type'] == 'str_list':
                 cogoutl(f"const auto {x['name']}_fb = FbStrVector({x['name']});")
