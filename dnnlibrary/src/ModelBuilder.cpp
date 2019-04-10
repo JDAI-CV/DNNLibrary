@@ -472,15 +472,15 @@ ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
-                                         int32_t local_size, float bias,
-                                         float alpha, float beta,
+ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input, int32_t size,
+                                         float bias, float alpha, float beta,
+                                         int32_t dim,
                                          const std::string &output) {
     IndexSeq input_indexes;
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
-    AddScalarOperands(input_indexes, local_size, bias, alpha, beta);
-    shaper_.LRN(input, output);
+    AddScalarOperands(input_indexes, size, bias, alpha, beta, dim);
+    shaper_.Identity(input, output);
     const OperandType operand_type =
         GetOperandType(operand_types_.at(input).type, shaper_[output]);
     const auto output_idx =
