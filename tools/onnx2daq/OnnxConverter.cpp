@@ -386,7 +386,7 @@ void OnnxConverter::AddLayerAvePoolImpl(
         skipped_act_.push_back(activation.first.value());
         name_map_[activation.first.value()] = output;
     }
-    shaper_.PoolNew(input, kernel_shape, pads, strides, output);
+    shaper_.Pool(input, kernel_shape, pads, strides, output);
     const auto param = DNN::CreateAvePoolDirect(
         builder_, m(input).c_str(), &kernel_shape, &pads, &strides,
         ConvertFuseCodeType(activation.second), output.c_str());
@@ -404,7 +404,7 @@ void OnnxConverter::AddLayerMaxPoolImpl(
         skipped_act_.push_back(activation.first.value());
         name_map_[activation.first.value()] = output;
     }
-    shaper_.PoolNew(input, kernel_shape, pads, strides, output);
+    shaper_.Pool(input, kernel_shape, pads, strides, output);
     const auto param = DNN::CreateMaxPoolDirect(
         builder_, m(input).c_str(), &kernel_shape, &pads, &strides,
         ConvertFuseCodeType(activation.second), output.c_str());

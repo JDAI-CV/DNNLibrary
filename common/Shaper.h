@@ -68,19 +68,12 @@ class Shaper {
                       const std::vector<int32_t> &strides, int32_t beginMask,
                       int32_t endMask, int32_t shrinkAxisMask,
                       const std::string &output_name);
-    void Pool(const std::string &input_name, const std::vector<int32_t> strides,
-              const std::vector<int32_t> paddings,
-              const std::vector<int32_t> kernel_shape,
-              const std::string &output_name);
-    void Pool(const std::string &input_name, int32_t strideX, int32_t strideY,
-              int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
-              int32_t paddingBottom, int32_t height, int32_t width,
-              const std::string &output_name);
-    void PoolNew(const std::string &input_name, int32_t strideX,
-                 int32_t strideY, int32_t paddingLeft, int32_t paddingRight,
-                 int32_t paddingTop, int32_t paddingBottom, int32_t height,
-                 int32_t width, const std::string &output_name);
-    void PoolNew(const std::string &input_name, const std::vector<int32_t> kernel_shape,
+    void Pool(const std::string &input_name, int32_t padding_left,
+                     int32_t padding_right, int32_t padding_top,
+                     int32_t padding_bottom, int32_t stride_x, int32_t stride_y,
+                     int32_t width, int32_t height,
+                     const std::string &output_name);
+    void Pool(const std::string &input_name, const std::vector<int32_t> kernel_shape,
               const std::vector<int32_t> pads,
               const std::vector<int32_t> strides,
               const std::string &output_name);

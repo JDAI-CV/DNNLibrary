@@ -132,9 +132,9 @@ ModelBuilder::Index ModelBuilder::AddAvePool(
     AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
                       padding_bottom, stride_x, stride_y, kernel_width,
                       kernel_height, fuse_code);
-    shaper_.PoolNew(input, padding_left, padding_right, padding_top,
-                    padding_bottom, stride_x, stride_y, kernel_width,
-                    kernel_height, output);
+    shaper_.Pool(input, padding_left, padding_right, padding_top,
+                 padding_bottom, stride_x, stride_y, kernel_width,
+                 kernel_height, output);
     const OperandType operand_type = GetOperandType(
         operand_types_.at(input).type, shaper_[output], output_quant_info);
     const auto output_idx = AddOperation(ANEURALNETWORKS_AVERAGE_POOL_2D,
@@ -156,9 +156,9 @@ ModelBuilder::Index ModelBuilder::AddMaxPool(
     AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
                       padding_bottom, stride_x, stride_y, kernel_width,
                       kernel_height, fuse_code);
-    shaper_.PoolNew(input, padding_left, padding_right, padding_top,
-                    padding_bottom, stride_x, stride_y, kernel_width,
-                    kernel_height, output);
+    shaper_.Pool(input, padding_left, padding_right, padding_top,
+                 padding_bottom, stride_x, stride_y, kernel_width,
+                 kernel_height, output);
     const OperandType operand_type = GetOperandType(
         operand_types_.at(input).type, shaper_[output], output_quant_info);
     const auto output_idx = AddOperation(ANEURALNETWORKS_MAX_POOL_2D,

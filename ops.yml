@@ -115,7 +115,7 @@
             cpp_type: int32_list
             needed_by_shaper: true
     nnapi: AVERAGE_POOL_2D
-    shaper: PoolNew
+    shaper: Pool
     fused: true
     converter: false
     support_quant_asymm: true
@@ -178,7 +178,7 @@
             cpp_type: int32_list
             needed_by_shaper: true
     nnapi: MAX_POOL_2D
-    shaper: PoolNew
+    shaper: Pool
     fused: true
     converter: false
     support_quant_asymm: true
