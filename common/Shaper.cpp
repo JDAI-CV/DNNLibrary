@@ -6,6 +6,10 @@
 using std::string;
 using std::vector;
 
+/**
+ *  strides: [stride_y, stride_x]
+ *  paddings: [top, right, bottom, left]
+ */
 void Shaper::Conv(const std::string &input_name,
                   const std::string &weight_name,
                   const std::vector<int32_t> paddings,
