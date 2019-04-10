@@ -235,8 +235,8 @@ CreateTensorFb(name, new_tensor);""")
 def generate_model_builder():
     with open('ops.yml') as f:
         cfg = yaml.load(f)
+    infer_cfg(cfg, Target.ModelBuilder)
     for i, op in enumerate(cfg):
-        infer_cfg(op, Target.ModelBuilder)
         if len(op['input']) == 0:
             continue
         cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
