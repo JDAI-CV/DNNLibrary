@@ -318,6 +318,9 @@ void OnnxConverter::AddLayerConcat(const std::vector<std::string> &inputs,
     const auto concat_inputs = FbStrVector(inputs);
     DNN_ASSERT(axis < 4, axis);
     const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
+    // TODO: The axis has the type "int", making it strongly coupled with layout
+    // (NHWC/NCHW) and hard to replace it with generated code. So shaper should
+    // be improved
     shaper_.Concat(inputs, axis, output_name);
     const auto param = DNN::CreateConcatDirect(
         builder_, &concat_inputs, axis_nchw_to_nhwc[axis], output_name.c_str());
