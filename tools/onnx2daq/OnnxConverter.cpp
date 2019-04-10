@@ -233,29 +233,23 @@ void OnnxConverter::AddConv(const string &input_name,
                       input_shape[2];
         LOG(INFO) << input_shape << ", " << pads << ", " << dilations << ", "
                   << new_pads;
+        // Why "AllowShortBlocksOnASingleLine: false" doesn't work on it?
+        // clang-format off
         {
-            shaper_.SpaceToBatch(input_name, dilations, new_pads, s2b_name);
-            const auto param = DNN::CreateSpaceToBatchDirect(
-                builder_, m(input_name).c_str(), &dilations, &new_pads,
-                s2b_name.c_str());
-            layer = DNN::CreateLayer(builder_, DNN::LayerType::SpaceToBatch, 0,
-                                     0, 0, 0, 0, 0, 0, 0, 0, 0, param);
-            layers_.push_back(layer);
+            AddLayerSpaceToBatchND(input_name, dilations, new_pads, s2b_name);
         }
+        // clang-format on
         {
             // paddings are applied in spacetobatch
             AddConv(s2b_name, strides, vector<int>{0, 0, 0, 0},
                     vector<int>{1, 1}, group, ori_weight_name, bias_name,
                     im_name);
         }
+        // clang-format off
         {
-            shaper_.BatchToSpace(im_name, dilations, b2s_name);
-            const auto param = DNN::CreateBatchToSpaceDirect(
-                builder_, im_name.c_str(), &dilations, b2s_name.c_str());
-            layer = DNN::CreateLayer(builder_, DNN::LayerType::BatchToSpace, 0,
-                                     0, 0, 0, 0, 0, 0, 0, 0, param);
-            layers_.push_back(layer);
+            AddLayerBatchToSpaceND(im_name, dilations, b2s_name);
         }
+        // clang-format on
         {
             const auto b2s_shape = shaper_[b2s_name];
             const std::vector<int32_t> starts{0, 0, 0, 0};
@@ -268,15 +262,9 @@ void OnnxConverter::AddConv(const string &input_name,
             const int32_t begin_mask = 0;
             const int32_t end_mask = 0;
             const int32_t shrink_axis_mask = 0;
-            shaper_.StridedSlice(b2s_name, starts, ends, strides_in_ss,
+            AddLayerStridedSlice(b2s_name, starts, ends, strides_in_ss,
                                  begin_mask, end_mask, shrink_axis_mask,
                                  output_name);
-            const auto param = DNN::CreateStridedSliceDirect(
-                builder_, b2s_name.c_str(), &starts, &ends, &strides_in_ss,
-                begin_mask, end_mask, shrink_axis_mask, output_name.c_str());
-            layer = DNN::CreateLayer(builder_, DNN::LayerType::StridedSlice, 0,
-                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
-            layers_.push_back(layer);
         }
         return;
     }
