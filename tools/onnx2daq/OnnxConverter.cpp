@@ -307,16 +307,6 @@ void OnnxConverter::AddLayerPool(css &op, css &input_name,
     }
 }
 
-void OnnxConverter::AddLayerDequantize(css &input_name, css &output_name) {
-    shaper_.Eltwise(input_name, output_name);
-    const auto param = DNN::CreateDequantizeDirect(
-        builder_, m(input_name).c_str(), output_name.c_str());
-    const auto layer =
-        DNN::CreateLayer(builder_, DNN::LayerType::Dequantize, 0, 0, 0, 0, 0, 0,
-                         0, 0, 0, 0, 0, 0, 0, 0, 0, param);
-    layers_.push_back(layer);
-}
-
 // OnnxConverter auto generated methods start
 void OnnxConverter::AddLayerConvImpl(const std::string &input,
                                      const std::string &weight,
@@ -563,6 +553,17 @@ void OnnxConverter::AddLayerMul(const std::string &input, float scalar,
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::MulScalar, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerDequantize(const std::string &input,
+                                       const std::string &output) {
+    shaper_.Identity(m(input), output);
+    const auto param =
+        DNN::CreateDequantizeDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Dequantize, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, param);
     layers_.push_back(layer);
 }
 

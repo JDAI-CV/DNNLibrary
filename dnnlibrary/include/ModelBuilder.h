@@ -195,6 +195,10 @@ class ModelBuilder {
                                int32_t fuse_code, const std::string &output);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
+    ModelBuilder::Index AddDequantize(const std::string &input,
+                                      const std::string &output);
+#endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddLRN(const std::string &input, int32_t radius,
                                float bias, float alpha, float beta,
                                const std::string &output);
@@ -248,8 +252,6 @@ class ModelBuilder {
         const std::string &input1_name, const std::string &input2_name,
         const std::string &output_name,
         const std::optional<QuantInfo> &output_quant_info = std::nullopt);
-    Index AddDequantize(const std::string &input_name,
-                        const std::string &output_name);
 #if __ANDROID_API__ >= __ANDROID_API_P__
     ModelBuilder &AllowFp16(const bool allowed);
 #endif
