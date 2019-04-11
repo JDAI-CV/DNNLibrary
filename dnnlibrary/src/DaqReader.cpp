@@ -202,8 +202,8 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 UNPACK_LAYER_QUANT(avepool, strides, pads, kernel_shape, fuse,
                                    input, output);
                 builder.AddPool(
-                    input, strides[1], strides[0], pads[2], pads[3], pads[0],
-                    pads[1], kernel_shape[0], kernel_shape[1], fuse,
+                    input, strides[1], strides[0], pads[1], pads[3], pads[0],
+                    pads[2], kernel_shape[0], kernel_shape[1], fuse,
                     ModelBuilder::PoolingType::AVE_POOL, output, quant_info);
                 break;
             }
@@ -211,8 +211,8 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 UNPACK_LAYER_QUANT(maxpool, strides, pads, kernel_shape, fuse,
                                    input, output);
                 builder.AddPool(
-                    input, strides[1], strides[0], pads[2], pads[3], pads[0],
-                    pads[1], kernel_shape[0], kernel_shape[1], fuse,
+                    input, strides[1], strides[0], pads[1], pads[3], pads[0],
+                    pads[2], kernel_shape[0], kernel_shape[1], fuse,
                     ModelBuilder::PoolingType::MAX_POOL, output, quant_info);
                 break;
             }
@@ -283,10 +283,10 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
 #endif
                 break;
             }
-            default: {
-                throw std::invalid_argument("Unsupported layer " +
-                                            layer_type_to_str(layer->type()));
-            }
+            case DNN::LayerType::LRN: {
+                ADD_LAYER(lrn, LRN, input, radius, bias, alpha, beta, output);
+                break;
+                                      }
         }
     }
 }
