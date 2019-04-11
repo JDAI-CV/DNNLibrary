@@ -98,9 +98,6 @@ class OnnxConverter {
                       nonstd::optional<std::string> bias_name, const int transA,
                       const int transB, const float alpha, const float beta,
                       css &output_name);
-    // axis here is for onnx nchw
-    void AddLayerConcat(const std::vector<std::string> &inputs,
-                        css &output_name, const int axis);
     void AddLayerDequantize(css &input_name, css &output_name);
     void SetIdentity(css &input_name, css &output_name);
     // OnnxConverter auto generated methods start
@@ -126,8 +123,9 @@ class OnnxConverter {
                     const std::string &output);
     void AddLayerAdd(const std::string &input1, const std::string &input2,
                      const std::string &output);
-    void AddLayerConcatImpl(const std::vector<std::string> &inputs,
-                            int32_t axis, const std::string &output);
+    // axis here is for NNAPI NHWC
+    void AddLayerConcat(const std::vector<std::string> &inputs, int32_t axis,
+                        const std::string &output);
     void AddLayerDepthwiseConvImpl(const std::string &input,
                                    const std::string &weight,
                                    const nonstd::optional<std::string> &bias,

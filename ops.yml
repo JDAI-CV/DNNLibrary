@@ -229,7 +229,6 @@
             cpp_type: int32_t
             needed_by_shaper: true
     nnapi: CONCATENATION
-    converter: false
     api: 27
 -
     name: DepthwiseConv
