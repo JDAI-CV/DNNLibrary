@@ -56,7 +56,7 @@ class OnnxConverter {
 
     ONNX_NAMESPACE::ModelProto model_proto_;
     flatbuffers::FlatBufferBuilder builder_;
-    std::vector<std::string> skipped_act_;
+    std::vector<int> skipped_act_;
     std::vector<std::string> dequantize_after_;
 
     std::vector<std::string> operands_;
@@ -67,8 +67,10 @@ class OnnxConverter {
     std::vector<flatbuffers::Offset<DNN::Tensor>> tensors_;
 
     DNN::FuseCode ConvertFuseCodeType(FuseCode fuse_code);
-    std::pair<nonstd::optional<std::string>, FuseCode> FindActivation(
-        const ONNX_NAMESPACE::ModelProto &model_proto, css &output_name);
+    std::pair<nonstd::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
+              FuseCode>
+    FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
+                   css &output_name);
     void CreateTensorFb(const Tensor &tensor, const DNN::DataType &data_type);
     void CreateTensorFb(const std::string &name, const Tensor &tensor);
     void CreateTensorFb(const std::string &name, const Tensor &tensor,
