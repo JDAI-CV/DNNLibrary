@@ -37,11 +37,14 @@ DNN::FuseCode OnnxConverter::ConvertFuseCodeType(FuseCode fuse_code) {
     throw std::invalid_argument("Invalid FuseCode");
 }
 
-std::pair<nonstd::optional<std::string>, OnnxConverter::FuseCode>
+std::pair<nonstd::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
+          OnnxConverter::FuseCode>
 OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                               css &output_name) {
-    std::pair<nonstd::optional<string>, FuseCode> activation{
-        {}, FuseCode::FUSED_NONE};
+    std::pair<nonstd::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
+              FuseCode>
+        activation{{}, FuseCode::FUSED_NONE};
+    int i = 0;
     for (const auto &_node : model_proto.graph().node()) {
         if (!_node.input().empty() && output_name == _node.input(0) &&
             _node.op_type() == "Relu") {
@@ -50,9 +53,11 @@ OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
             if (activation.second != FuseCode::FUSED_NONE) {
                 return {{}, FuseCode::FUSED_NONE};
             }
-            activation = std::make_pair(nonstd::make_optional(_node.name()),
+            const auto node_pair = std::make_pair(i, _node);
+            activation = std::make_pair(nonstd::make_optional(node_pair),
                                         FuseCode::FUSED_RELU);
         }
+        i++;
     }
     if (activation.first.has_value()) {
         skipped_act_.push_back(activation.first.value().first);
@@ -791,11 +796,12 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     const auto inputs = GetInputOfOnnxModel();
 
     bool has_reshape = false;
-    for (const auto &node : model_proto_.graph().node()) {
+    for (int i = 0; i < model_proto_.graph().node_size(); i++) {
+        const auto &node = model_proto_.graph().node(i);
         NodeAttrHelper helper(node);
         const auto &op = node.op_type();
         LOG(INFO) << "Node " << node.name();
-        if (std::find(skipped_act_.begin(), skipped_act_.end(), node.name()) !=
+        if (std::find(skipped_act_.begin(), skipped_act_.end(), i) !=
             skipped_act_.end()) {
             LOG(INFO) << "Skip layer " << node.name();
             continue;
