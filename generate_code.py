@@ -178,10 +178,6 @@ def generate_onnx_converter():
         cogoutl(f"void OnnxConverter::AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str}) {{")
         if op['fused']:
             cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
-            cogoutl("if (activation.first.has_value()) {")
-            cogoutl("skipped_act_.push_back(activation.first.value());")
-            cogoutl("name_map_[activation.first.value()] = output;")
-            cogoutl("}")
         for x in op['input']:
             if x['learnable']:
                 assert x['cpp_type'] in ['str', 'optional_str']

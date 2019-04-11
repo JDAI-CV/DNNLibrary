@@ -54,6 +54,10 @@ OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                                         FuseCode::FUSED_RELU);
         }
     }
+    if (activation.first.has_value()) {
+        skipped_act_.push_back(activation.first.value().first);
+        name_map_[activation.first.value().second.output(0)] = output_name;
+    }
     return activation;
 }
 
@@ -347,10 +351,6 @@ void OnnxConverter::AddLayerConvImpl(const std::string &input,
                                      const std::vector<int32_t> &strides,
                                      const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
     {
         const auto name = weight;
         const auto &onnx_tensor = onnx_tensors_.at(name);
@@ -382,11 +382,7 @@ void OnnxConverter::AddLayerAvePoolImpl(
     const std::vector<int32_t> &pads, const std::vector<int32_t> &strides,
     const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
-    shaper_.Pool(input, kernel_shape, pads, strides, output);
+    shaper_.Pool(m(input), kernel_shape, pads, strides, output);
     const auto param = DNN::CreateAvePoolDirect(
         builder_, m(input).c_str(), &kernel_shape, &pads, &strides,
         ConvertFuseCodeType(activation.second), output.c_str());
@@ -400,11 +396,7 @@ void OnnxConverter::AddLayerMaxPoolImpl(
     const std::vector<int32_t> &pads, const std::vector<int32_t> &strides,
     const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
-    shaper_.Pool(input, kernel_shape, pads, strides, output);
+    shaper_.Pool(m(input), kernel_shape, pads, strides, output);
     const auto param = DNN::CreateMaxPoolDirect(
         builder_, m(input).c_str(), &kernel_shape, &pads, &strides,
         ConvertFuseCodeType(activation.second), output.c_str());
@@ -438,10 +430,6 @@ void OnnxConverter::AddLayerFC(const std::string &input,
                                const nonstd::optional<std::string> &bias,
                                const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
     {
         const auto name = weight;
         const auto &onnx_tensor = onnx_tensors_.at(name);
@@ -472,11 +460,7 @@ void OnnxConverter::AddLayerAdd(const std::string &input1,
                                 const std::string &input2,
                                 const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
-    shaper_.Eltwise(input1, input2, output);
+    shaper_.Eltwise(m(input1), m(input2), output);
     const auto param = DNN::CreateAddDirect(
         builder_, m(input1).c_str(), m(input2).c_str(),
         ConvertFuseCodeType(activation.second), output.c_str());
@@ -503,10 +487,6 @@ void OnnxConverter::AddLayerDepthwiseConvImpl(
     const std::vector<int32_t> &strides, int32_t depth_multiplier,
     const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
     {
         const auto name = weight;
         const auto &onnx_tensor = onnx_tensors_.at(name);
@@ -578,11 +558,7 @@ void OnnxConverter::AddLayerMul(const std::string &input1,
                                 const std::string &input2,
                                 const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
-    shaper_.Eltwise(input1, input2, output);
+    shaper_.Eltwise(m(input1), m(input2), output);
     const auto param = DNN::CreateMulDirect(
         builder_, m(input1).c_str(), m(input2).c_str(),
         ConvertFuseCodeType(activation.second), output.c_str());
@@ -594,11 +570,7 @@ void OnnxConverter::AddLayerMul(const std::string &input1,
 void OnnxConverter::AddLayerAdd(const std::string &input, float scalar,
                                 const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
-    shaper_.Eltwise(input, output);
+    shaper_.Eltwise(m(input), output);
     const auto param = DNN::CreateAddScalarDirect(
         builder_, m(input).c_str(), scalar,
         ConvertFuseCodeType(activation.second), output.c_str());
@@ -611,11 +583,7 @@ void OnnxConverter::AddLayerAdd(const std::string &input, float scalar,
 void OnnxConverter::AddLayerMul(const std::string &input, float scalar,
                                 const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
-    if (activation.first.has_value()) {
-        skipped_act_.push_back(activation.first.value());
-        name_map_[activation.first.value()] = output;
-    }
-    shaper_.Eltwise(input, output);
+    shaper_.Eltwise(m(input), output);
     const auto param = DNN::CreateMulScalarDirect(
         builder_, m(input).c_str(), scalar,
         ConvertFuseCodeType(activation.second), output.c_str());
