@@ -598,13 +598,12 @@ void OnnxConverter::AddLayerMul(const std::string &input, float scalar,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerLRN(const std::string &input, int32_t size,
+void OnnxConverter::AddLayerLRN(const std::string &input, int32_t radius,
                                 float bias, float alpha, float beta,
-                                int32_t dim, const std::string &output) {
+                                const std::string &output) {
     shaper_.Identity(m(input), output);
-    const auto param =
-        DNN::CreateLRNDirect(builder_, m(input).c_str(), size, bias, alpha,
-                             beta, dim, output.c_str());
+    const auto param = DNN::CreateLRNDirect(builder_, m(input).c_str(), radius,
+                                            bias, alpha, beta, output.c_str());
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::LRN, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -1002,10 +1001,16 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                     "LRN");
             }
             const auto size = helper.get("size", 1);
-            const auto alpha = helper.get("alpha", 0.0001f);
+            auto alpha = helper.get("alpha", 0.0001f);
             const auto beta = helper.get("beta", 0.75f);
             const auto bias = helper.get("bias", 1.f);
-            AddLayerLRN(node.input(0), size, bias, alpha, beta, -1,
+            if (size % 2 == 0) {
+                std::invalid_argument("NNAPI only support odd size for LRN");
+            }
+            const auto radius = (size - 1) / 2;
+            alpha /= size;  // The implementation of ONNX LRN is not the same as
+                            // that of NNAPI LRN
+            AddLayerLRN(node.input(0), radius, bias, alpha, beta,
                         node.output(0));
             LOG(INFO) << "Converting LRN completed";
         } else {
