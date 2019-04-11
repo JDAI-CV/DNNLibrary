@@ -321,23 +321,6 @@ void OnnxConverter::AddLayerGemm(css &input_name, css &weight_name,
     }
 }
 
-// axis here is for onnx nchw
-void OnnxConverter::AddLayerConcat(const std::vector<std::string> &inputs,
-                                   css &output_name, const int axis) {
-    const auto concat_inputs = FbStrVector(inputs);
-    DNN_ASSERT(axis < 4, axis);
-    const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
-    // TODO: The axis has the type "int", making it strongly coupled with layout
-    // (NHWC/NCHW) and hard to replace it with generated code. So shaper should
-    // be improved
-    shaper_.Concat(inputs, axis, output_name);
-    const auto param = DNN::CreateConcatDirect(
-        builder_, &concat_inputs, axis_nchw_to_nhwc[axis], output_name.c_str());
-    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Concat, 0, 0,
-                                        0, 0, 0, 0, 0, param);
-    layers_.push_back(layer);
-}
-
 void OnnxConverter::AddLayerDequantize(css &input_name, css &output_name) {
     shaper_.Eltwise(input_name, output_name);
     const auto param = DNN::CreateDequantizeDirect(
@@ -474,9 +457,8 @@ void OnnxConverter::AddLayerAdd(const std::string &input1,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerConcatImpl(const std::vector<std::string> &inputs,
-                                       int32_t axis,
-                                       const std::string &output) {
+void OnnxConverter::AddLayerConcat(const std::vector<std::string> &inputs,
+                                   int32_t axis, const std::string &output) {
     const auto inputs_fb = FbStrVector(inputs);
     shaper_.Concat(inputs, axis, output);
     const auto param =
@@ -934,9 +916,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             for (const auto &onnx_input : node.input()) {
                 concat_inputs_str.push_back(m(onnx_input));
             }
+            const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
             const auto axis = helper.get("axis", 1);
             const auto output_name = m(node.output(0));
-            AddLayerConcat(concat_inputs_str, output_name, axis);
+            AddLayerConcat(concat_inputs_str, axis_nchw_to_nhwc[axis], output_name);
             LOG(INFO) << "Converting Concat completed";
         } else if (op == "Dropout") {
             LOG(INFO) << "Start converting Dropout";
