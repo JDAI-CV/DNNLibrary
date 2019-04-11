@@ -195,8 +195,8 @@ class ModelBuilder {
                                int32_t fuse_code, const std::string &output);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddLRN(const std::string &input, int32_t size,
-                               float bias, float alpha, float beta, int32_t dim,
+    ModelBuilder::Index AddLRN(const std::string &input, int32_t radius,
+                               float bias, float alpha, float beta,
                                const std::string &output);
 #endif  // __ANDROID_API__ >= 27
         // ModelBuilder auto generated methods end
