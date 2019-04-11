@@ -200,8 +200,16 @@ CreateTensorFb(name, new_tensor);""")
             if x['cpp_type'] == 'str_list':
                 cogoutl(f"const auto {x['name']}_fb = FbStrVector({x['name']});")
 
+        shaper_params = []
+        for x in op['input']:
+            if x.get('needed_by_shaper', False):
+                if x['cpp_type'] == 'str':
+                    shaper_params.append(f"m({x['name']})")
+                else:
+                    shaper_params.append(f"{x['name']}")
+        shaper_params += [x['name'] for x in op['output']]
         cogoutl(
-            f"shaper_.{op['shaper']}({', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])});")
+            f"shaper_.{op['shaper']}({', '.join(shaper_params)});")
 
         def get_input_param(x):
             if x['cpp_type'] == 'str':
