@@ -78,7 +78,7 @@ deploy:
             tags: true
     -
         provider: script
-        script: bash /scripts/publish_aar_to_jcenter.sh $BINTRAY_KEY
+        script: bash ./scripts/publish_aar_to_jcenter.sh $BINTRAY_KEY
         skip_cleanup: true
         on:
             branch: master
