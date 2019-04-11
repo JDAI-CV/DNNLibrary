@@ -22,12 +22,6 @@ This screenshot is MobileNet v2, both float version and 8-bit quantized version
 
 ## Preparation
 
-Clone this repo and submodules:
-
-```bash
-git clone --recursive https://github.com/JDAI-CV/DNNLibrary
-```
-
 Please make sure the Android System on your phone is 8.1+, or you may want to use an 8.1+ emulator.
 
 ## Introduction
@@ -51,6 +45,24 @@ Only five lines! And the `daq` model file is got from the pretrained onnx model 
 
 ## Convert the model
 
+### If you are a Linux user
+
+We provide precomplied AppImage of onnx2daq, our model conversion tool. [AppImage](https://appimage.org/) is a program format that runs on almost all Linux system. Just download the onnx2daq.AppImage from [releases](https://github.com/JDAI-CV/DNNLibrary/releases), and make it executable by
+
+```bash
+chmod +x onnx2daq.AppImage
+```
+
+### If you are a Windows or Mac user
+
+You need to build onnx2daq from source.
+
+Clone this repo and submodules:
+
+```bash
+git clone --recursive https://github.com/JDAI-CV/DNNLibrary
+```
+
 After cloning step listed in Preparation section, run
 ```bash
 mkdir build
@@ -59,15 +71,17 @@ cmake ..
 cmake --build .
 ```
 
-Now `onnx2daq` is in `tools/onnx2daq` directory. The following command is to convert onnx model to daq model.
+Now `onnx2daq` is in `tools/onnx2daq` directory. 
+
+### Usage of onnx2daq
 
 ```bash
-./tools/onnx2daq/onnx2daq onnx_model output_filename
+path_of_onnx2daq onnx_model output_filename
 ```
 
-For example, if you have a model named "mobilenetv2.onnx" in your current directory,
+For example, if you are a Linux user and have a model named "mobilenetv2.onnx" in your current directory,
 ```bash
-./tools/onnx2daq/onnx2daq mobilenetv2.onnx mobilenetv2.daq
+./onnx2daq.AppImage mobilenetv2.onnx mobilenetv2.daq
 ```
 
 For 8-bit quantization, please check out [our wiki](https://github.com/JDAI-CV/DNNLibrary/wiki/Quantization)
