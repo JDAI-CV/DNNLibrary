@@ -94,10 +94,6 @@ class OnnxConverter {
                       const std::vector<int> &pads,
                       const std::vector<int> &strides, css &output_name);
     void AddLayerRelu(css &input_name, css &output_name);
-    void AddLayerGemm(css &input_name, css &weight_name,
-                      nonstd::optional<std::string> bias_name, const int transA,
-                      const int transB, const float alpha, const float beta,
-                      css &output_name);
     void AddLayerDequantize(css &input_name, css &output_name);
     void SetIdentity(css &input_name, css &output_name);
     // OnnxConverter auto generated methods start

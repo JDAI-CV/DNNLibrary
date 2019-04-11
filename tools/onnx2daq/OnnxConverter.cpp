@@ -307,20 +307,6 @@ void OnnxConverter::AddLayerPool(css &op, css &input_name,
     }
 }
 
-void OnnxConverter::AddLayerGemm(css &input_name, css &weight_name,
-                                 nonstd::optional<std::string> bias_name,
-                                 const int transA, const int transB,
-                                 const float alpha, const float beta,
-                                 css &output_name) {
-    if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
-        AddLayerFC(input_name, weight_name, bias_name, output_name);
-    } else {
-        throw std::invalid_argument(
-            "Only transA == 0, transB == 1, alpha == 1.0 and beta == 1.0 is "
-            "supported.");
-    }
-}
-
 void OnnxConverter::AddLayerDequantize(css &input_name, css &output_name) {
     shaper_.Eltwise(input_name, output_name);
     const auto param = DNN::CreateDequantizeDirect(
@@ -900,8 +886,14 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto transB = helper.get("transB", 0);
             const auto alpha = helper.get("alpha", 1.0f);
             const auto beta = helper.get("beta", 1.0f);
-            AddLayerGemm(input_name, weight_name, bias_name, transA, transB,
-                         alpha, beta, output_name);
+            if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
+                AddLayerFC(input_name, weight_name, bias_name, output_name);
+            } else {
+                throw std::invalid_argument(
+                    "Only transA == 0, transB == 1, alpha == 1.0 and beta == "
+                    "1.0 is "
+                    "supported.");
+            }
             has_reshape = false;
             LOG(INFO) << "Converting Gemm completed";
         } else if (op == "Softmax") {
