@@ -912,7 +912,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
             const auto axis = helper.get("axis", 1);
             const auto output_name = m(node.output(0));
-            AddLayerConcat(concat_inputs_str, axis_nchw_to_nhwc[axis], output_name);
+            AddLayerConcat(concat_inputs_str, axis_nchw_to_nhwc[axis],
+                           output_name);
             LOG(INFO) << "Converting Concat completed";
         } else if (op == "Dropout") {
             LOG(INFO) << "Start converting Dropout";
