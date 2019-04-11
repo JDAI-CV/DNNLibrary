@@ -12,11 +12,15 @@
 using std::string;
 using std::vector;
 
+void usage(const std::string &filename) {
+    std::cout << "Usage: " << filename << " onnx_model output_filename [table_file]" << std::endl;
+}
+
 int main(int argc, char **argv) {
     FLAGS_logtostderr = true;
     google::InitGoogleLogging(argv[0]);
     if (argc != 3 && argc != 4) {
-        std::cerr << "argc must be 3 or 4" << std::endl;
+        usage(argv[0]);
         return -1;
     }
     css table_file = argc == 4 ? argv[3] : "";
