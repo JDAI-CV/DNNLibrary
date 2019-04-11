@@ -8,7 +8,7 @@ using std::vector;
 
 /**
  *  strides: [stride_y, stride_x]
- *  paddings: [top, right, bottom, left]
+ *  paddings: [top, left, bottom, right]
  */
 void Shaper::Conv(const std::string &input_name,
                   const std::string &weight_name,
@@ -16,7 +16,7 @@ void Shaper::Conv(const std::string &input_name,
                   const std::vector<int32_t> strides,
                   const std::string &output_name) {
     Shaper::Conv(input_name, strides[1], strides[0], 1, 1,
-                 paddings[3], paddings[1], paddings[0], paddings[2],
+                 paddings[1], paddings[3], paddings[0], paddings[2],
                  weight_name, output_name);
 }
 
@@ -27,7 +27,7 @@ void Shaper::Conv(const std::string &input_name,
                   const std::string &weight_name,
                   const std::string &output_name) {
     Shaper::Conv(input_name, strides[1], strides[0], dilations[1], dilations[0],
-                 paddings[3], paddings[1], paddings[0], paddings[2],
+                 paddings[1], paddings[3], paddings[0], paddings[2],
                  weight_name, output_name);
 }
 
@@ -79,7 +79,7 @@ void Shaper::DepthwiseConv(const std::string &input_name,
                            const std::string &weight_name,
                            const std::string &output_name) {
     Shaper::DepthwiseConv(input_name, strides[1], strides[0], dilations[1],
-                          dilations[0], paddings[3], paddings[1], paddings[0],
+                          dilations[0], paddings[1], paddings[3], paddings[0],
                           paddings[2], weight_name, output_name);
 }
 
@@ -122,7 +122,7 @@ void Shaper::DepthwiseConv(const std::string &input_name,
                    const std::vector<int32_t> paddings,
                    const std::vector<int32_t> strides,
                    const std::string &output_name) {
-    DepthwiseConv(input_name, weight_name, paddings[3], paddings[1], paddings[0], paddings[2], strides[1], strides[0], output_name);
+    DepthwiseConv(input_name, weight_name, paddings[1], paddings[3], paddings[0], paddings[2], strides[1], strides[0], output_name);
 }
 
 void Shaper::StridedSlice(const std::string &input_name,
@@ -176,13 +176,13 @@ void Shaper::Pool(const std::string &input_name, int32_t padding_left,
 /**
  *  kernel_shape: [height, width]
  *  strides: [stride_y, stride_x]
- *  pads: [top, right, bottom, left]
+ *  pads: [top, left, bottom, right]
  */
 void Shaper::Pool(const std::string &input_name, const std::vector<int32_t> kernel_shape,
           const std::vector<int32_t> pads,
           const std::vector<int32_t> strides,
           const std::string &output_name) {
-    Shaper::Pool(input_name, pads[3], pads[1], pads[0], pads[2], strides[1], strides[0], kernel_shape[1], kernel_shape[0], output_name);
+    Shaper::Pool(input_name, pads[1], pads[3], pads[0], pads[2], strides[1], strides[0], kernel_shape[1], kernel_shape[0], output_name);
 }
 
 void Shaper::Softmax(const std::string &input_name,
