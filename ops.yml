@@ -375,7 +375,6 @@
             name: scalar
             nnapi_type: tensor
             cpp_type: float
-            need_by_shaper: false
     fused: true
     shaper: Eltwise
     api: 27
@@ -387,7 +386,6 @@
             name: scalar
             nnapi_type: tensor
             cpp_type: float
-            need_by_shaper: false
     fused: true
     shaper: Eltwise
     api: 27
@@ -403,22 +401,18 @@
             name: radius
             nnapi_type: scalar
             cpp_type: int32_t
-            need_by_shaper: false
         -
             name: bias
             nnapi_type: scalar
             cpp_type: float
-            need_by_shaper: false
         -
             name: alpha
             nnapi_type: scalar
             cpp_type: float
-            need_by_shaper: false
         -
             name: beta
             nnapi_type: scalar
             cpp_type: float
-            need_by_shaper: false
     nnapi: LOCAL_RESPONSE_NORMALIZATION
     shaper: Identity
     pos: 16

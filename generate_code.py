@@ -150,6 +150,8 @@ def infer_cfg(cfg, target: Target):
                 ipt['learnable'] = False
             if ipt['learnable'] and 'convert_func' not in ipt:
                 ipt['convert_func'] = 'OnnxToNnapiIdentity'
+            if 'needed_by_shaper' not in ipt:
+                ipt['needed_by_shaper'] = False
 
 
 def update_code(file: str, label: str) -> None:
@@ -206,7 +208,7 @@ CreateTensorFb(name, new_tensor);""")
 
         shaper_params = []
         for x in op['input']:
-            if x.get('needed_by_shaper', False):
+            if x['needed_by_shaper']:
                 if x['cpp_type'] == 'str':
                     shaper_params.append(f"m({x['name']})")
                 else:
@@ -275,7 +277,7 @@ def generate_model_builder():
         if len(scalar_input) > 0:
             cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
         cogoutl('shaper_.{}({});'.format(op['shaper'],
-                                         ', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])))
+                                         ', '.join([x['name'] for x in ipt_opt if x['needed_by_shaper']])))
         if op['output_tensor_type'] != 'auto':
             op_type_params = ['Type::{}'.format(op['output_tensor_type']),
                               'shaper_[{}]'.format(op['output'][0]['name'])]
