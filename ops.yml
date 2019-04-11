@@ -392,6 +392,11 @@
     shaper: Eltwise
     api: 27
 -
+    name: Dequantize
+    shaper: Identity
+    output_tensor_type: FLOAT32
+    api: 27
+-
     name: LRN
     input:
         -

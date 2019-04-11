@@ -136,6 +136,8 @@ def infer_cfg(cfg, target: Target):
             op['support_quant_asymm'] = False
         if 'converter' not in op:
             op['converter'] = True
+        if 'output_tensor_type' not in op:
+            op['output_tensor_type'] = 'auto'
         for ipt in op['input']:
             if 'predefined' not in ipt:
                 ipt['predefined'] = ''
@@ -274,7 +276,10 @@ def generate_model_builder():
             cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
         cogoutl('shaper_.{}({});'.format(op['shaper'],
                                          ', '.join([x['name'] for x in ipt_opt if x.get('needed_by_shaper', False)])))
-        if op['input'][0]['cpp_type'] == 'str_list':
+        if op['output_tensor_type'] != 'auto':
+            op_type_params = ['Type::{}'.format(op['output_tensor_type']),
+                              'shaper_[{}]'.format(op['output'][0]['name'])]
+        elif op['input'][0]['cpp_type'] == 'str_list':
             op_type_params = ['operand_types_.at({}[0]).type'.format(op['input'][0]['name']),
                               'shaper_[{}]'.format(op['output'][0]['name'])]
         else:

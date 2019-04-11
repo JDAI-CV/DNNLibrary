@@ -94,7 +94,6 @@ class OnnxConverter {
                       const std::vector<int> &pads,
                       const std::vector<int> &strides, css &output_name);
     void AddLayerRelu(css &input_name, css &output_name);
-    void AddLayerDequantize(css &input_name, css &output_name);
     void SetIdentity(css &input_name, css &output_name);
     // OnnxConverter auto generated methods start
     void AddLayerConvImpl(const std::string &input, const std::string &weight,
@@ -149,6 +148,8 @@ class OnnxConverter {
                      const std::string &output);
     void AddLayerMul(const std::string &input, float scalar,
                      const std::string &output);
+    void AddLayerDequantize(const std::string &input,
+                            const std::string &output);
     void AddLayerLRN(const std::string &input, int32_t radius, float bias,
                      float alpha, float beta, const std::string &output);
     // OnnxConverter auto generated methods end

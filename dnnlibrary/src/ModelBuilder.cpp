@@ -472,6 +472,21 @@ ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
+ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
+                                                const std::string &output) {
+    IndexSeq input_indexes;
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(Type::FLOAT32, shaper_[output]);
+    const auto output_idx = AddOperation(ANEURALNETWORKS_DEQUANTIZE,
+                                         input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    return output_idx;
+}
+#endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
 ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
                                          int32_t radius, float bias,
                                          float alpha, float beta,
@@ -548,18 +563,6 @@ ModelBuilder::Index ModelBuilder::AddSoftMax(const string &input_name,
                                              float beta,
                                              const string &output_name) {
     return AddSoftmax(input_name, beta, output_name);
-}
-
-ModelBuilder::Index ModelBuilder::AddDequantize(
-    const std::string &input_name, const std::string &output_name) {
-    const auto input = operand_indexes_[input_name];
-    shaper_.Eltwise(input_name, output_name);
-    IndexSeq input_indexes{input};
-    const OperandType operand_type(Type::TENSOR_FLOAT32, shaper_[output_name]);
-    const auto output_idx = AddOperation(ANEURALNETWORKS_DEQUANTIZE,
-                                         input_indexes, operand_type)[0];
-    RegisterOperand(output_name, output_idx, operand_type);
-    return output_idx;
 }
 
 ModelBuilder::Index ModelBuilder::AddFC(
