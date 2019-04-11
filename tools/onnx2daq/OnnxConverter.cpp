@@ -367,7 +367,7 @@ void OnnxConverter::AddLayerConvImpl(const std::string &input,
         nnapi_tensors_[name] = new_tensor;
         CreateTensorFb(name, new_tensor);
     }
-    shaper_.Conv(input, weight, pads, strides, output);
+    shaper_.Conv(m(input), m(weight), pads, strides, output);
     const auto param = DNN::CreateConv2DDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr, &pads, &strides,
@@ -407,7 +407,7 @@ void OnnxConverter::AddLayerMaxPoolImpl(
 
 void OnnxConverter::AddLayerReLU(const std::string &input,
                                  const std::string &output) {
-    shaper_.Relu(input, output);
+    shaper_.Relu(m(input), output);
     const auto param =
         DNN::CreateReluDirect(builder_, m(input).c_str(), output.c_str());
     const auto layer =
@@ -417,7 +417,7 @@ void OnnxConverter::AddLayerReLU(const std::string &input,
 
 void OnnxConverter::AddLayerSoftmax(const std::string &input,
                                     const std::string &output) {
-    shaper_.Softmax(input, output);
+    shaper_.Softmax(m(input), output);
     const auto param =
         DNN::CreateSoftmaxDirect(builder_, m(input).c_str(), output.c_str());
     const auto layer =
@@ -446,7 +446,7 @@ void OnnxConverter::AddLayerFC(const std::string &input,
         nnapi_tensors_[name] = new_tensor;
         CreateTensorFb(name, new_tensor);
     }
-    shaper_.FC(input, weight, output);
+    shaper_.FC(m(input), m(weight), output);
     const auto param = DNN::CreateFCDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr,
@@ -503,7 +503,7 @@ void OnnxConverter::AddLayerDepthwiseConvImpl(
         nnapi_tensors_[name] = new_tensor;
         CreateTensorFb(name, new_tensor);
     }
-    shaper_.DepthwiseConv(input, weight, pads, strides, output);
+    shaper_.DepthwiseConv(m(input), m(weight), pads, strides, output);
     const auto param = DNN::CreateDepthwiseConv2DDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr, &pads, &strides,
@@ -518,7 +518,7 @@ void OnnxConverter::AddLayerDepthwiseConvImpl(
 void OnnxConverter::AddLayerBatchToSpaceND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::string &output) {
-    shaper_.BatchToSpace(input, block_sizes, output);
+    shaper_.BatchToSpace(m(input), block_sizes, output);
     const auto param = DNN::CreateBatchToSpaceDirect(
         builder_, m(input).c_str(), &block_sizes, output.c_str());
     const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::BatchToSpace,
@@ -529,7 +529,7 @@ void OnnxConverter::AddLayerBatchToSpaceND(
 void OnnxConverter::AddLayerSpaceToBatchND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::vector<int32_t> &pads, const std::string &output) {
-    shaper_.SpaceToBatch(input, block_sizes, pads, output);
+    shaper_.SpaceToBatch(m(input), block_sizes, pads, output);
     const auto param = DNN::CreateSpaceToBatchDirect(
         builder_, m(input).c_str(), &block_sizes, &pads, output.c_str());
     const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::SpaceToBatch,
@@ -544,7 +544,7 @@ void OnnxConverter::AddLayerStridedSlice(const std::string &input,
                                          int32_t begin_mask, int32_t end_mask,
                                          int32_t shrink_axis_mask,
                                          const std::string &output) {
-    shaper_.StridedSlice(input, starts, ends, strides, begin_mask, end_mask,
+    shaper_.StridedSlice(m(input), starts, ends, strides, begin_mask, end_mask,
                          shrink_axis_mask, output);
     const auto param = DNN::CreateStridedSliceDirect(
         builder_, m(input).c_str(), &starts, &ends, &strides, begin_mask,
@@ -596,7 +596,7 @@ void OnnxConverter::AddLayerMul(const std::string &input, float scalar,
 void OnnxConverter::AddLayerLRN(const std::string &input, int32_t size,
                                 float bias, float alpha, float beta,
                                 int32_t dim, const std::string &output) {
-    shaper_.Identity(input, output);
+    shaper_.Identity(m(input), output);
     const auto param =
         DNN::CreateLRNDirect(builder_, m(input).c_str(), size, bias, alpha,
                              beta, dim, output.c_str());
