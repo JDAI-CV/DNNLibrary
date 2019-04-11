@@ -2005,18 +2005,17 @@ inline flatbuffers::Offset<Dequantize> CreateDequantizeDirect(
 struct LRN FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_INPUT = 4,
-    VT_SIZE = 6,
+    VT_RADIUS = 6,
     VT_BIAS = 8,
     VT_ALPHA = 10,
     VT_BETA = 12,
-    VT_DIM = 14,
-    VT_OUTPUT = 16
+    VT_OUTPUT = 14
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
   }
-  int32_t size() const {
-    return GetField<int32_t>(VT_SIZE, 0);
+  int32_t radius() const {
+    return GetField<int32_t>(VT_RADIUS, 0);
   }
   float bias() const {
     return GetField<float>(VT_BIAS, 0.0f);
@@ -2027,9 +2026,6 @@ struct LRN FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   float beta() const {
     return GetField<float>(VT_BETA, 0.0f);
   }
-  int32_t dim() const {
-    return GetField<int32_t>(VT_DIM, 0);
-  }
   const flatbuffers::String *output() const {
     return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
   }
@@ -2037,11 +2033,10 @@ struct LRN FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_INPUT) &&
            verifier.VerifyString(input()) &&
-           VerifyField<int32_t>(verifier, VT_SIZE) &&
+           VerifyField<int32_t>(verifier, VT_RADIUS) &&
            VerifyField<float>(verifier, VT_BIAS) &&
            VerifyField<float>(verifier, VT_ALPHA) &&
            VerifyField<float>(verifier, VT_BETA) &&
-           VerifyField<int32_t>(verifier, VT_DIM) &&
            VerifyOffset(verifier, VT_OUTPUT) &&
            verifier.VerifyString(output()) &&
            verifier.EndTable();
@@ -2054,8 +2049,8 @@ struct LRNBuilder {
   void add_input(flatbuffers::Offset<flatbuffers::String> input) {
     fbb_.AddOffset(LRN::VT_INPUT, input);
   }
-  void add_size(int32_t size) {
-    fbb_.AddElement<int32_t>(LRN::VT_SIZE, size, 0);
+  void add_radius(int32_t radius) {
+    fbb_.AddElement<int32_t>(LRN::VT_RADIUS, radius, 0);
   }
   void add_bias(float bias) {
     fbb_.AddElement<float>(LRN::VT_BIAS, bias, 0.0f);
@@ -2065,9 +2060,6 @@ struct LRNBuilder {
   }
   void add_beta(float beta) {
     fbb_.AddElement<float>(LRN::VT_BETA, beta, 0.0f);
-  }
-  void add_dim(int32_t dim) {
-    fbb_.AddElement<int32_t>(LRN::VT_DIM, dim, 0);
   }
   void add_output(flatbuffers::Offset<flatbuffers::String> output) {
     fbb_.AddOffset(LRN::VT_OUTPUT, output);
@@ -2087,19 +2079,17 @@ struct LRNBuilder {
 inline flatbuffers::Offset<LRN> CreateLRN(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> input = 0,
-    int32_t size = 0,
+    int32_t radius = 0,
     float bias = 0.0f,
     float alpha = 0.0f,
     float beta = 0.0f,
-    int32_t dim = 0,
     flatbuffers::Offset<flatbuffers::String> output = 0) {
   LRNBuilder builder_(_fbb);
   builder_.add_output(output);
-  builder_.add_dim(dim);
   builder_.add_beta(beta);
   builder_.add_alpha(alpha);
   builder_.add_bias(bias);
-  builder_.add_size(size);
+  builder_.add_radius(radius);
   builder_.add_input(input);
   return builder_.Finish();
 }
@@ -2107,20 +2097,18 @@ inline flatbuffers::Offset<LRN> CreateLRN(
 inline flatbuffers::Offset<LRN> CreateLRNDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *input = nullptr,
-    int32_t size = 0,
+    int32_t radius = 0,
     float bias = 0.0f,
     float alpha = 0.0f,
     float beta = 0.0f,
-    int32_t dim = 0,
     const char *output = nullptr) {
   return DNN::CreateLRN(
       _fbb,
       input ? _fbb.CreateString(input) : 0,
-      size,
+      radius,
       bias,
       alpha,
       beta,
-      dim,
       output ? _fbb.CreateString(output) : 0);
 }
 

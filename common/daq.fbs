@@ -157,11 +157,10 @@ table Dequantize {
 
 table LRN {
     input:string;
-    size:int;
+    radius:int;
     bias:float;
     alpha:float;
     beta:float;
-    dim:int;
     output:string;
 }
 
