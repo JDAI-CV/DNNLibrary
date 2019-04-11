@@ -13,6 +13,11 @@ class Target(Enum):
     OnnxConverter = 2
 
 
+def clang_format(filename: str):
+    import subprocess
+    subprocess.run(['clang-format', '-i', filename])
+
+
 def cogout(txt):
     print(txt, end='', file=str_io)
 
@@ -162,6 +167,7 @@ def update_code(file: str, label: str) -> None:
         new_s = s[:idx1] + str_io.getvalue() + s[idx2:]
         f.write(new_s)
     str_io = io.StringIO()
+    clang_format(file)
 
 
 def generate_onnx_converter():
