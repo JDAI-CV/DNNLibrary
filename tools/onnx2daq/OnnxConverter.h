@@ -93,7 +93,6 @@ class OnnxConverter {
                       const std::vector<int> &kernel_shape,
                       const std::vector<int> &pads,
                       const std::vector<int> &strides, css &output_name);
-    void AddLayerRelu(css &input_name, css &output_name);
     void SetIdentity(css &input_name, css &output_name);
     // OnnxConverter auto generated methods start
     void AddLayerConvImpl(const std::string &input, const std::string &weight,
@@ -118,7 +117,6 @@ class OnnxConverter {
                     const std::string &output);
     void AddLayerAdd(const std::string &input1, const std::string &input2,
                      const std::string &output);
-    // axis here is for NNAPI NHWC
     void AddLayerConcat(const std::vector<std::string> &inputs, int32_t axis,
                         const std::string &output);
     void AddLayerDepthwiseConvImpl(const std::string &input,
