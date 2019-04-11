@@ -53,6 +53,8 @@ We provide precomplied AppImage of onnx2daq, our model conversion tool. [AppImag
 chmod +x onnx2daq.AppImage
 ```
 
+then [directly use it](#usage-of-onnx2daq).
+
 ### If you are a Windows or Mac user
 
 You need to build onnx2daq from source.
