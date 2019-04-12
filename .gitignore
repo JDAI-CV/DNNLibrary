@@ -10,3 +10,9 @@ build*/
 table*.txt
 *.npy
 val.py
+
+# For onnx2daq python package
+.setuptools-cmake-build/
+dist/
+onnx2daq.egg-info/
+__pycache__/

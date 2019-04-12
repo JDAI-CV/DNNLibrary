@@ -1,7 +1,6 @@
 # It is configuration file for [project_manager.vim](https://github.com/daquexian/project_manager.vim)
 name DNNLibrary
 type cpp
-target onnx2daq
 cmake_options -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 build_dir build_onnx2daq
 binary ./tools/onnx2daq/onnx2daq ~/models/mobilenetv2-1.0/quant-mobilenetv2-1.0.onnx temp.daq ../table.txt

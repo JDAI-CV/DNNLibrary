@@ -38,3 +38,16 @@ if (NOT ${ONNX2DAQ_ONLY_LIB})
     treat_warnings_as_errors(onnx2daq-bin)
     set_target_properties(onnx2daq-bin PROPERTIES OUTPUT_NAME "onnx2daq")
 endif()
+
+if (${DNN_BUILD_PYTHON})
+    pybind11_add_module(_onnx2daq ${CMAKE_CURRENT_SOURCE_DIR}/pywrapper.cpp)
+
+    target_link_libraries(_onnx2daq
+        PUBLIC
+        protobuf::libprotobuf
+        glog::glog
+        onnx
+        onnx2daq
+        pybind11::pybind11
+        )
+endif()
