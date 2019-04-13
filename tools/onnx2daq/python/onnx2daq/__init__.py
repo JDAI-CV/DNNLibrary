@@ -1,1 +1,1 @@
-from _onnx2daq import *
+from .convert import convert, simplify_and_convert

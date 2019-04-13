@@ -6,7 +6,7 @@ namespace py = pybind11;
 
 void convert(const std::string &model_str,
                             const std::string &filepath,
-                            const css &table_file) {
+                            const css &table_file="") {
 
     ONNX_NAMESPACE::ModelProto model_proto;
     bool ret = model_proto.ParseFromString(model_str);

@@ -35,7 +35,7 @@ WINDOWS = (os.name == 'nt')
 CMAKE = find_executable('cmake3') or find_executable('cmake')
 MAKE = find_executable('make')
 
-install_requires = []
+install_requires = ['onnx', 'onnx-simplifier']
 setup_requires = []
 tests_require = []
 extras_require = {}
@@ -151,7 +151,7 @@ cmdclass = {
 ################################################################################
 
 ext_modules = [
-    CMakeExtension("onnx2daq")
+    CMakeExtension("_onnx2daq")
 ]
 
 ################################################################################
