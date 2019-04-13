@@ -1,5 +1,7 @@
 language: android
 sudo: true
+services:
+  - docker
 git:
   depth: 3
 compiler:
@@ -60,6 +62,10 @@ script:
   - cmake ..
   - cmake --build . -- "-j$(nproc)"
   - cd ..
+  - pip install cibuildwheel==0.10.2
+  - pushd tools/onnx2daq/python
+  - cibuildwheel --output-dir wheelhouse
+  - popd
   # Build aar
   - ./scripts/build_aar.sh $TRAVIS_TAG
   # Uncomment when android 27 or 28 emulator works
