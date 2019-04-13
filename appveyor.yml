@@ -1,0 +1,9 @@
+environment:
+  CIBW_SKIP: "cp27-* cp33-* cp34-*"
+build_script:
+  - cd tools\onnx2daq\python
+  - pip install cibuildwheel==0.10.2
+  - cibuildwheel --output-dir wheelhouse
+artifacts:
+  - path: "wheelhouse\\*.whl"
+    name: Wheels
