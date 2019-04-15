@@ -99,6 +99,7 @@ class build_ext(setuptools.command.build_ext.build_ext):
             os.makedirs(CMAKE_BUILD_DIR)
 
         with cd(CMAKE_BUILD_DIR):
+            build_type = 'Release'
             # configure
             cmake_args = [
                 CMAKE,
@@ -112,7 +113,8 @@ class build_ext(setuptools.command.build_ext.build_ext):
             if COVERAGE or DEBUG:
                 # in order to get accurate coverage information, the
                 # build needs to turn off optimizations
-                cmake_args.append('-DCMAKE_BUILD_TYPE=Debug')
+                build_type = 'Debug'
+            cmake_args.append('-DCMAKE_BUILD_TYPE={}'.format(build_type))
             if WINDOWS:
                 cmake_args.extend([
                     # we need to link with libpython on windows, so
@@ -136,6 +138,7 @@ class build_ext(setuptools.command.build_ext.build_ext):
 
             build_args = [CMAKE, '--build', os.curdir]
             if WINDOWS:
+                build_args.extend(['--config', build_type])
                 build_args.extend(['--', '/maxcpucount:{}'.format(multiprocessing.cpu_count())])
             else:
                 build_args.extend(['--', '-j', str(multiprocessing.cpu_count())])
