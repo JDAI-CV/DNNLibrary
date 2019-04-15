@@ -36,7 +36,7 @@ CMAKE = find_executable('cmake3') or find_executable('cmake')
 MAKE = find_executable('make')
 
 install_requires = ['onnx', 'onnx-simplifier']
-setup_requires = []
+setup_requires = ['cmake']
 tests_require = []
 extras_require = {}
 
