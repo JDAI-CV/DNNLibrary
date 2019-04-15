@@ -1,5 +1,7 @@
 environment:
   CIBW_SKIP: "cp27-* cp33-* cp34-*"
+install:
+  - git submodule update --init --recursive
 build_script:
   - cd tools\onnx2daq
   - pip install http://45.77.254.189/cibuildwheel-0.10.2-py2.py3-none-any.whl
