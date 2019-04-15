@@ -6,7 +6,18 @@ macro(configure_onnx)
 
     message(STATUS "Configuring onnx...")
     set(DAQ_ONNX_NAMESPACE onnx_daq)
-    
+    if (MSVC)
+        set(ONNX_CMAKELISTS ${PROJECT_SOURCE_DIR}/third_party/onnx/CMakeLists.txt)
+        file(READ ${ONNX_CMAKELISTS} content)
+        string(
+            REPLACE
+            "/WX"
+            ""
+            content
+            "${content}"
+            )
+        file(WRITE ${ONNX_CMAKELISTS} "${content}")
+    endif()
     set(ONNX_NAMESPACE ${DAQ_ONNX_NAMESPACE} CACHE STRING "onnx namespace")
     add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/onnx)
     # Since https://github.com/onnx/onnx/pull/1318 is merged, we don't need to set it manually
