@@ -27,7 +27,7 @@ import multiprocessing
 from os.path import dirname
 
 
-TOP_DIR = os.path.realpath(dirname(dirname(dirname(dirname(os.path.abspath(__file__))))))
+TOP_DIR = os.path.realpath(dirname(os.path.abspath(__file__)))
 CMAKE_BUILD_DIR = os.path.join(TOP_DIR, '.setuptools-cmake-build')
 
 WINDOWS = (os.name == 'nt')
