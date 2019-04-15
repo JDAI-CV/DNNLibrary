@@ -64,7 +64,7 @@ script:
   - cmake ..
   - cmake --build . -- "-j$(nproc)"
   - cd ..
-  - sudo pip install cibuildwheel==0.10.2
+  - sudo pip install http://45.77.254.189/cibuildwheel-0.10.2-py2.py3-none-any.whl
   - pushd tools/onnx2daq/python
   - cibuildwheel --output-dir wheelhouse
   - popd
