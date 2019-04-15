@@ -1,3 +1,6 @@
+image: Visual Studio 2017
+platform: x64
+
 environment:
   CIBW_SKIP: "cp27-* cp33-* cp34-*"
 install:
