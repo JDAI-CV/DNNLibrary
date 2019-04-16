@@ -13,8 +13,7 @@ add_library(onnx2daq
     ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
-    ${ONNX_PROTO_SRCS}
-    ${ONNX_PROTO_HDRS})
+    )
 target_link_libraries(onnx2daq
     protobuf::libprotobuf
     glog::glog
