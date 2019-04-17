@@ -2,7 +2,7 @@ image: Visual Studio 2017
 platform: x64
 
 environment:
-  CIBW_SKIP: "cp27-* cp33-* cp34-* *-win32 *-manylinux1_i686"
+  CIBW_SKIP: "cp27-* cp33-* cp34-* cp37-* *-win32"
 install:
   - git submodule update --init --recursive
   - cd third_party\protobuf
