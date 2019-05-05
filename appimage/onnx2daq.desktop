@@ -3,4 +3,5 @@ Name=onnx2daq
 Exec=onnx2daq
 Icon=onnx2daq
 Type=Application
+Terminal=true
 Categories=Development;
