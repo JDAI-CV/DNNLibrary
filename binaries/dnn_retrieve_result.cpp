@@ -44,10 +44,9 @@ int main(int argc, char **argv) {
         return -1;
     }
     string daqName = argv[1];
-    string outputBlob = argv[2];
-    bool quant_input = std::atoi(argv[3]) != 0;
-    bool quant_output = std::atoi(argv[4]) != 0;
-    bool use_external_input = argc >= 6;
+    bool quant_input = std::atoi(argv[2]) != 0;
+    bool quant_output = std::atoi(argv[3]) != 0;
+    bool use_external_input = argc >= 5;
 
     std::unique_ptr<Model> model;
     ModelBuilder builder;
@@ -68,8 +67,7 @@ int main(int argc, char **argv) {
                               ". It must end with .daq or .onnx (.onnx is only "
                               "supported when DNN_READ_ONNX is ON)");
     }
-    model = builder.AddOutput(outputBlob)
-                .Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+    model = builder.Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
     DNN_ASSERT(model->GetOutputs().size() == 1, "the number of outputs can only be 1 here");
     const auto outputLen = model->GetSize(model->GetOutputs()[0]);
     std::vector<std::vector<float>> inputs;
