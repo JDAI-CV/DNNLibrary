@@ -14,7 +14,8 @@ def convert(onnx2daq, onnx, daq, table_file=''):
 
 def finish(model):
     os.system("adb shell rm /data/local/tmp/{}".format(os.path.basename(model)))
-    os.system("rm {}".format(model))
+    if model[-4:] == '.daq':
+        os.system("rm {}".format(model))
 
 
 def run(input_arr, daq, dnn_retrieve_result, output_name, quant_input=False, quant_output=False):
