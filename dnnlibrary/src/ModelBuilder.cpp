@@ -3,12 +3,13 @@
 //
 #include "ModelBuilder.h"
 
-#include <sys/mman.h>
+#include <algorithm>
 #include <array>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <sys/mman.h>
 #include <tuple>
 
 #include <common/helper.h>
@@ -761,6 +762,17 @@ ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
 }
 
 std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
+    if (output_index_vec_.empty()) {
+        std::set<std::string> outputs;
+        std::set_difference(imm_blob_outputs_.begin(), imm_blob_outputs_.end(),
+                            imm_blob_inputs_.begin(), imm_blob_inputs_.end(),
+                            std::inserter(outputs, outputs.end()));
+        for (const auto &output : outputs) {
+            VLOG(3) << "No output set explicitly, automatically add " + output +
+                           " as an output..";
+            AddOutput(output);
+        }
+    }
     THROW_ON_ERROR_WITH_NOTE(
         ANeuralNetworksModel_identifyInputsAndOutputs(
             dnn_model_->model_, static_cast<uint32_t>(input_index_vec_.size()),
