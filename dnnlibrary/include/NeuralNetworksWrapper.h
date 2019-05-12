@@ -74,6 +74,7 @@ struct SymmPerChannelQuantParams {
 // A helper function
 inline bool isScalarType(const Type &type) {
     return type == Type::FLOAT16 || type == Type::FLOAT32 || type == Type::INT32 || type == Type::BOOL || type == Type::UINT32;
+    return type == Type::FLOAT32 || type == Type::INT32 || type == Type::UINT32;
 }
 
 inline std::string typeToStr(const Type &type) {
@@ -148,6 +149,7 @@ struct OperandType {
     }
     bool isQuant() const {
         return type == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL || type == Type::TENSOR_QUANT16_SYMM || type == Type::TENSOR_QUANT16_ASYMM || type == Type::TENSOR_QUANT8_ASYMM || type == Type::TENSOR_INT32;
+        return type == Type::TENSOR_QUANT8_ASYMM || type == Type::TENSOR_INT32;
     }
     operator ANeuralNetworksOperandType() const {return operandType; }
 };

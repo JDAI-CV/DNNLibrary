@@ -11,6 +11,9 @@
 #include <vector>
 
 #include <DaqReader.h>
+#ifdef DNN_READ_ONNX
+#include <OnnxReader.h>
+#endif
 #include <common/helper.h>
 #include <glog/logging.h>
 #include "ModelBuilder.h"
@@ -20,6 +23,15 @@ using std::cout;
 using std::endl;
 using std::string;
 using Clock = std::chrono::high_resolution_clock;
+
+bool hasEnding(std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare(fullString.length() - ending.length(),
+                                        ending.length(), ending));
+    } else {
+        return false;
+    }
+}
 
 // ./dnn_retrieve_result daqName outputBlob [input]
 int main(int argc, char **argv) {
@@ -38,15 +50,26 @@ int main(int argc, char **argv) {
     bool use_external_input = argc >= 6;
 
     std::unique_ptr<Model> model;
-    {
-        ModelBuilder builder;
+    ModelBuilder builder;
+    if (hasEnding(daqName, ".daq")) {
         DaqReader daq_reader;
         // Set the last argument to true to use mmap. It may be more efficient
         // than memory buffer.
         daq_reader.ReadDaq(daqName, builder, false);
-        model = builder.AddOutput(outputBlob)
-                    .Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+#ifdef DNN_READ_ONNX
+    } else if (hasEnding(daqName, ".onnx")) {
+        OnnxReader onnx_reader;
+        // Set the last argument to true to use mmap. It may be more efficient
+        // than memory buffer.
+        onnx_reader.ReadOnnx(daqName, builder);
+#endif
+    } else {
+        std::invalid_argument("Wrong model name " + daqName +
+                              ". It must end with .daq or .onnx (.onnx is only "
+                              "supported when DNN_READ_ONNX is ON)");
     }
+    model = builder.AddOutput(outputBlob)
+                .Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
     DNN_ASSERT(model->GetOutputs().size() == 1, "the number of outputs can only be 1 here");
     const auto outputLen = model->GetSize(model->GetOutputs()[0]);
     std::vector<std::vector<float>> inputs;

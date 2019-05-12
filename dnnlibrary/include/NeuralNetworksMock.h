@@ -77,7 +77,6 @@ typedef enum {
      *   real_value = (integer_value - zeroPoint) * scale.
      */
     ANEURALNETWORKS_TENSOR_QUANT8_ASYMM = 5,
-#if __ANDROID_API__ >= __ANDROID_API_Q__
     /**
      * An 8 bit boolean scalar value.
      *
@@ -169,7 +168,6 @@ typedef enum {
      * Available since API level 29.
      */
     ANEURALNETWORKS_TENSOR_QUANT8_SYMM = 13,
-#endif  // __ANDROID_API__ >= __ANDROID_API_Q__
 } OperandCode;
 /**
  * Operation types.
@@ -4684,7 +4682,6 @@ typedef struct ANeuralNetworksCompilation ANeuralNetworksCompilation;
  * Available since API level 27.
  */
 typedef struct ANeuralNetworksExecution ANeuralNetworksExecution;
-#if __ANDROID_API__ >= __ANDROID_API_Q__
 /**
  * Parameters for ANEURALNETWORKS_TENSOR_QUANT8_SYMM_PER_CHANNEL operand.
  */
@@ -4728,7 +4725,6 @@ typedef struct ANeuralNetworksSymmPerChannelQuantParams {
  * Available since API level 29.
  */
 typedef struct ANeuralNetworksBurst ANeuralNetworksBurst;
-#endif  //  __ANDROID_API__ >= __ANDROID_API_Q__
 /**
  * ANeuralNetworksOperandType describes the type of an operand.
  * This structure is used to describe both scalars and tensors.
@@ -4794,7 +4790,6 @@ typedef int32_t ANeuralNetworksOperationType;
  * Available since API level 27.
  */
 typedef struct ANeuralNetworksEvent ANeuralNetworksEvent;
-#if __ANDROID_API__ >= __ANDROID_API_Q__
 /**
  * ANeuralNetworksDevice is an opaque type that represents a device.
  *
@@ -5174,8 +5169,6 @@ typedef enum {
  */
 int ANeuralNetworksExecution_getDuration(const ANeuralNetworksExecution* execution,
                                          int32_t durationCode, uint64_t* duration);
-#endif  // __ANDROID_API__ >= __ANDROID_API_Q__
-#if __ANDROID_API__ >= 27
 /**
  * Creates a shared memory object from a file descriptor.
  *
@@ -5359,7 +5352,6 @@ int ANeuralNetworksModel_addOperand(ANeuralNetworksModel* model,
  */
 int ANeuralNetworksModel_setOperandValue(ANeuralNetworksModel* model, int32_t index,
                                          const void* buffer, size_t length) __INTRODUCED_IN(27);
-#if __ANDROID_API__ >= __ANDROID_API_Q__
 /**
  * Sets an operand's per channel quantization parameters.
  *
@@ -5382,7 +5374,6 @@ int ANeuralNetworksModel_setOperandValue(ANeuralNetworksModel* model, int32_t in
 int ANeuralNetworksModel_setOperandSymmPerChannelQuantParams(
         ANeuralNetworksModel* model, int32_t index,
         const ANeuralNetworksSymmPerChannelQuantParams* channelQuant) __INTRODUCED_IN(29);
-#endif  // __ANDROID_API__ >= __ANDROID_API_Q__
 /**
  * Sets an operand to a value stored in a memory object.
  *
@@ -5474,7 +5465,6 @@ int ANeuralNetworksModel_addOperation(ANeuralNetworksModel* model,
 int ANeuralNetworksModel_identifyInputsAndOutputs(ANeuralNetworksModel* model, uint32_t inputCount,
                                                   const uint32_t* inputs, uint32_t outputCount,
                                                   const uint32_t* outputs) __INTRODUCED_IN(27);
-#if __ANDROID_API__ >= 28
 /**
  * Specifies whether {@link ANEURALNETWORKS_TENSOR_FLOAT32} is allowed to be
  * calculated with range and/or precision as low as that of the IEEE 754 16-bit
@@ -5499,7 +5489,6 @@ int ANeuralNetworksModel_identifyInputsAndOutputs(ANeuralNetworksModel* model, u
  */
 int ANeuralNetworksModel_relaxComputationFloat32toFloat16(ANeuralNetworksModel* model, bool allow)
         __INTRODUCED_IN(28);
-#endif  // __ANDROID_API__ >= 28
 /**
  * Create a {@link ANeuralNetworksCompilation} to compile the given model.
  *
@@ -5826,7 +5815,6 @@ int ANeuralNetworksEvent_wait(ANeuralNetworksEvent* event) __INTRODUCED_IN(27);
  * Available since API level 27.
  */
 void ANeuralNetworksEvent_free(ANeuralNetworksEvent* event) __INTRODUCED_IN(27);
-#endif  // __ANDROID_API__ >= 27
 __END_DECLS
 #endif  // ANDROID_ML_NN_RUNTIME_NEURAL_NETWORKS_MOCK_H
 /** @} */

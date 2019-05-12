@@ -9,13 +9,12 @@ import tempfile
 def convert(onnx2daq, onnx, daq, table_file=''):
     daq = "temp.daq"
     os.system("{} {} {} {}".format(onnx2daq, onnx, daq, table_file))
-    os.system("adb push {} /data/local/tmp/".format(daq))
     print("Converted to daq")
 
 
-def finish(daq):
-    os.system("adb shell rm /data/local/tmp/{}".format(os.path.basename(daq)))
-    os.system("rm {}".format(daq))
+def finish(model):
+    os.system("adb shell rm /data/local/tmp/{}".format(os.path.basename(model)))
+    os.system("rm {}".format(model))
 
 
 def run(input_arr, daq, dnn_retrieve_result, output_name, quant_input=False, quant_output=False):
@@ -53,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--quant_input', help='whether the input is quant8', action='store_true')
     parser.add_argument('--quant_output', help='whether the output is quant8', action='store_true')
     parser.add_argument('--res_shape', type=str, help='The shape of result in nhwc, such as [1000] or [1,224,224,3]', default='-1')
+    parser.add_argument('--read_onnx', action='store_true', help='Read ONNX model directly, onnx2daq will not be used')
 
     args = parser.parse_args()
     import ast
@@ -84,10 +84,14 @@ if __name__ == '__main__':
         ref_outputs.append(numpy_helper.to_array(tensor))
 
     assert inputs_num == ref_outputs_num
-    daq = "temp.daq"
-    convert(args.onnx2daq, args.onnx, daq, args.table_file)
+    if not args.read_onnx:
+        model = "temp.daq"
+        convert(args.onnx2daq, args.onnx, model, args.table_file)
+    else:
+        model = args.onnx
+    os.system("adb push {} /data/local/tmp/".format(model))
     for i in range(inputs_num):
-        actual = run(inputs[i], daq, args.dnn_retrieve_result, args.output, args.quant_input, args.quant_output)
+        actual = run(inputs[i], model, args.dnn_retrieve_result, args.output, args.quant_input, args.quant_output)
         if len(args.res_shape) == 4:
             actual = np.transpose(actual.reshape(args.res_shape), [0, 3, 1, 2]).flatten()
         expected = ref_outputs[i].flatten()
@@ -105,4 +109,4 @@ if __name__ == '__main__':
             print(actual)
             print(np.argmax(actual))
 
-    finish(daq)
+    finish(model)

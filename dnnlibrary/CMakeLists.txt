@@ -60,7 +60,12 @@ target_link_libraries(
 if (DNN_READ_ONNX)
     target_link_libraries(
         dnnlibrary
-        onnx
+        onnx2daq
+        )
+    target_compile_definitions(
+        dnnlibrary
+        PUBLIC
+        DNN_READ_ONNX
         )
 endif()
 

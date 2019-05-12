@@ -1,7 +1,6 @@
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/daq_generated.h>
-#include <common/helper.h>
 #include <glog/logging.h>
 #include <onnx/onnx_pb.h>
 #include "optional.h"
