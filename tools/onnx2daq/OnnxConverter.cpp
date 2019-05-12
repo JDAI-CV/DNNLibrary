@@ -738,7 +738,6 @@ OnnxConverter::ConvertQuantInfosToFbs() {
 }
 
 void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
-                            const std::string &filepath,
                             const css &table_file) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -1016,11 +1015,6 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     LOG(INFO) << "Shapes: ";
     LOG(INFO) << shaper_;
 
-    std::ofstream ofs(filepath);
-    ofs.write(reinterpret_cast<char *>(builder_.GetBufferPointer()),
-              builder_.GetSize());
-    ofs.close();
-
     skipped_act_.clear();
     layers_.clear();
     operands_.clear();
@@ -1029,4 +1023,17 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     nnapi_tensors_.clear();
     onnx_tensors_.clear();
     shaper_.Clear();
+}
+
+void OnnxConverter::Save(const std::string &filename) {
+    std::ofstream ofs(filename);
+    ofs.write(reinterpret_cast<char *>(builder_.GetBufferPointer()),
+              builder_.GetSize());
+    ofs.close();
+}
+
+std::unique_ptr<uint8_t []> OnnxConverter::GetBuf() {
+    std::unique_ptr<uint8_t []> ptr(new uint8_t[builder_.GetSize()]);
+    memcpy(ptr.get(), builder_.GetBufferPointer(), builder_.GetSize());
+    return std::move(ptr);
 }

@@ -171,5 +171,7 @@ class OnnxConverter {
 
    public:
     void Convert(const ONNX_NAMESPACE::ModelProto &model,
-                 const std::string &filepath, const css &table_file = "");
+                       const css &table_file = "");
+    void Save(const std::string &filename);
+    std::unique_ptr<uint8_t []> GetBuf();
 };

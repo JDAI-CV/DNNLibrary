@@ -32,7 +32,8 @@ int main(int argc, char **argv) {
     }
 
     OnnxConverter converter;
-    converter.Convert(model_proto, argv[2], table_file);
+    converter.Convert(model_proto, table_file);
+    converter.Save(argv[2]);
 
     google::protobuf::ShutdownProtobufLibrary();
     return 0;
