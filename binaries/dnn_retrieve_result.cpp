@@ -33,7 +33,7 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
     }
 }
 
-// ./dnn_retrieve_result daqName outputBlob [input]
+// ./dnn_retrieve_result daqName quant_input? quant_output? [input]
 int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_log_dir = "/data/local/tmp/log";

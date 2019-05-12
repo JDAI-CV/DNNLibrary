@@ -768,8 +768,8 @@ std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
                             imm_blob_inputs_.begin(), imm_blob_inputs_.end(),
                             std::inserter(outputs, outputs.end()));
         for (const auto &output : outputs) {
-            VLOG(3) << "No output set explicitly, automatically add " + output +
-                           " as an output..";
+            VLOG(3) << "No blob is set explicitly as the output, automatically "
+                       "set " + output;
             AddOutput(output);
         }
     }
