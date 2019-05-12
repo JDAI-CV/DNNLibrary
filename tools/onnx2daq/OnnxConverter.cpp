@@ -1032,8 +1032,8 @@ void OnnxConverter::Save(const std::string &filename) {
     ofs.close();
 }
 
-std::unique_ptr<uint8_t []> OnnxConverter::GetBuf() {
-    std::unique_ptr<uint8_t []> ptr(new uint8_t[builder_.GetSize()]);
+std::unique_ptr<uint8_t[]> OnnxConverter::GetBuf() {
+    std::unique_ptr<uint8_t[]> ptr(new uint8_t[builder_.GetSize()]);
     memcpy(ptr.get(), builder_.GetBufferPointer(), builder_.GetSize());
     return std::move(ptr);
 }
