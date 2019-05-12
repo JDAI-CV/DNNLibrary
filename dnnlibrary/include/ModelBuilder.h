@@ -97,8 +97,9 @@ class ModelBuilder {
     Index GetBlobIndex(const std::string &blobName);
     Shape GetBlobDim(const std::string &blobName);
     Shape GetBlobDim(Index index);
-    Index AddInput(std::string name, const uint32_t height,
-                   const uint32_t width, const uint32_t depth);
+    Index AddInput(std::string name, const uint32_t batch,
+                   const uint32_t height, const uint32_t width,
+                   const uint32_t depth);
     Index AddInput(std::string name,
                    const android::nn::wrapper::OperandType &operand_type);
     // ModelBuilder auto generated methods start

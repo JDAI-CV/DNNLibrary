@@ -170,7 +170,7 @@ void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
                                      quant_info.zero_point_.value_or(0));
             builder.AddInput(input_name, operand_type);
         } else {
-            builder.AddInput(input_name, shape[1], shape[2], shape[3]);
+            builder.AddInput(input_name, shape[0], shape[1], shape[2], shape[3]);
         }
     }
 }

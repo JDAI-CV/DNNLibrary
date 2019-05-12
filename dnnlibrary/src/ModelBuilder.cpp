@@ -50,10 +50,11 @@ void ModelBuilder::RegisterOperand(const std::string &name,
     operand_types_.insert({name, operand_type});
 }
 
-ModelBuilder::Index ModelBuilder::AddInput(string name, const uint32_t height,
+ModelBuilder::Index ModelBuilder::AddInput(string name, const uint32_t batch,
+                                           const uint32_t height,
                                            const uint32_t width,
                                            const uint32_t depth) {
-    const vector<uint32_t> dimen{1, width, height, depth};
+    const vector<uint32_t> dimen{batch, width, height, depth};
     return AddInput(name, {Type::TENSOR_FLOAT32, dimen});
 }
 
