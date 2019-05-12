@@ -79,8 +79,10 @@ ModelBuilder::Index ModelBuilder::AddConv(
     const std::string &output,
     const std::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
+    imm_blob_inputs_.insert(weight);
     const auto weight_idx = operand_indexes_.at(weight);
     input_indexes.push_back(weight_idx);
     uint32_t bias_idx_val;
@@ -117,6 +119,7 @@ ModelBuilder::Index ModelBuilder::AddConv(
     const auto output_idx =
         AddOperation(ANEURALNETWORKS_CONV_2D, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -128,6 +131,7 @@ ModelBuilder::Index ModelBuilder::AddAvePool(
     int32_t fuse_code, const std::string &output,
     const std::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
@@ -141,6 +145,7 @@ ModelBuilder::Index ModelBuilder::AddAvePool(
     const auto output_idx = AddOperation(ANEURALNETWORKS_AVERAGE_POOL_2D,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -152,6 +157,7 @@ ModelBuilder::Index ModelBuilder::AddMaxPool(
     int32_t fuse_code, const std::string &output,
     const std::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
@@ -165,6 +171,7 @@ ModelBuilder::Index ModelBuilder::AddMaxPool(
     const auto output_idx = AddOperation(ANEURALNETWORKS_MAX_POOL_2D,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -172,6 +179,7 @@ ModelBuilder::Index ModelBuilder::AddMaxPool(
 ModelBuilder::Index ModelBuilder::AddReLU(const std::string &input,
                                           const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     shaper_.Relu(input, output);
@@ -180,6 +188,7 @@ ModelBuilder::Index ModelBuilder::AddReLU(const std::string &input,
     const auto output_idx =
         AddOperation(ANEURALNETWORKS_RELU, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -188,6 +197,7 @@ ModelBuilder::Index ModelBuilder::AddSoftmax(const std::string &input,
                                              float beta,
                                              const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     AddScalarOperands(input_indexes, beta);
@@ -197,6 +207,7 @@ ModelBuilder::Index ModelBuilder::AddSoftmax(const std::string &input,
     const auto output_idx =
         AddOperation(ANEURALNETWORKS_SOFTMAX, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -207,8 +218,10 @@ ModelBuilder::Index ModelBuilder::AddFC(
     const std::string &output,
     const std::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
+    imm_blob_inputs_.insert(weight);
     const auto weight_idx = operand_indexes_.at(weight);
     input_indexes.push_back(weight_idx);
     uint32_t bias_idx_val;
@@ -243,6 +256,7 @@ ModelBuilder::Index ModelBuilder::AddFC(
     const auto output_idx = AddOperation(ANEURALNETWORKS_FULLY_CONNECTED,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -252,8 +266,10 @@ ModelBuilder::Index ModelBuilder::AddAdd(
     const std::string &output,
     const std::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input1);
     const auto input1_idx = operand_indexes_.at(input1);
     input_indexes.push_back(input1_idx);
+    imm_blob_inputs_.insert(input2);
     const auto input2_idx = operand_indexes_.at(input2);
     input_indexes.push_back(input2_idx);
     AddScalarOperands(input_indexes, fuse_code);
@@ -263,6 +279,7 @@ ModelBuilder::Index ModelBuilder::AddAdd(
     const auto output_idx =
         AddOperation(ANEURALNETWORKS_ADD, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -272,6 +289,7 @@ ModelBuilder::Index ModelBuilder::AddConcat(
     const std::string &output) {
     IndexSeq input_indexes;
     for (const auto &x : inputs) {
+        imm_blob_inputs_.insert(x);
         input_indexes.push_back(operand_indexes_.at(x));
     }
     AddScalarOperands(input_indexes, axis);
@@ -281,6 +299,7 @@ ModelBuilder::Index ModelBuilder::AddConcat(
     const auto output_idx = AddOperation(ANEURALNETWORKS_CONCATENATION,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -293,8 +312,10 @@ ModelBuilder::Index ModelBuilder::AddDepthwiseConv(
     int32_t fuse_code, const std::string &output,
     const std::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
+    imm_blob_inputs_.insert(weight);
     const auto weight_idx = operand_indexes_.at(weight);
     input_indexes.push_back(weight_idx);
     uint32_t bias_idx_val;
@@ -333,6 +354,7 @@ ModelBuilder::Index ModelBuilder::AddDepthwiseConv(
     const auto output_idx = AddOperation(ANEURALNETWORKS_DEPTHWISE_CONV_2D,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -341,6 +363,7 @@ ModelBuilder::Index ModelBuilder::AddBatchToSpaceND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     const auto block_sizes_idx = AddTensorFromBuffer(
@@ -353,6 +376,7 @@ ModelBuilder::Index ModelBuilder::AddBatchToSpaceND(
     const auto output_idx = AddOperation(ANEURALNETWORKS_BATCH_TO_SPACE_ND,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 28
@@ -361,6 +385,7 @@ ModelBuilder::Index ModelBuilder::AddSpaceToBatchND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::vector<int32_t> &pads, const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     const auto block_sizes_idx = AddTensorFromBuffer(
@@ -377,6 +402,7 @@ ModelBuilder::Index ModelBuilder::AddSpaceToBatchND(
     const auto output_idx = AddOperation(ANEURALNETWORKS_SPACE_TO_BATCH_ND,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 28
@@ -387,6 +413,7 @@ ModelBuilder::Index ModelBuilder::AddStridedSlice(
     int32_t begin_mask, int32_t end_mask, int32_t shrink_axis_mask,
     const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     const auto starts_idx = AddTensorFromBuffer(
@@ -409,6 +436,7 @@ ModelBuilder::Index ModelBuilder::AddStridedSlice(
     const auto output_idx = AddOperation(ANEURALNETWORKS_STRIDED_SLICE,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 28
@@ -418,8 +446,10 @@ ModelBuilder::Index ModelBuilder::AddMul(
     const std::string &output,
     const std::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input1);
     const auto input1_idx = operand_indexes_.at(input1);
     input_indexes.push_back(input1_idx);
+    imm_blob_inputs_.insert(input2);
     const auto input2_idx = operand_indexes_.at(input2);
     input_indexes.push_back(input2_idx);
     AddScalarOperands(input_indexes, fuse_code);
@@ -429,6 +459,7 @@ ModelBuilder::Index ModelBuilder::AddMul(
     const auto output_idx =
         AddOperation(ANEURALNETWORKS_MUL, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -437,6 +468,7 @@ ModelBuilder::Index ModelBuilder::AddAdd(const std::string &input, float scalar,
                                          int32_t fuse_code,
                                          const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     const auto scalar_idx = FillOperand("input_scalar_of_" + output,
@@ -449,6 +481,7 @@ ModelBuilder::Index ModelBuilder::AddAdd(const std::string &input, float scalar,
     const auto output_idx =
         AddOperation(ANEURALNETWORKS_ADD, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -457,6 +490,7 @@ ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
                                          int32_t fuse_code,
                                          const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     const auto scalar_idx = FillOperand("input_scalar_of_" + output,
@@ -469,6 +503,7 @@ ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
     const auto output_idx =
         AddOperation(ANEURALNETWORKS_MUL, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -476,6 +511,7 @@ ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
 ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
                                                 const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     shaper_.Identity(input, output);
@@ -484,6 +520,7 @@ ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
     const auto output_idx = AddOperation(ANEURALNETWORKS_DEQUANTIZE,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
@@ -493,6 +530,7 @@ ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
                                          float alpha, float beta,
                                          const std::string &output) {
     IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     AddScalarOperands(input_indexes, radius, bias, alpha, beta);
@@ -503,6 +541,7 @@ ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
         AddOperation(ANEURALNETWORKS_LOCAL_RESPONSE_NORMALIZATION,
                      input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
