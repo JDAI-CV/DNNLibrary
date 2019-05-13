@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "argh.h"
 #include <DaqReader.h>
 #ifdef DNN_READ_ONNX
 #include <OnnxReader.h>
@@ -33,20 +34,21 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
     }
 }
 
-// ./dnn_retrieve_result daqName quant_input? quant_output? [input1 ..]
+// ./dnn_retrieve_result daqName [--quant_input] [--quant_output] [input1 ..]
 int main(int argc, char **argv) {
+    argh::parser cmdl(argc, argv);
     google::InitGoogleLogging(argv[0]);
     FLAGS_log_dir = "/data/local/tmp/log";
     FLAGS_logbuflevel = -1;
     FLAGS_alsologtostderr = true;
-    FLAGS_v = 5;
-    if (argc < 5 || argc > 6) {
+    FLAGS_v = cmdl("v", 5);
+    if (!cmdl(2)) {
         return -1;
     }
     string daqName = argv[1];
-    bool quant_input = std::atoi(argv[2]) != 0;
-    bool quant_output = std::atoi(argv[3]) != 0;
-    bool use_external_input = argc >= 5;
+    bool quant_input = cmdl["quant_input"];
+    bool quant_output = cmdl["quant_output"];
+    bool use_external_input = cmdl(2);
 
     std::unique_ptr<Model> model;
     ModelBuilder builder;
@@ -71,7 +73,7 @@ int main(int argc, char **argv) {
     DNN_ASSERT(model->GetOutputs().size() == 1, "the number of outputs can only be 1 here");
     const auto outputLen = model->GetSize(model->GetOutputs()[0]);
     std::vector<std::vector<float>> inputs;
-    for (int i = 4, n = 0; i < argc; i++, n++) {
+    for (size_t i = 2, n = 0; i < cmdl.size(); i++, n++) {
         const auto &input_name = model->GetInputs()[n];
         const auto input_size = model->GetSize(input_name);
         std::vector<float> input_data;
