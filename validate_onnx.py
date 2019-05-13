@@ -55,7 +55,6 @@ if __name__ == '__main__':
     parser.add_argument('--table_file', type=str, help='table file for 8-bit quantization', default='')
     parser.add_argument('--quant_input', help='whether the input is quant8', action='store_true')
     parser.add_argument('--quant_output', help='whether the output is quant8', action='store_true')
-    parser.add_argument('--read_onnx', action='store_true', help='Read ONNX model directly, onnx2daq will not be used')
 
     args = parser.parse_args()
 
@@ -82,11 +81,11 @@ if __name__ == '__main__':
             tensor.ParseFromString(f.read())
         ref_outputs.append(numpy_helper.to_array(tensor))
 
-    if not args.read_onnx:
+    if args.onnx2daq is None:
+        model = args.onnx
+    else:
         model = "temp.daq"
         convert(args.onnx2daq, args.onnx, model, args.table_file)
-    else:
-        model = args.onnx
     os.system("adb push {} /data/local/tmp/".format(model))
     for i in range(inputs_num):
         actual = run(inputs, model, args.dnn_retrieve_result, args.quant_input, args.quant_output)
