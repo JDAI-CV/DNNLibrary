@@ -21,7 +21,7 @@ using std::endl;
 using std::string;
 using Clock = std::chrono::high_resolution_clock;
 
-auto get_model(css &daqName, css &outputBlob, const bool allowFp16,
+auto get_model(css &daqName, const bool allowFp16,
                const PreferenceCode &compilePreference) {
     std::unique_ptr<Model> model;
     ModelBuilder builder;
@@ -31,10 +31,9 @@ auto get_model(css &daqName, css &outputBlob, const bool allowFp16,
     daq_reader.ReadDaq(daqName, builder, false);
 #if __ANDROID_API__ >= __ANDROID_API_P__
     model = builder.AllowFp16(allowFp16)
-                .AddOutput(outputBlob)
                 .Compile(compilePreference);
 #else
-    model = builder.AddOutput(outputBlob).Compile(compilePreference);
+    model = builder.Compile(compilePreference);
 #endif
     return model;
 }
@@ -62,13 +61,12 @@ int main(int argc, char **argv) {
         return -1;
     }
     css daqName = argv[1];
-    css outputBlob = argv[2];
-    const int numberRunning = std::atoi(argv[3]);
-    const bool quant = std::atoi(argv[4]) != 0;
+    const int numberRunning = std::atoi(argv[2]);
+    const bool quant = std::atoi(argv[3]) != 0;
 
     size_t inputLen, outputLen;
     {
-        auto model = get_model(daqName, outputBlob, false,
+        auto model = get_model(daqName, false,
                                ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
         inputLen = model->GetSize(model->GetInputs()[0]);
         outputLen = model->GetSize(model->GetOutputs()[0]);
