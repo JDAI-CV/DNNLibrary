@@ -42,18 +42,22 @@ using css = const std::string;
 #define STR(a) #a
 #define XSTR(a) STR(a)
 
-#define PNT_STR(var) << XSTR(var) << " = " << (var) << ", "
-#define PNT_TO(stream, ...) stream FOR_EACH(PNT_STR, __VA_ARGS__);
+#define PNT_STR(s) << s << " "
+#define PNT_VAR(var) << XSTR(var) << " = " << (var) << ", "
+#define PNT_TO(stream, ...) stream FOR_EACH(PNT_VAR, __VA_ARGS__);
 #define PNT(...) PNT_TO(LOG(INFO), __VA_ARGS__)
 
-#define DNN_ASSERT(condition, note)                                            \
-    if (!(condition)) {                                                        \
-        std::stringstream ss;                                                  \
-        ss << std::string(XSTR(condition))                                     \
-           << std::string(" is not satisfied on ") << std::to_string(__LINE__) \
-           << " of " << __FILE__ << note;                                      \
-        LOG(INFO) << ss.str();                                                 \
-        throw std::runtime_error(ss.str());                                    \
+#define DNN_ASSERT(condition, ...)               \
+    if (!(condition)) {                           \
+        std::stringstream ss;                     \
+        ss << std::string(XSTR(condition))        \
+           << std::string(" is not satisfied! ")  \
+                  FOR_EACH(PNT_STR, __VA_ARGS__); \
+        LOG(INFO) << ss.str();                    \
+        throw std::runtime_error(ss.str());       \
     }
+
+#define DNN_ASSERT_EQ(actual, expected)                                        \
+    DNN_ASSERT((actual) == (expected), XSTR(actual), "=", actual, ", the expected value is", XSTR(expected), "(which is", expected, ")" )
 
 #endif /* DNNLIBRARY_HELPER_H */
