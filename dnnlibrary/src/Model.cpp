@@ -108,6 +108,10 @@ size_t Model::GetSize(const std::string &name) {
     return shaper_.GetSize(name);
 }
 
+Shaper::Shape Model::GetShape(const std::string &name) {
+    return shaper_[name];
+}
+
 std::vector<std::string> Model::GetInputs() {
     return input_names_;
 }

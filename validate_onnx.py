@@ -54,14 +54,9 @@ if __name__ == '__main__':
     parser.add_argument('--table_file', type=str, help='table file for 8-bit quantization', default='')
     parser.add_argument('--quant_input', help='whether the input is quant8', action='store_true')
     parser.add_argument('--quant_output', help='whether the output is quant8', action='store_true')
-    parser.add_argument('--res_shape', type=str, help='The shape of result in nhwc, such as [1000] or [1,224,224,3]', default='-1')
     parser.add_argument('--read_onnx', action='store_true', help='Read ONNX model directly, onnx2daq will not be used')
 
     args = parser.parse_args()
-    import ast
-    args.res_shape = ast.literal_eval(args.res_shape)
-    if type(args.res_shape) == int:
-        args.res_shape = [args.res_shape]
 
     # Load inputs
     inputs = []
@@ -94,8 +89,6 @@ if __name__ == '__main__':
     os.system("adb push {} /data/local/tmp/".format(model))
     for i in range(inputs_num):
         actual = run(inputs, model, args.dnn_retrieve_result, args.quant_input, args.quant_output)
-        if len(args.res_shape) == 4:
-            actual = np.transpose(actual.reshape(args.res_shape), [0, 3, 1, 2]).flatten()
         expected = ref_outputs[i].flatten()
 
         print('====================')
