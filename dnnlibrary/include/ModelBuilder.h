@@ -9,6 +9,7 @@
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -42,6 +43,10 @@ class ModelBuilder {
     std::map<float, Index> float32_operand_map_;
     std::map<float, Index> float32_as_tensor_operand_map_;
     StrKeyMap<android::nn::wrapper::OperandType> operand_types_;
+    // imm_blob_inputs_ and imm_blob_outputs_ is to automatically determine the
+    // output of the model
+    std::set<std::string> imm_blob_inputs_;
+    std::set<std::string> imm_blob_outputs_;
 
     uint32_t int32_missing_index = UINT32_MAX;
     uint32_t float32_missing_index = UINT32_MAX;

@@ -1,7 +1,6 @@
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/daq_generated.h>
-#include <common/helper.h>
 #include <glog/logging.h>
 #include <onnx/onnx_pb.h>
 #include "optional.h"
@@ -171,5 +170,7 @@ class OnnxConverter {
 
    public:
     void Convert(const ONNX_NAMESPACE::ModelProto &model,
-                 const std::string &filepath, const css &table_file = "");
+                 const css &table_file = "");
+    void Save(const std::string &filename);
+    std::unique_ptr<uint8_t[]> GetBuf();
 };

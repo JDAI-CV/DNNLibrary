@@ -1,6 +1,6 @@
 # dnn_protobuf_generate_cpp(ONNX_SRCS ONNX_HDRS onnx.proto3)
 
-add_library(dnnlibrary
+set(dnnlibrary_src 
     include/ModelBuilder.h
     include/Model.h
     include/DaqReader.h
@@ -13,6 +13,15 @@ add_library(dnnlibrary
     ${PROJECT_SOURCE_DIR}/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h 
+    )
+if (DNN_READ_ONNX)
+    list(APPEND dnnlibrary_src 
+        src/OnnxReader.cpp
+        src/OnnxReader.h)
+endif()
+
+add_library(dnnlibrary
+    ${dnnlibrary_src}
     )
 
 target_include_directories(
@@ -47,6 +56,19 @@ target_link_libraries(
     ${log-lib}
     ${neural-networks-lib}
     )
+
+if (DNN_READ_ONNX)
+    target_link_libraries(
+        dnnlibrary
+        onnx2daq
+        )
+    target_compile_definitions(
+        dnnlibrary
+        PUBLIC
+        DNN_READ_ONNX
+        )
+endif()
+
 
 treat_warnings_as_errors(dnnlibrary)
 

@@ -75,7 +75,8 @@ def add_tensor_operand(operand):
     if operand['predefined'] == 'optional_bias':
         return add_optional_bias()
     if operand['cpp_type'] == 'str':
-        return '''const auto {0}_idx = operand_indexes_.at({0});
+        return '''imm_blob_inputs_.insert({0});
+const auto {0}_idx = operand_indexes_.at({0});
 input_indexes.push_back({0}_idx);'''.format(operand['name'])
     elif operand['cpp_type'] == 'float':
         return '''const auto {0}_idx = FillOperand("input_{0}_of_" + output, {{Type::TENSOR_FLOAT32, {{1}}}}, {0}); 
@@ -85,6 +86,7 @@ input_indexes.push_back({0}_idx);'''.format(operand['name'])
 input_indexes.push_back({0}_idx);'''.format(operand['name'])
     elif operand['cpp_type'] == 'str_list':
         return '''for (const auto &x : {}) {{
+imm_blob_inputs_.insert(x);
 input_indexes.push_back(operand_indexes_.at(x));
 }}'''.format(operand['name'])
     else:
@@ -294,6 +296,7 @@ def generate_model_builder():
                 'AddOperation(ANEURALNETWORKS_{}, input_indexes, operand_type)[0];'.format(op['nnapi']))
         cogout(
             '''RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
     return output_idx;
     }
     '''

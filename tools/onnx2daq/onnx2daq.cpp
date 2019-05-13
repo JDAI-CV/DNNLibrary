@@ -3,11 +3,8 @@
 #include <numeric>
 #include <string>
 
-#include <common/StrKeyMap.h>
 #include <glog/logging.h>
-#include "NodeAttrHelper.h"
 #include "OnnxConverter.h"
-#include "common/log_helper.h"
 
 using std::string;
 using std::vector;
@@ -32,7 +29,8 @@ int main(int argc, char **argv) {
     }
 
     OnnxConverter converter;
-    converter.Convert(model_proto, argv[2], table_file);
+    converter.Convert(model_proto, table_file);
+    converter.Save(argv[2]);
 
     google::protobuf::ShutdownProtobufLibrary();
     return 0;

@@ -78,6 +78,7 @@ class Model {
     void SetOutputBuffer(const int32_t index, char *buffer);
     void SetOutputBuffer(const int32_t index, void *buffer, const size_t elemsize);
     size_t GetSize(const std::string &name);
+    Shaper::Shape GetShape(const std::string &name);
     std::vector<std::string> GetInputs();
     std::vector<std::string> GetOutputs();
 };

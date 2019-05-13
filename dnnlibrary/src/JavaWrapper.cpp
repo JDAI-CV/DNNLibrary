@@ -78,16 +78,16 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_compile(JNIEnv *env,
         jni_input_type *data =                                                 \
             env->Get##JniInputType##ArrayElements(dataArrayObject, nullptr);   \
                                                                                \
-        uint32_t outputLen = model->GetOutputSize(0);                          \
-        cpp_output_type output[outputLen];                                     \
+        uint32_t output_len = model->GetSize(model->GetOutputs()[0]);          \
+        cpp_output_type output[output_len];                                    \
         model->SetOutputBuffer(0, output);                                     \
                                                                                \
         model->Predict(std::vector{reinterpret_cast<cpp_input_type *>(data)}); \
                                                                                \
         jni_output_type##Array result =                                        \
-            env->New##JniOutputType##Array(outputLen);                         \
+            env->New##JniOutputType##Array(output_len);                        \
         env->Set##JniOutputType##ArrayRegion(                                  \
-            result, 0, outputLen,                                              \
+            result, 0, output_len,                                             \
             reinterpret_cast<jni_output_type *>(output));                      \
                                                                                \
         return result;                                                         \
