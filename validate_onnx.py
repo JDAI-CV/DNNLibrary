@@ -21,12 +21,13 @@ def finish(model):
 def run(input_arrs, daq, dnn_retrieve_result, quant_input=False, quant_output=False):
     input_txts = []
     for i, input_arr in enumerate(input_arrs):
-        nchw_shape = input_arr.shape
-        nhwc_shape = (nchw_shape[0], nchw_shape[2], nchw_shape[3], nchw_shape[1])
-        nhwc_input = np.moveaxis(input_arr, 1, -1)
-        assert nhwc_input.shape == nhwc_shape
+        if len(input_arr.shape) == 4:
+            nchw_shape = input_arr.shape
+            nhwc_shape = (nchw_shape[0], nchw_shape[2], nchw_shape[3], nchw_shape[1])
+            input_arr = np.moveaxis(input_arr, 1, -1)
+            assert input_arr.shape == nhwc_shape
         input_txt = 'input{}.txt'.format(i)
-        np.savetxt(input_txt, nhwc_input.flatten(), delimiter='\n')
+        np.savetxt(input_txt, input_arr.flatten(), delimiter='\n')
         input_txts.append(input_txt)
     input_txts_arg = " ".join(input_txts)
     input_txts_in_android_arg = " ".join(map(lambda x: "/data/local/tmp/" + x, input_txts))
