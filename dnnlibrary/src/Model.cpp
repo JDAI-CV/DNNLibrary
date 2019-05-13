@@ -75,6 +75,25 @@ void Model::SetOutputBuffer(const int32_t index, void *buffer, const size_t elem
     }
 }
 
+void Model::PredictAfterSetInputBuffer() {
+    ANeuralNetworksEvent *event = nullptr;
+    if (int ret = ANeuralNetworksExecution_startCompute(execution_, &event);
+        ret != ANEURALNETWORKS_NO_ERROR) {
+        throw std::invalid_argument(
+            "Error in startCompute, return value: " + std::to_string(ret));
+    }
+
+    if (int ret = ANeuralNetworksEvent_wait(event);
+        ret != ANEURALNETWORKS_NO_ERROR) {
+        throw std::invalid_argument("Error in wait, return value: " +
+                                    std::to_string(ret));
+    }
+
+    ANeuralNetworksEvent_free(event);
+    ANeuralNetworksExecution_free(execution_);
+    prepared_for_exe_ = false;
+}
+
 void Model::AddInput(const std::string &name, const Shaper::Shape &shape) {
     input_names_.push_back(name);
     shaper_.AddShape(name, shape);
@@ -89,10 +108,11 @@ size_t Model::GetSize(const std::string &name) {
     return shaper_.GetSize(name);
 }
 
-size_t Model::GetInputSize(const int &index) {
-    return shaper_.GetSize(input_names_[index]);
+std::vector<std::string> Model::GetInputs() {
+    return input_names_;
 }
 
-size_t Model::GetOutputSize(const int &index) {
-    return shaper_.GetSize(output_names_[index]);
+std::vector<std::string> Model::GetOutputs() {
+    return output_names_;
 }
+

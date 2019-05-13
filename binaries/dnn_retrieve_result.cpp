@@ -35,7 +35,7 @@ int main(int argc, char **argv) {
     string outputBlob = argv[2];
     bool quant_input = std::atoi(argv[3]) != 0;
     bool quant_output = std::atoi(argv[4]) != 0;
-    bool use_external_input = argc == 6;
+    bool use_external_input = argc >= 6;
 
     std::unique_ptr<Model> model;
     {
@@ -47,22 +47,29 @@ int main(int argc, char **argv) {
         model = builder.AddOutput(outputBlob)
                     .Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
     }
-    const auto inputLen = model->GetInputSize(0),
-               outputLen = model->GetOutputSize(0);
-    float data[inputLen];
-    if (use_external_input) {
-        std::ifstream ifs(argv[5]);
-        float element;
-        FORZ(i, inputLen) {
-            if (!(ifs >> element)) {
-                throw std::invalid_argument("Read file error");
+    DNN_ASSERT(model->GetOutputs().size() == 1, "the number of outputs can only be 1 here");
+    const auto outputLen = model->GetSize(model->GetOutputs()[0]);
+    std::vector<std::vector<float>> inputs;
+    for (int i = 5, n = 0; i < argc; i++, n++) {
+        const auto &input_name = model->GetInputs()[n];
+        const auto input_size = model->GetSize(input_name);
+        std::vector<float> input_data;
+        input_data.reserve(input_size);
+        if (use_external_input) {
+            std::ifstream ifs(argv[i]);
+            float element;
+            FORZ(i, model->GetSize(input_name)) {
+                if (!(ifs >> element)) {
+                    throw std::invalid_argument("Read file error");
+                }
+                input_data.push_back(element);
             }
-            data[i] = element;
+        } else {
+            FORZ(j, input_size) {
+                input_data.push_back(j);
+            }
         }
-    } else {
-        FORZ(i, inputLen) {
-            data[i] = i;
-        }
+        inputs.push_back(input_data);
     }
 
     uint8_t output_uint8[outputLen];
@@ -74,14 +81,14 @@ int main(int argc, char **argv) {
         model->SetOutputBuffer(0, output_float);
     }
     if (quant_input) {
-        uint8_t uint8_data[inputLen];
-        FORZ(i, inputLen) {
-            uint8_data[i] = data[i];
+        std::vector<std::vector<uint8_t>> uint8_inputs;
+        for (const auto &input : inputs) {
+            std::vector<uint8_t> uint8_input(input.begin(), input.end());
+            uint8_inputs.push_back(uint8_input);
         }
-        model->Predict(std::vector{uint8_data});
+        model->Predict(uint8_inputs);
     } else {
-        model->Predict(std::vector{data});
-        std::ofstream ofs("/data/local/tmp/result");
+        model->Predict(inputs);
     }
     std::ofstream ofs("/data/local/tmp/result");
     if (quant_output) {

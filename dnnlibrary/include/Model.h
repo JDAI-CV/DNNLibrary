@@ -36,32 +36,40 @@ class Model {
     void SetInputBuffer(const int32_t index, const uint8_t *buffer);
     void SetInputBuffer(const int32_t index, const void *buffer, const size_t elemsize);
     void PrepareForExecution();
+    void PredictAfterSetInputBuffer();
     bool prepared_for_exe_;
     Model() = default;
 
    public:
     template <typename T>
-    void Predict(std::vector<T *> inputs) {
+    void Predict(const std::vector<T> &input) {
+        DNN_ASSERT_EQ(input.size, GetSize(GetInputs()[0]));
+        // const_cast is a ugly workaround, vector<const T*> causes strange errors
+        Predict<T>({const_cast<T *>(input.data())});
+    }
+    template <typename T>
+    void Predict(const std::vector<std::vector<T>> &inputs) {
+        std::vector<T *> input_ptrs;
+        for (size_t i = 0; i < inputs.size(); i++) {
+            auto &input = inputs[i];
+            DNN_ASSERT_EQ(input.size(), GetSize(GetInputs()[i]));
+            // const_cast is a ugly workaround, vector<const T*> causes strange errors
+            input_ptrs.push_back(const_cast<T *>(input.data()));
+        }
+        Predict<T>(input_ptrs);
+    }
+    template <typename T>
+    void Predict(const T *input) {
+        Predict<T>(std::vector<T*>{input});
+    }
+    template <typename T>
+    void Predict(const std::vector<T *> &inputs) {
+        DNN_ASSERT_EQ(inputs.size(), GetInputs().size());
         if (!prepared_for_exe_) PrepareForExecution();
         for (size_t i = 0; i < inputs.size(); i++) {
             SetInputBuffer(i, inputs[i]);
         }
-        ANeuralNetworksEvent *event = nullptr;
-        if (int ret = ANeuralNetworksExecution_startCompute(execution_, &event);
-            ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument(
-                "Error in startCompute, return value: " + std::to_string(ret));
-        }
-
-        if (int ret = ANeuralNetworksEvent_wait(event);
-            ret != ANEURALNETWORKS_NO_ERROR) {
-            throw std::invalid_argument("Error in wait, return value: " +
-                                        std::to_string(ret));
-        }
-
-        ANeuralNetworksEvent_free(event);
-        ANeuralNetworksExecution_free(execution_);
-        prepared_for_exe_ = false;
+        PredictAfterSetInputBuffer();
     }
 
     ~Model();
@@ -70,8 +78,8 @@ class Model {
     void SetOutputBuffer(const int32_t index, char *buffer);
     void SetOutputBuffer(const int32_t index, void *buffer, const size_t elemsize);
     size_t GetSize(const std::string &name);
-    size_t GetInputSize(const int &index);
-    size_t GetOutputSize(const int &index);
+    std::vector<std::string> GetInputs();
+    std::vector<std::string> GetOutputs();
 };
 
 #endif  // NNAPIEXAMPLE_MODEL_H
