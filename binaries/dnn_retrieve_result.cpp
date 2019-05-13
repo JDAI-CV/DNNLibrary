@@ -33,7 +33,7 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
     }
 }
 
-// ./dnn_retrieve_result daqName quant_input? quant_output? [input]
+// ./dnn_retrieve_result daqName quant_input? quant_output? [input1 ..]
 int main(int argc, char **argv) {
     google::InitGoogleLogging(argv[0]);
     FLAGS_log_dir = "/data/local/tmp/log";
@@ -71,7 +71,7 @@ int main(int argc, char **argv) {
     DNN_ASSERT(model->GetOutputs().size() == 1, "the number of outputs can only be 1 here");
     const auto outputLen = model->GetSize(model->GetOutputs()[0]);
     std::vector<std::vector<float>> inputs;
-    for (int i = 5, n = 0; i < argc; i++, n++) {
+    for (int i = 4, n = 0; i < argc; i++, n++) {
         const auto &input_name = model->GetInputs()[n];
         const auto input_size = model->GetSize(input_name);
         std::vector<float> input_data;
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
         if (use_external_input) {
             std::ifstream ifs(argv[i]);
             float element;
-            FORZ(i, model->GetSize(input_name)) {
+            FORZ(_, model->GetSize(input_name)) {
                 if (!(ifs >> element)) {
                     throw std::invalid_argument("Read file error");
                 }
