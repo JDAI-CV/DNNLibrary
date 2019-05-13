@@ -78,7 +78,7 @@ Java_me_daquexian_dnnlibrary_ModelBuilder_compile(JNIEnv *env,
         jni_input_type *data =                                                 \
             env->Get##JniInputType##ArrayElements(dataArrayObject, nullptr);   \
                                                                                \
-        uint32_t outputLen = model->GetOutputSize(0);                          \
+        uint32_t outputLen = model->GetSize(model->GetOutputs()[0]);    \
         cpp_output_type output[outputLen];                                     \
         model->SetOutputBuffer(0, output);                                     \
                                                                                \
