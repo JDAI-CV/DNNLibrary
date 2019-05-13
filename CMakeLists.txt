@@ -3,7 +3,7 @@ project(DNNLibrary)
 
 option(DNN_BUILD_BIN "Build binaries" ON)
 option(DNN_BUILD_JNI "Build Java Wrapper" OFF)
-option(DNN_READ_ONNX "Read ONNX model directly instead of converting to .daq" ON)
+option(DNN_READ_ONNX "Read ONNX model directly instead of converting to .daq" OFF)
 option(DNN_SYSTEM_PROTOBUF "Use system protobuf when building onnx2daq" OFF)
 
 include(cmake/system.cmake)
