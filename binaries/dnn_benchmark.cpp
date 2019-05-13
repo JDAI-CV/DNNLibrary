@@ -70,8 +70,8 @@ int main(int argc, char **argv) {
     {
         auto model = get_model(daqName, outputBlob, false,
                                ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
-        inputLen = model->GetInputSize(0);
-        outputLen = model->GetOutputSize(0);
+        inputLen = model->GetSize(model->GetInputs()[0]);
+        outputLen = model->GetSize(model->GetOutputs()[0]);
     }
 #define WARM_UP                                                            \
     {                                                                      \
