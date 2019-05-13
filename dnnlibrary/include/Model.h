@@ -32,9 +32,9 @@ class Model {
     Shaper shaper_;
     void AddInput(const std::string &name, const Shaper::Shape &shape);
     void AddOutput(const std::string &name, const Shaper::Shape &shape);
-    void SetInputBuffer(int32_t index, float *buffer);
-    void SetInputBuffer(int32_t index, uint8_t *buffer);
-    void SetInputBuffer(int32_t index, void *buffer, size_t elemsize);
+    void SetInputBuffer(const int32_t index, const float *buffer);
+    void SetInputBuffer(const int32_t index, const uint8_t *buffer);
+    void SetInputBuffer(const int32_t index, const void *buffer, const size_t elemsize);
     void PrepareForExecution();
     bool prepared_for_exe_;
     Model() = default;
@@ -65,10 +65,10 @@ class Model {
     }
 
     ~Model();
-    void SetOutputBuffer(int32_t index, float *buffer);
-    void SetOutputBuffer(int32_t index, uint8_t *buffer);
-    void SetOutputBuffer(int32_t index, char *buffer);
-    void SetOutputBuffer(int32_t index, void *buffer, size_t elemsize);
+    void SetOutputBuffer(const int32_t index, float *buffer);
+    void SetOutputBuffer(const int32_t index, uint8_t *buffer);
+    void SetOutputBuffer(const int32_t index, char *buffer);
+    void SetOutputBuffer(const int32_t index, void *buffer, const size_t elemsize);
     size_t GetSize(const std::string &name);
     size_t GetInputSize(const int &index);
     size_t GetOutputSize(const int &index);
