@@ -31,7 +31,7 @@ if (${DNN_SYSTEM_PROTOBUF})
 endif()
 
 
-if (NOT ${ONNX2DAQ_ONLY_LIB})
+if (NOT ONNX2DAQ_ONLY_LIB)
     add_executable(onnx2daq-bin
         ${CMAKE_CURRENT_SOURCE_DIR}/onnx2daq.cpp)
     target_link_libraries(onnx2daq-bin
