@@ -3,6 +3,6 @@ wget https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/downloa
 
 chmod +x linuxdeploy-*.AppImage
 mkdir -p ci/appimage/appdir/usr/bin
-cp build_onnx2bnn/tools/onnx2bnn/onnx2bnn ci/appimage/appdir/usr/bin/
-./linuxdeploy-x86_64.AppImage --appdir ci/appimage/appdir -d ci/appimage/onnx2bnn.desktop -i ci/appimage/onnx2bnn.png --output appimage
-mv `ls onnx2bnn-*.AppImage` onnx2bnn.AppImage
+cp build_onnx2daq/tools/onnx2daq/onnx2daq ci/appimage/appdir/usr/bin/
+./linuxdeploy-x86_64.AppImage --appdir ci/appimage/appdir -d ci/appimage/onnx2daq.desktop -i ci/appimage/onnx2daq.png --output appimage
+mv `ls onnx2daq-*.AppImage` onnx2daq.AppImage

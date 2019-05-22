@@ -17,8 +17,8 @@ rm -rf ${JNI_BUILD_DIR} && mkdir ${JNI_BUILD_DIR} && pushd ${JNI_BUILD_DIR}
 cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=android-21 -DANDROID_ABI=arm64-v8a -DBNN_BUILD_JNI=ON -DBNN_BUILD_TEST=OFF -DBNN_BUILD_BENCHMARK=OFF ..
 cmake --build . -- -j$nproc
 popd
-mkdir -p ci/android_aar/dabnn/src/main/jniLibs/arm64-v8a
-cp ${JNI_BUILD_DIR}/dabnn/jni/libdabnn-jni.so ci/android_aar/dabnn/src/main/jniLibs/arm64-v8a/
+mkdir -p ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a
+cp ${JNI_BUILD_DIR}/dnnlibrary/jni/libdnnlibrary-jni.so ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/
 
 # Increase version code and update version name
 
@@ -36,10 +36,10 @@ elif (( $# == 1 )); then
 fi
 echo "ver=$ver"
 
-sed -i -E "s/versionName .+/versionName \"v$ver\"/" ci/android_aar/dabnn/build.gradle
-sed -i -E "s/publishVersion = .+/publishVersion = \'$ver\'/" ci/android_aar/dabnn/build.gradle
+sed -i -E "s/versionName .+/versionName \"v$ver\"/" ci/android_aar/dnnlibrary/build.gradle
+sed -i -E "s/publishVersion = .+/publishVersion = \'$ver\'/" ci/android_aar/dnnlibrary/build.gradle
 
-cat ci/android_aar/dabnn/build.gradle
+cat ci/android_aar/dnnlibrary/build.gradle
 
 pushd ci/android_aar
 ANDROID_HOME=$MY_ANDROID_HOME ./gradlew clean build

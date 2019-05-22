@@ -2,7 +2,7 @@ steps:
 - task: GitHubRelease@0
   condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/v'))
   inputs:
-    gitHubConnection: 'dabnn release'
+    gitHubConnection: 'dnnlibrary release'
     repositoryName: '$(Build.Repository.Name)'
     action: 'edit'
     tag: '$(Build.SourceBranchName)'

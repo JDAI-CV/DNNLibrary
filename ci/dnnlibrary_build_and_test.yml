@@ -29,17 +29,17 @@ steps:
   submodules: true
 - bash: brew install watch gnu-sed
   displayName: Install watch and gnu-sed
-- bash: ci/build_dabnn.sh
+- bash: ci/build_dnnlibrary.sh
   displayName: Build
 - bash: ci/start_android_emulator.sh
   displayName: Start Android Emulator
-- bash: ci/adb_push_and_run.sh build_dabnn/tests/bconv_test
+- bash: ci/adb_push_and_run.sh build_dnnlibrary/tests/bconv_test
   displayName: Binary Conv Test
-- bash: ci/adb_push_and_run.sh build_dabnn/tests/bgemm_test
+- bash: ci/adb_push_and_run.sh build_dnnlibrary/tests/bgemm_test
   displayName: Binary Gemm Test
 - bash: ci/download_models.sh
   displayName: Download Models
-- bash: ci/adb_push_and_run.sh build_dabnn/tests/net_test
+- bash: ci/adb_push_and_run.sh build_dnnlibrary/tests/net_test
   displayName: Model Test
 - bash: ci/build_aar.sh
   env: 
