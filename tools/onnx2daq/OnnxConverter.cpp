@@ -745,7 +745,8 @@ void OnnxConverter::Convert(const std::string &model_str,
     if (!ret) {
         throw std::invalid_argument("Read protobuf string failed");
     }
-    Convert(model_proto, filepath, table_file);
+    Convert(model_proto, table_file);
+    Save(filepath);
 }
 
 void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
