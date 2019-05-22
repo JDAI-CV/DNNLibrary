@@ -1,5 +1,9 @@
 language: android
 sudo: true
+services:
+  - docker
+env:
+  - CIBW_SKIP="cp27-* cp33-* cp34-* cp37-* *-manylinux1_i686" CIBW_BEFORE_BUILD_LINUX="pip install cmake"
 git:
   depth: 3
 compiler:
@@ -60,6 +64,10 @@ script:
   - cmake ..
   - cmake --build . -- "-j$(nproc)"
   - cd ..
+  - sudo pip install http://45.77.254.189/cibuildwheel-0.10.2-py2.py3-none-any.whl
+  - pushd tools/onnx2daq/python
+  - cibuildwheel --output-dir wheelhouse
+  - popd
   # Build aar
   - ./scripts/build_aar.sh $TRAVIS_TAG
   # Uncomment when android 27 or 28 emulator works

@@ -169,6 +169,8 @@ class OnnxConverter {
     Tensor OnnxToNnapiIdentity(const Tensor &src);
 
    public:
+    void Convert(const std::string &model_str,
+                 const std::string &filepath, const css &table_file = "");
     void Convert(const ONNX_NAMESPACE::ModelProto &model,
                  const css &table_file = "");
     void Save(const std::string &filename);
