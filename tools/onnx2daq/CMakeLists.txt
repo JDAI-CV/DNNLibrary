@@ -1,7 +1,3 @@
-if (${DNN_SYSTEM_PROTOBUF})
-    find_package(Protobuf)
-endif()
-
 # dnn_protobuf_generate_cpp(ONNX_PROTO_SRCS ONNX_PROTO_HDRS onnx.proto3)
 # message(${ONNX_PROTO_SRCS})
 # message(${CMAKE_CURRENT_BINARY_DIR})
