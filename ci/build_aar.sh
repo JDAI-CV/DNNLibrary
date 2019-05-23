@@ -14,7 +14,7 @@ MY_ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 MY_ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$MY_ANDROID_HOME/ndk-bundle}"
 JNI_BUILD_DIR=build_jni_tmp
 rm -rf ${JNI_BUILD_DIR} && mkdir ${JNI_BUILD_DIR} && pushd ${JNI_BUILD_DIR}
-cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=android-21 -DANDROID_ABI=arm64-v8a -DBNN_BUILD_JNI=ON -DBNN_BUILD_TEST=OFF -DBNN_BUILD_BENCHMARK=OFF ..
+cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=android-27 -DANDROID_ABI=arm64-v8a -DBNN_BUILD_JNI=ON -DBNN_BUILD_TEST=OFF -DBNN_BUILD_BENCHMARK=OFF ..
 cmake --build . -- -j$nproc
 popd
 mkdir -p ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a
