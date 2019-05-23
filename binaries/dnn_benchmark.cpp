@@ -32,6 +32,7 @@ auto GetModel(css &daq_name, const bool allow_fp16,
 #if __ANDROID_API__ >= __ANDROID_API_P__
     model = builder.AllowFp16(allow_fp16).Compile(compile_preference);
 #else
+    (void) allow_fp16;
     model = builder.Compile(compile_preference);
 #endif
     return model;
