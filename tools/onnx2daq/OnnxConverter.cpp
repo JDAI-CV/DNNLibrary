@@ -962,17 +962,22 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                             bias_tensor.float_data()[i]);
             }
 
+            const auto tensor_a_name = output_name + "_imm_a";
+            const auto tensor_b_name = output_name + "_imm_b";
+            const auto tensor_imm_product_name = output_name + "_imm_mul";
             const auto flat_tensor_a = DNN::CreateTensorDirect(
                 builder_, DNN::DataType::Float32, nullptr, &a,
-                &scale_tensor.shape, (output_name + "_imm_a").c_str());
+                &scale_tensor.shape, tensor_a_name.c_str());
             const auto flat_tensor_b = DNN::CreateTensorDirect(
                 builder_, DNN::DataType::Float32, nullptr, &b,
-                &scale_tensor.shape, (output_name + "_imm_b").c_str());
+                &scale_tensor.shape, tensor_b_name.c_str());
+            shaper_.AddShape(tensor_a_name, scale_tensor.shape);
+            shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            AddLayerMul(input_name, output_name + "_imm_a",
-                        output_name + "_imm_mul");
-            AddLayerAdd(output_name + "_imm_mul", output_name + "_imm_b",
+            AddLayerMul(input_name, tensor_a_name,
+                        tensor_imm_product_name);
+            AddLayerAdd(tensor_imm_product_name, tensor_b_name,
                         output_name);
 
             LOG(INFO) << "Converting BatchNormalization completed";
