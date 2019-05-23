@@ -1,0 +1,80 @@
+trigger:
+  branches:
+    include:
+    - master
+  tags:
+    include:
+    - v*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - README.md
+    - docs/*
+    # not trigger onnx2daq build when only dnnlibrary is edited
+    - dnnlibrary/*
+pr:
+  branches:
+    include:
+    - '*'
+  paths:
+    include:
+    - '*'
+    exclude:
+    - README.md
+    - docs/*
+    # not trigger onnx2daq build when only dnnlibrary is edited
+    - dnnlibrary/*
+
+jobs:
+- job: LinuxAppImage
+  pool:
+      vmImage: 'ubuntu-16.04'
+  steps:
+  - checkout: self
+    submodules: true
+  - script: sudo apt install -y protobuf-compiler libprotobuf-dev
+    displayName: Install protobuf
+  - bash: ci/build_onnx2daq.sh
+    displayName: Build
+  - bash: ci/build_appimage.sh
+    displayName: Build AppImage
+  - task: CopyFiles@2
+    inputs:
+        contents: 'onnx2daq.AppImage'
+        targetFolder: $(Build.ArtifactStagingDirectory)
+  - template: template_onnx2daq_publish_artifacts.yml
+  - template: template_onnx2daq_github_release.yml
+# Don't know why Windows CI fails
+# - job: Windows
+#   pool:
+#       vmImage: 'vs2017-win2016'
+#   steps:
+#   - checkout: self
+#     submodules: true
+#   - template: template_onnx2daq_build_python_all_version.yml
+#   - task: CopyFiles@2
+#     inputs:
+#       sourceFolder: '.setuptools-cmake-build\tools\onnx2daq\Release\'
+#       contents: 'onnx2daq.exe'
+#       targetFolder: $(Build.ArtifactStagingDirectory)
+#   - template: template_onnx2daq_publish_artifacts.yml
+#   - template: template_onnx2daq_github_release.yml
+#   - template: template_onnx2daq_upload_to_pypi.yml
+- job: macOS
+  pool:
+      vmImage: 'macOS-10.14'
+  steps:
+  - checkout: self
+    submodules: true
+  - template: template_onnx2daq_build_python_all_version.yml
+  - script: 'cp .setuptools-cmake-build/tools/onnx2daq/onnx2daq .setuptools-cmake-build/tools/onnx2daq/onnx2daq-macos'
+    displayName: 'Rename onnx2daq'
+  - task: CopyFiles@2
+    inputs:
+      sourceFolder: '.setuptools-cmake-build/tools/onnx2daq'
+      contents: 'onnx2daq-macos'
+      targetFolder: $(Build.ArtifactStagingDirectory)
+  - template: template_onnx2daq_publish_artifacts.yml
+  - template: template_onnx2daq_github_release.yml
+  - template: template_onnx2daq_upload_to_pypi.yml

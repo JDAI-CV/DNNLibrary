@@ -1,0 +1,45 @@
+trigger:
+  branches:
+    include:
+    - master
+  tags:
+    include:
+    - v*
+  paths:
+    include:
+    - '*'
+    exclude:
+    - README.md
+    - docs/*
+pr:
+  branches:
+    include:
+    - '*'
+  paths:
+    include:
+    - '*'
+    exclude:
+    - README.md
+    - docs/*
+
+pool:
+    vmImage: 'macOS-10.14'
+steps:
+- checkout: self
+  submodules: true
+- bash: brew install watch gnu-sed
+  displayName: Install watch and gnu-sed
+- bash: ci/download_protoc.sh
+  displayName: Download protoc
+- bash: ci/build_dnnlibrary.sh
+  displayName: Build
+- bash: ci/start_android_emulator.sh
+  displayName: Start Android Emulator
+- bash: pip3 install --user onnx
+  displayName: Install ONNX
+- bash: ci/download_and_test_models.sh
+  displayName: Download And Test Models
+- bash: ci/build_aar.sh
+  env: 
+    BINTRAY_KEY: $(bintrayKey)
+  displayName: Build and Publish AAR package

@@ -258,9 +258,7 @@ class ModelBuilder {
         const std::string &input1_name, const std::string &input2_name,
         const std::string &output_name,
         const std::optional<QuantInfo> &output_quant_info = std::nullopt);
-#if __ANDROID_API__ >= __ANDROID_API_P__
     ModelBuilder &AllowFp16(const bool allowed);
-#endif
     ModelBuilder &AddOutput(const std::string &name);
     std::unique_ptr<Model> Compile(uint32_t preference);
     IndexSeq GetInputIndexes();

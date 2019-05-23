@@ -67,10 +67,12 @@ if (DNN_READ_ONNX)
         PUBLIC
         DNN_READ_ONNX
         )
+else()
+    # Reading ONNX need protobuf, which produces warnings
+    treat_warnings_as_errors(dnnlibrary)
 endif()
 
 
-treat_warnings_as_errors(dnnlibrary)
 
 if (DNN_BUILD_JNI)
     add_library(
