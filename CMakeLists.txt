@@ -12,6 +12,9 @@ include(cmake/system.cmake)
 include(cmake/glog.cmake)
 include(cmake/common.cmake)
 
+include(cmake/utils.cmake)
+dnn_add_msvc_runtime_flag()
+
 configure_glog()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
@@ -29,8 +32,6 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     add_subdirectory(dnnlibrary)
     add_subdirectory(binaries)
 else()
-    include(cmake/utils.cmake)
-    dnn_add_msvc_runtime_flag()
     set (CMAKE_CXX_STANDARD 11)
     if (MSVC)
         set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
