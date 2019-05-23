@@ -14,11 +14,11 @@ MY_ANDROID_HOME="${ANDROID_HOME:-$HOME/Android/Sdk}"
 MY_ANDROID_NDK_HOME="${ANDROID_NDK_HOME:-$MY_ANDROID_HOME/ndk-bundle}"
 JNI_BUILD_DIR=build_jni_tmp
 rm -rf ${JNI_BUILD_DIR} && mkdir ${JNI_BUILD_DIR} && pushd ${JNI_BUILD_DIR}
-cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=android-27 -DANDROID_ABI=arm64-v8a -DBNN_BUILD_JNI=ON -DBNN_BUILD_TEST=OFF -DBNN_BUILD_BENCHMARK=OFF ..
-cmake --build . -- -j$nproc
+cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake -DANDROID_CPP_FEATURES=exceptions -DANDROID_PLATFORM=android-27 -DANDROID_ABI=arm64-v8a -DDNN_BUILD_JNI=ON -DDNN_BUILD_BIN=OFF ..
+cmake --build . --target daq-jni -- -j$nproc
 popd
 mkdir -p ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a
-cp ${JNI_BUILD_DIR}/dnnlibrary/jni/libdnnlibrary-jni.so ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/
+cp ${JNI_BUILD_DIR}/dnnlibrary/jni/libdaq-jni.so ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/
 
 # Increase version code and update version name
 
