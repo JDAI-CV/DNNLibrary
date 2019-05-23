@@ -29,6 +29,8 @@ steps:
   submodules: true
 - bash: brew install watch gnu-sed
   displayName: Install watch and gnu-sed
+- bash: ci/download_protoc.sh
+  displayName: Download protoc
 - bash: ci/build_dnnlibrary.sh
   displayName: Build
 - bash: ci/start_android_emulator.sh
