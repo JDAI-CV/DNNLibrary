@@ -40,6 +40,13 @@ setup_requires = ['cmake']
 tests_require = []
 extras_require = {}
 
+build_source_branch = os.getenv("BUILD_SOURCEBRANCH", "")
+if build_source_branch.startswith('refs/tags/v'):
+    dnnlibrary_version = build_source_branch[len('refs/tags/v'):]
+else:
+    dnnlibrary_version = '0.0.0'
+print("DNNLibrary version: {}".format(dnnlibrary_version))
+
 ################################################################################
 # Global variables for controlling the build variant
 ################################################################################
@@ -184,7 +191,7 @@ packages = setuptools.find_packages()
 
 setuptools.setup(
     name="onnx2daq",
-    # version=VersionInfo.version,
+    version=dnnlibrary_version,
     description="Convert ONNX to daq for DNNLibrary",
     ext_modules=ext_modules,
     cmdclass=cmdclass,
