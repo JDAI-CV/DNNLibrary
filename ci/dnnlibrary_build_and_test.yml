@@ -35,6 +35,8 @@ steps:
   displayName: Build
 - bash: ci/start_android_emulator.sh
   displayName: Start Android Emulator
+- bash: pip3 install --user onnx
+  displayName: Install ONNX
 - bash: ci/download_and_test_models.sh
   displayName: Download And Test Models
 - bash: ci/build_aar.sh
