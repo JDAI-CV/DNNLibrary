@@ -938,10 +938,12 @@ ModelBuilder &ModelBuilder::AddOutput(const std::string &name) {
     return *this;
 }
 
-#if __ANDROID_API__ >= __ANDROID_API_P__
 ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
+#if __ANDROID_API__ >= __ANDROID_API_P__
     ANeuralNetworksModel_relaxComputationFloat32toFloat16(dnn_model_->model_,
                                                           allowed);
+#else
+    (void) allowed;
+#endif
     return *this;
 }
-#endif
