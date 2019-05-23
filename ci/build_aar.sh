@@ -18,7 +18,7 @@ cmake -DCMAKE_SYSTEM_NAME=Android -DCMAKE_TOOLCHAIN_FILE=${MY_ANDROID_NDK_HOME}/
 cmake --build . --target daq-jni -- -j$nproc
 popd
 mkdir -p ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a
-cp ${JNI_BUILD_DIR}/dnnlibrary/jni/libdaq-jni.so ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/
+cp ${JNI_BUILD_DIR}/dnnlibrary/libdaq-jni.so ci/android_aar/dnnlibrary/src/main/jniLibs/arm64-v8a/
 
 # Increase version code and update version name
 
