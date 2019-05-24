@@ -1,12 +1,13 @@
 #include <pybind11/pybind11.h>
 
-#include "OnnxConverter.h"
+#include <tools/onnx2daq/OnnxConverter.h>
 
 namespace py = pybind11;
+using dnn::OnnxConverter;
 
 void convert(const std::string &model_str,
                             const std::string &filepath,
-                            const css &table_file="") {
+                            const std::string &table_file="") {
 
     OnnxConverter converter;
     converter.Convert(model_str, filepath, table_file);

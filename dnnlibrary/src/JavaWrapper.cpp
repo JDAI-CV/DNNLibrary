@@ -5,11 +5,14 @@
 #include <map>
 #include <vector>
 
-#include <DaqReader.h>
 #include <android/asset_manager_jni.h>
-#include "ModelBuilder.h"
+#include <dnnlibrary/DaqReader.h>
+#include <dnnlibrary/ModelBuilder.h>
 #include "jni_handle.h"
 
+using dnn::DaqReader;
+using dnn::Model;
+using dnn::ModelBuilder;
 using std::map;
 using std::string;
 

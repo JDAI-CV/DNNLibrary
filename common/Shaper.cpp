@@ -1,10 +1,14 @@
-#include "Shaper.h"
+#include <common/Shaper.h>
 
 #include <common/helper.h>
 #include <glog/logging.h>
 
 using std::string;
 using std::vector;
+
+Shaper::len_t Shaper::total(const Shape &shape) {
+    return Product(shape);
+}
 
 /**
  *  strides: [stride_y, stride_x]
@@ -295,3 +299,11 @@ size_t Shaper::GetSize(const std::string &name) {
 void Shaper::Clear() {
     shape_map_.clear();
 }
+
+std::ostream &operator<<(std::ostream &os, const Shaper &shaper) {
+    for (const auto &p : shaper.shape_map_) {
+        os << (p.first + ": ") << p.second << std::endl;
+    }
+    return os;
+}
+

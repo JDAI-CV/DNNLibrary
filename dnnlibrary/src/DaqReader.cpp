@@ -2,7 +2,7 @@
 // Created by daquexian on 8/13/18.
 //
 
-#include "DaqReader.h"
+#include <dnnlibrary/DaqReader.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -14,6 +14,7 @@
 #include <flatbuffers_helper.h>
 #include <glog/logging.h>
 
+namespace dnn {
 void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder);
 
 std::string layer_type_to_str(DNN::LayerType type) {
@@ -357,4 +358,5 @@ void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder) {
     AddInitializersFromBuffer(*model, builder);
     AddInputs(*model, builder);
     AddLayers(*model, builder);
+}
 }

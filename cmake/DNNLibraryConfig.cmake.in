@@ -1,0 +1,18 @@
+get_filename_component(DNNLibrary_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+if (@DNN_READ_ONNX@)
+    if (NOT TARGET protobuf::libprotobuf)
+        find_package(Protobuf REQUIRED)
+    endif()
+    if (NOT TARGET onnx)
+        find_package(ONNX REQUIRED)
+    endif()
+endif()
+
+if (NOT TARGET glog::glog)
+    find_package(glog REQUIRED)
+endif()
+
+if (NOT TARGET dnnlibrary::dnnlibrary)
+    include("${DNNLibrary_CMAKE_DIR}/DNNLibraryTargets.cmake")
+endif()

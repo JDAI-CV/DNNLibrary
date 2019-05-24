@@ -1,9 +1,10 @@
-#include "OnnxReader.h"
+#include <dnnlibrary/OnnxReader.h>
 
 #include <fstream>
 
 #include <tools/onnx2daq/OnnxConverter.h>
 
+namespace dnn {
 void OnnxReader::ReadOnnx(const std::string &filepath, ModelBuilder &builder) {
     ONNX_NAMESPACE::ModelProto model_proto;
     {
@@ -27,4 +28,5 @@ void OnnxReader::ReadOnnx(const ONNX_NAMESPACE::ModelProto &model_proto, ModelBu
     
     DaqReader daq_reader;
     daq_reader.ReadDaq(std::move(buf), builder);
+}
 }

@@ -4,13 +4,15 @@
 #include <string>
 
 #include <glog/logging.h>
-#include "OnnxConverter.h"
+#include "tools/onnx2daq/OnnxConverter.h"
 
+using dnn::OnnxConverter;
 using std::string;
 using std::vector;
 
 void usage(const std::string &filename) {
-    std::cout << "Usage: " << filename << " onnx_model output_filename [table_file]" << std::endl;
+    std::cout << "Usage: " << filename
+              << " onnx_model output_filename [table_file]" << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -20,7 +22,7 @@ int main(int argc, char **argv) {
         usage(argv[0]);
         return -1;
     }
-    css table_file = argc == 4 ? argv[3] : "";
+    const std::string table_file = argc == 4 ? argv[3] : "";
     ONNX_NAMESPACE::ModelProto model_proto;
     {
         std::ifstream ifs(argv[1], std::ios::in | std::ios::binary);

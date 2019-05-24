@@ -3,6 +3,10 @@ if (DNN_BUILD_BIN)
         dnn_retrieve_result.cpp)
     target_link_libraries(dnn_retrieve_result
         dnnlibrary)
+    target_include_directories(dnn_retrieve_result
+        PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        )
 
     if ((NOT DNN_READ_ONNX) OR DNN_SYSTEM_PROTOBUF)
         treat_warnings_as_errors(dnn_retrieve_result)
@@ -12,6 +16,10 @@ if (DNN_BUILD_BIN)
         dnn_benchmark.cpp)
     target_link_libraries(dnn_benchmark
         dnnlibrary)
+    target_include_directories(dnn_benchmark
+        PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        )
 
     if ((NOT DNN_READ_ONNX) OR DNN_SYSTEM_PROTOBUF)
         treat_warnings_as_errors(dnn_benchmark)
@@ -21,6 +29,10 @@ if (DNN_BUILD_BIN)
         ex_model_builder.cpp)
     target_link_libraries(ex_model_builder
         dnnlibrary)
+    target_include_directories(ex_model_builder
+        PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        )
 
     if ((NOT DNN_READ_ONNX) OR DNN_SYSTEM_PROTOBUF)
         treat_warnings_as_errors(ex_model_builder)

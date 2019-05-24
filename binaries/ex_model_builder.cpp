@@ -6,12 +6,13 @@
 #include <vector>
 
 #include <common/helper.h>
+#include <dnnlibrary/ModelBuilder.h>
 #include <glog/logging.h>
-#include "ModelBuilder.h"
-#include "android_log_helper.h"
+
+using namespace android::nn::wrapper;
+using dnn::ModelBuilder;
 
 int main() {
-    using namespace android::nn::wrapper;
     ModelBuilder builder;
     builder.Prepare();
     const bool quant8 = true;

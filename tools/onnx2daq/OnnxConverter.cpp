@@ -1,4 +1,4 @@
-#include "OnnxConverter.h"
+#include <tools/onnx2daq/OnnxConverter.h>
 
 #include <fstream>
 #include <map>
@@ -7,6 +7,7 @@
 
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
+#include <common/helper.h>
 #include <glog/logging.h>
 #include <onnx/optimizer/optimize.h>
 #include "NodeAttrHelper.h"
@@ -15,6 +16,7 @@ using std::string;
 using std::vector;
 using Shape = Shaper::Shape;
 
+namespace dnn {
 std::string OnnxConverter::m(const std::string &str) {
     if (name_map_.find(str) != name_map_.end()) {
         return name_map_[str];
@@ -975,10 +977,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            AddLayerMul(input_name, tensor_a_name,
-                        tensor_imm_product_name);
-            AddLayerAdd(tensor_imm_product_name, tensor_b_name,
-                        output_name);
+            AddLayerMul(input_name, tensor_a_name, tensor_imm_product_name);
+            AddLayerAdd(tensor_imm_product_name, tensor_b_name, output_name);
 
             LOG(INFO) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
@@ -1054,3 +1054,4 @@ std::unique_ptr<uint8_t[]> OnnxConverter::GetBuf() {
     memcpy(ptr.get(), builder_.GetBufferPointer(), builder_.GetSize());
     return std::move(ptr);
 }
+}  // namespace dnn

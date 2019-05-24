@@ -7,16 +7,13 @@
 #include <iostream>
 
 #include "StrKeyMap.h"
-#include "helper.h"
 
 class Shaper {
    public:
     using len_t = uint32_t;
     using Shape = std::vector<len_t>;
 
-    static len_t total(const Shape &shape) {
-        return Product(shape);
-    }
+    static len_t total(const Shape &shape);
 
     void Conv(const std::string &input_name,
                   const std::string &weight_name,
@@ -106,13 +103,7 @@ class Shaper {
     inline const Shape &operator[](const std::string &key) {
         return shape_map_.at(key);
     }
-    inline friend std::ostream &operator<<(std::ostream &os,
-                                           const Shaper &shaper) {
-        for (const auto &p : shaper.shape_map_) {
-            os << (p.first + ": ") << p.second << std::endl;
-        }
-        return os;
-    }
+    friend std::ostream &operator<<(std::ostream &os, const Shaper &shaper);
 
    private:
     StrKeyMap<Shape> shape_map_;
