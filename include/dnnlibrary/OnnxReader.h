@@ -9,9 +9,9 @@
 #include <string>
 
 #include <common/daq_generated.h>
-#include "DaqReader.h"
+#include <dnnlibrary/DaqReader.h>
+#include <dnnlibrary/ModelBuilder.h>
 #include <flatbuffers/flatbuffers.h>
-#include <ModelBuilder.h>
 #include <onnx/onnx_pb.h>
 
 class OnnxReader {
@@ -22,4 +22,3 @@ class OnnxReader {
 };
 
 #endif  // DNNLIBRARY_ONNXREADER_H
-#include <onnx/onnx_pb.h>

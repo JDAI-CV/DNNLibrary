@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include <ModelBuilder.h>
+#include <dnnlibrary/ModelBuilder.h>
 #include <common/daq_generated.h>
 #include <flatbuffers/flatbuffers.h>
 

@@ -2,14 +2,24 @@
 // Created by daquexian on 2017/11/8.
 //
 
-#include <Model.h>
+#include <dnnlibrary/Model.h>
 
 #include <sys/mman.h>
 #include <stdexcept>
 #include <string>
 #include <utility>
 
+#include <common/helper.h>
 #include <glog/logging.h>
+
+template void Model::Predict<float>(const std::vector<float> &);
+template void Model::Predict<uint8_t>(const std::vector<uint8_t> &);
+template void Model::Predict<float>(const std::vector<std::vector<float>> &);
+template void Model::Predict<uint8_t>(const std::vector<std::vector<uint8_t>> &);
+template void Model::Predict<float>(const float *);
+template void Model::Predict<uint8_t>(const uint8_t *);
+template void Model::Predict<float>(const std::vector<float *> &);
+template void Model::Predict<uint8_t>(const std::vector<uint8_t *> &);
 
 void Model::PrepareForExecution() {
     if (compilation_ == nullptr) {
@@ -120,3 +130,37 @@ std::vector<std::string> Model::GetOutputs() {
     return output_names_;
 }
 
+template <typename T>
+void Model::Predict(const std::vector<T> &input) {
+    DNN_ASSERT_EQ(input.size(), GetSize(GetInputs()[0]));
+    // const_cast is a ugly workaround, vector<const T*> causes strange errors
+    Predict<T>({const_cast<T *>(input.data())});
+}
+template <typename T>
+void Model::Predict(const std::vector<std::vector<T>> &inputs) {
+    std::vector<T *> input_ptrs;
+    for (size_t i = 0; i < inputs.size(); i++) {
+        auto &input = inputs[i];
+        DNN_ASSERT_EQ(input.size(), GetSize(GetInputs()[i]));
+        // const_cast is a ugly workaround, vector<const T*> causes strange errors
+        input_ptrs.push_back(const_cast<T *>(input.data()));
+    }
+    Predict<T>(input_ptrs);
+}
+template <typename T>
+void Model::Predict(const T *input) {
+    // Predict<T>({input}) doesn't compile. Have no idea why.
+    std::vector<T *> inputs;
+    inputs.push_back(const_cast<T *>(input));
+    Predict<T>(inputs);
+}
+
+template <typename T>
+void Model::Predict(const std::vector<T *> &inputs) {
+    DNN_ASSERT_EQ(inputs.size(), GetInputs().size());
+    if (!prepared_for_exe_) PrepareForExecution();
+    for (size_t i = 0; i < inputs.size(); i++) {
+        SetInputBuffer(i, inputs[i]);
+    }
+    PredictAfterSetInputBuffer();
+}

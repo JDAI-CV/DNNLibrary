@@ -1,23 +1,25 @@
 # dnn_protobuf_generate_cpp(ONNX_SRCS ONNX_HDRS onnx.proto3)
 
 set(dnnlibrary_src 
-    include/ModelBuilder.h
-    include/Model.h
-    include/DaqReader.h
-    include/android_log_helper.h
-    include/operand_helper.h
-    include/flatbuffers_helper.h
+    ${PROJECT_SOURCE_DIR}/include/dnnlibrary/ModelBuilder.h
+    ${PROJECT_SOURCE_DIR}/include/dnnlibrary/Model.h
+    ${PROJECT_SOURCE_DIR}/include/dnnlibrary/DaqReader.h
+    ${PROJECT_SOURCE_DIR}/include/dnnlibrary/NeuralNetworksWrapper.h
+    src/android_log_helper.h
+    src/operand_helper.h
+    src/flatbuffers_helper.h
     src/ModelBuilder.cpp
     src/Model.cpp
     src/DaqReader.cpp 
-    ${PROJECT_SOURCE_DIR}/common/Shaper.h
+    src/NeuralNetworksWrapper.cpp
+    ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
-    ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h 
+    ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h 
     )
 if (DNN_READ_ONNX)
     list(APPEND dnnlibrary_src 
         src/OnnxReader.cpp
-        src/OnnxReader.h)
+        ${PROJECT_SOURCE_DIR}/include/dnnlibrary/OnnxReader.h)
 endif()
 
 add_library(dnnlibrary
@@ -28,10 +30,10 @@ target_include_directories(
     dnnlibrary
     PUBLIC
     $<INSTALL_INTERFACE:include>
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    PRIVATE
     ${PROJECT_SOURCE_DIR}
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    ${CMAKE_SYSROOT}/usr/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_BINARY_DIR})
 
 find_library(

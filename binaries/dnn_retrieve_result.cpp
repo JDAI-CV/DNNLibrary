@@ -10,15 +10,14 @@
 #include <string>
 #include <vector>
 
-#include <DaqReader.h>
-#include "argh.h"
-#ifdef DNN_READ_ONNX
-#include <OnnxReader.h>
-#endif
 #include <common/helper.h>
+#include <dnnlibrary/DaqReader.h>
+#include <dnnlibrary/ModelBuilder.h>
+#ifdef DNN_READ_ONNX
+#include <dnnlibrary/OnnxReader.h>
+#endif
 #include <glog/logging.h>
-#include "ModelBuilder.h"
-#include "android_log_helper.h"
+#include "argh.h"
 
 using std::cout;
 using std::endl;

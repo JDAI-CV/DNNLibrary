@@ -3,11 +3,11 @@
 # message(${CMAKE_CURRENT_BINARY_DIR})
 add_library(onnx2daq
     ${CMAKE_CURRENT_SOURCE_DIR}/OnnxConverter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/OnnxConverter.h
+    ${PROJECT_SOURCE_DIR}/include/tools/onnx2daq/OnnxConverter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.h
-    ${PROJECT_SOURCE_DIR}/common/StrKeyMap.h
-    ${PROJECT_SOURCE_DIR}/common/Shaper.h
+    ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h
+    ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     )
 target_link_libraries(onnx2daq
@@ -16,6 +16,9 @@ target_link_libraries(onnx2daq
     onnx)
 target_include_directories(onnx2daq
     PUBLIC
+    $<INSTALL_INTERFACE:include>
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     )

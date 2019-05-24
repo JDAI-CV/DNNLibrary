@@ -21,7 +21,6 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include <common/helper.h>
 
 namespace android {
 namespace nn {
@@ -115,37 +114,9 @@ struct OperandType {
     Type type;
     std::vector<uint32_t> dimensions;
     std::optional<SymmPerChannelQuantParams> channelQuant;
-    OperandType(Type type, std::vector<uint32_t> d = {}, float scale = 0.0f, int32_t zeroPoint = 0)
-        : type(type), dimensions(std::move(d)), channelQuant(std::nullopt) {
-        if (dimensions.empty()) {
-            DNN_ASSERT(isScalarType(type), typeToStr(type));
-        } else {
-            DNN_ASSERT(!isScalarType(type), typeToStr(type));
-        }
-        operandType = {
-                .type = static_cast<int32_t>(type),
-                .dimensionCount = static_cast<uint32_t>(dimensions.size()),
-                .dimensions = dimensions.size() > 0 ? dimensions.data() : nullptr,
-                .scale = scale,
-                .zeroPoint = zeroPoint,
-        };
-    }
+    OperandType(Type type, std::vector<uint32_t> d = {}, float scale = 0.0f, int32_t zeroPoint = 0);
     OperandType(Type type, std::vector<uint32_t> data, float scale, int32_t zeroPoint,
-                SymmPerChannelQuantParams&& channelQuant)
-        : type(type), dimensions(std::move(data)), channelQuant(std::move(channelQuant)) {
-        if (dimensions.empty()) {
-            DNN_ASSERT(isScalarType(type), "");
-        } else {
-            DNN_ASSERT(!isScalarType(type), "");
-        }
-        operandType = {
-                .type = static_cast<int32_t>(type),
-                .dimensionCount = static_cast<uint32_t>(dimensions.size()),
-                .dimensions = dimensions.size() > 0 ? dimensions.data() : nullptr,
-                .scale = scale,
-                .zeroPoint = zeroPoint,
-        };
-    }
+                SymmPerChannelQuantParams&& channelQuant);
     bool isQuant() const {
         return type == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL || type == Type::TENSOR_QUANT16_SYMM || type == Type::TENSOR_QUANT16_ASYMM || type == Type::TENSOR_QUANT8_ASYMM || type == Type::TENSOR_INT32;
     }

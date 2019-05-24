@@ -69,7 +69,7 @@ class OnnxConverter {
     std::pair<nonstd::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
               FuseCode>
     FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
-                   css &output_name);
+                   const std::string &output_name);
     void CreateTensorFb(const Tensor &tensor, const DNN::DataType &data_type);
     void CreateTensorFb(const std::string &name, const Tensor &tensor);
     void CreateTensorFb(const std::string &name, const Tensor &tensor,
@@ -79,7 +79,7 @@ class OnnxConverter {
 
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
-    void ReadTableFile(css &table_file);
+    void ReadTableFile(const std::string &table_file);
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
 
     void AddConv(const std::string &input_name, const std::vector<int> &strides,
@@ -88,11 +88,13 @@ class OnnxConverter {
                  const std::string &ori_weight_name,
                  const nonstd::optional<std::string> &bias_name,
                  const std::string &output_name);
-    void AddLayerPool(css &op, css &input_name,
+    void AddLayerPool(const std::string &op, const std::string &input_name,
                       const std::vector<int> &kernel_shape,
                       const std::vector<int> &pads,
-                      const std::vector<int> &strides, css &output_name);
-    void SetIdentity(css &input_name, css &output_name);
+                      const std::vector<int> &strides,
+                      const std::string &output_name);
+    void SetIdentity(const std::string &input_name,
+                     const std::string &output_name);
     // OnnxConverter auto generated methods start
     void AddLayerConvImpl(const std::string &input, const std::string &weight,
                           const nonstd::optional<std::string> &bias,
@@ -170,9 +172,9 @@ class OnnxConverter {
 
    public:
     void Convert(const std::string &model_str, const std::string &filepath,
-                 const css &table_file = "");
+                 const std::string &table_file = "");
     void Convert(const ONNX_NAMESPACE::ModelProto &model,
-                 const css &table_file = "");
+                 const std::string &table_file = "");
     void Save(const std::string &filename);
     std::unique_ptr<uint8_t[]> GetBuf();
 };

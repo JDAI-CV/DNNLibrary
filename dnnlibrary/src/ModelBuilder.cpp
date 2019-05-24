@@ -1,7 +1,7 @@
 //
 // Created by daquexian on 2017/11/8.
 //
-#include "ModelBuilder.h"
+#include <dnnlibrary/ModelBuilder.h>
 
 #include <sys/mman.h>
 #include <algorithm>

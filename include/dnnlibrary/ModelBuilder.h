@@ -13,10 +13,10 @@
 #include <string>
 #include <vector>
 
-#include <NeuralNetworksWrapper.h>
+#include <dnnlibrary/NeuralNetworksWrapper.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
-#include "Model.h"
+#include <dnnlibrary/Model.h>
 
 class ModelBuilder {
    public:
@@ -66,13 +66,13 @@ class ModelBuilder {
     Index OperandFromScalar(uint32_t value);
     Index AddMissingOperand(
         const android::nn::wrapper::OperandType &operand_type);
-    Index FillOperand(css &name,
+    Index FillOperand(const std::string &name,
                       const android::nn::wrapper::OperandType &operand_type,
                       const float val);
-    Index FillOperand(css &name,
+    Index FillOperand(const std::string &name,
                       const android::nn::wrapper::OperandType &operand_type,
                       const int32_t val);
-    Index FillOperand(css &name,
+    Index FillOperand(const std::string &name,
                       const android::nn::wrapper::OperandType &operand_type,
                       const uint32_t val);
 

@@ -10,11 +10,10 @@
 #include <string>
 #include <vector>
 
-#include <DaqReader.h>
 #include <common/helper.h>
+#include <dnnlibrary/DaqReader.h>
+#include <dnnlibrary/ModelBuilder.h>
 #include <glog/logging.h>
-#include "ModelBuilder.h"
-#include "android_log_helper.h"
 
 using std::cout;
 using std::endl;
@@ -32,7 +31,7 @@ auto GetModel(css &daq_name, const bool allow_fp16,
 #if __ANDROID_API__ >= __ANDROID_API_P__
     model = builder.AllowFp16(allow_fp16).Compile(compile_preference);
 #else
-    (void) allow_fp16;
+    (void)allow_fp16;
     model = builder.Compile(compile_preference);
 #endif
     return model;
@@ -81,7 +80,7 @@ int main(int argc, char **argv) {
         }                                                                 \
     }
 
-#define BENCHMARK(fp16_candidates, preference_candidates)                        \
+#define BENCHMARK(fp16_candidates, preference_candidates)                      \
     for (const auto allow_fp16 : fp16_candidates) {                            \
         for (const auto compile_preference : preference_candidates) {          \
             auto model = GetModel(daq_name, allow_fp16, compile_preference);   \

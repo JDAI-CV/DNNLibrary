@@ -2,7 +2,7 @@
 // Created by daquexian on 8/13/18.
 //
 
-#include "DaqReader.h"
+#include <dnnlibrary/DaqReader.h>
 
 #include <fcntl.h>
 #include <sys/mman.h>

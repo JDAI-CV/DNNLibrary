@@ -6,9 +6,8 @@
 #include <vector>
 
 #include <common/helper.h>
+#include <dnnlibrary/ModelBuilder.h>
 #include <glog/logging.h>
-#include "ModelBuilder.h"
-#include "android_log_helper.h"
 
 int main() {
     using namespace android::nn::wrapper;

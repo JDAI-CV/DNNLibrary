@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-#include <NeuralNetworksWrapper.h>
+#include <dnnlibrary/NeuralNetworksWrapper.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 
@@ -42,35 +42,13 @@ class Model {
 
    public:
     template <typename T>
-    void Predict(const std::vector<T> &input) {
-        DNN_ASSERT_EQ(input.size, GetSize(GetInputs()[0]));
-        // const_cast is a ugly workaround, vector<const T*> causes strange errors
-        Predict<T>({const_cast<T *>(input.data())});
-    }
+    void Predict(const std::vector<T> &input);
     template <typename T>
-    void Predict(const std::vector<std::vector<T>> &inputs) {
-        std::vector<T *> input_ptrs;
-        for (size_t i = 0; i < inputs.size(); i++) {
-            auto &input = inputs[i];
-            DNN_ASSERT_EQ(input.size(), GetSize(GetInputs()[i]));
-            // const_cast is a ugly workaround, vector<const T*> causes strange errors
-            input_ptrs.push_back(const_cast<T *>(input.data()));
-        }
-        Predict<T>(input_ptrs);
-    }
+    void Predict(const std::vector<std::vector<T>> &inputs);
     template <typename T>
-    void Predict(const T *input) {
-        Predict<T>(std::vector<T*>{input});
-    }
+    void Predict(const T *input);
     template <typename T>
-    void Predict(const std::vector<T *> &inputs) {
-        DNN_ASSERT_EQ(inputs.size(), GetInputs().size());
-        if (!prepared_for_exe_) PrepareForExecution();
-        for (size_t i = 0; i < inputs.size(); i++) {
-            SetInputBuffer(i, inputs[i]);
-        }
-        PredictAfterSetInputBuffer();
-    }
+    void Predict(const std::vector<T *> &inputs);
 
     ~Model();
     void SetOutputBuffer(const int32_t index, float *buffer);

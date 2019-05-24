@@ -1,4 +1,4 @@
-#include "OnnxConverter.h"
+#include <tools/onnx2daq/OnnxConverter.h>
 
 #include <fstream>
 #include <map>
@@ -7,6 +7,7 @@
 
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
+#include <common/helper.h>
 #include <glog/logging.h>
 #include <onnx/optimizer/optimize.h>
 #include "NodeAttrHelper.h"
@@ -975,10 +976,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            AddLayerMul(input_name, tensor_a_name,
-                        tensor_imm_product_name);
-            AddLayerAdd(tensor_imm_product_name, tensor_b_name,
-                        output_name);
+            AddLayerMul(input_name, tensor_a_name, tensor_imm_product_name);
+            AddLayerAdd(tensor_imm_product_name, tensor_b_name, output_name);
 
             LOG(INFO) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
