@@ -34,15 +34,15 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Android")
     # Build DNNLibrary (on Android)
     install(TARGETS onnx2daq
         EXPORT DNNLibraryTargets
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
 else()
     # Build onnx2daq (on non-Android)
     install(TARGETS onnx2daq
         EXPORT ONNX2daqTargets
-        ARCHIVE DESTINATION ${LIBDIR}
-        LIBRARY DESTINATION ${LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         )
 endif()
 add_library(dnnlibrary::onnx2daq ALIAS onnx2daq)
@@ -59,9 +59,9 @@ if (NOT ONNX2DAQ_ONLY_LIB)
     set_target_properties(onnx2daq-bin PROPERTIES OUTPUT_NAME "onnx2daq")
     install(TARGETS onnx2daq-bin
         EXPORT ONNX2daqTargets
-        RUNTIME DESTINATION ${BINDIR})
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
     
-	add_library(dnnlibrary::onnx2daq-bin ALIAS onnx2daq-bin)
+	add_executable(dnnlibrary::onnx2daq-bin ALIAS onnx2daq-bin)
 
     if (${DNN_BUILD_PYTHON})
         pybind11_add_module(_onnx2daq ${CMAKE_CURRENT_SOURCE_DIR}/pywrapper.cpp)

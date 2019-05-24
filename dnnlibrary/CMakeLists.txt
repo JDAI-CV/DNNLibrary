@@ -77,8 +77,8 @@ endif()
 include(GNUInstallDirs)
 install(TARGETS dnnlibrary
     EXPORT DNNLibraryTargets
-    ARCHIVE DESTINATION ${LIBDIR}
-    LIBRARY DESTINATION ${LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     )
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
         DESTINATION include)
@@ -93,7 +93,7 @@ if (DNN_BUILD_JNI)
         dnnlibrary)
     install(TARGETS daq-jni
         EXPORT DNNLibraryTargets
-        ARCHIVE DESTINATION ${LIBDIR})
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
     add_library(dnnlibrary::daq-jni ALIAS daq-jni)
 endif()
 
