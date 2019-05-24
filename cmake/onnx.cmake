@@ -28,6 +28,7 @@ function(configure_onnx)
         message(FATAL ERROR "DNN_CUSTOM_PROTOC_EXECUTABLE is not set or wrong.")
     endif()
     set(ONNX_CUSTOM_PROTOC_EXECUTABLE ${DNN_CUSTOM_PROTOC_EXECUTABLE})
+    option(ONNX_USE_LITE_PROTO "" ON)
     add_subdirectory(${PROJECT_SOURCE_DIR}/third_party/onnx)
     target_compile_definitions(onnx_proto PRIVATE ONNX_BUILD_MAIN_LIB)
     # Since https://github.com/onnx/onnx/pull/1318 is merged, we don't need to set it manually

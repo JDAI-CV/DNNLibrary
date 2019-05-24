@@ -1,6 +1,6 @@
 get_filename_component(ONNX2daq_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
-if (NOT TARGET protobuf::libprotobuf)
+if (NOT TARGET protobuf::libprotobuf-lite)
     find_package(Protobuf REQUIRED)
 endif()
 

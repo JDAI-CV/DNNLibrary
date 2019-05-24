@@ -1,7 +1,7 @@
 get_filename_component(DNNLibrary_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
 if (@DNN_READ_ONNX@)
-    if (NOT TARGET protobuf::libprotobuf)
+    if (NOT TARGET protobuf::libprotobuf-lite)
         find_package(Protobuf REQUIRED)
     endif()
     if (NOT TARGET onnx)

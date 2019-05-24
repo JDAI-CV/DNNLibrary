@@ -11,7 +11,7 @@ add_library(onnx2daq
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     )
 target_link_libraries(onnx2daq
-    protobuf::libprotobuf
+    protobuf::libprotobuf-lite
     glog::glog
     onnx)
 target_include_directories(onnx2daq
@@ -72,9 +72,6 @@ if (NOT ONNX2DAQ_ONLY_LIB)
 
         target_link_libraries(_onnx2daq
             PUBLIC
-            protobuf::libprotobuf
-            glog::glog
-            onnx
             onnx2daq
             pybind11::pybind11
             )
