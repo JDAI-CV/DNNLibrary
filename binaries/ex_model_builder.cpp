@@ -9,8 +9,10 @@
 #include <dnnlibrary/ModelBuilder.h>
 #include <glog/logging.h>
 
+using namespace android::nn::wrapper;
+using dnn::ModelBuilder;
+
 int main() {
-    using namespace android::nn::wrapper;
     ModelBuilder builder;
     builder.Prepare();
     const bool quant8 = true;

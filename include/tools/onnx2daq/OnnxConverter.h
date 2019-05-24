@@ -5,6 +5,7 @@
 #include <onnx/onnx_pb.h>
 #include "optional.h"
 
+namespace dnn {
 class OnnxConverter {
    private:
     Shaper shaper_;
@@ -178,3 +179,4 @@ class OnnxConverter {
     void Save(const std::string &filename);
     std::unique_ptr<uint8_t[]> GetBuf();
 };
+}  // namespace dnn

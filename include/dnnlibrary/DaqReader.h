@@ -12,6 +12,7 @@
 #include <common/daq_generated.h>
 #include <flatbuffers/flatbuffers.h>
 
+namespace dnn {
 class DaqReader {
    public:
     void ReadDaq(const std::string &filepath, ModelBuilder &builder,
@@ -21,5 +22,6 @@ class DaqReader {
     void ReadDaq(std::unique_ptr<uint8_t[]> buf, ModelBuilder &builder);
     void ReadDaq(const uint8_t *buf, ModelBuilder &builder);
 };
+}
 
 #endif  // DNNLIBRARY_DAQREADER_H

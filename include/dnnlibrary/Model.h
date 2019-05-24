@@ -9,10 +9,11 @@
 #include <memory>
 #include <vector>
 
-#include <dnnlibrary/NeuralNetworksWrapper.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
+#include <dnnlibrary/NeuralNetworksWrapper.h>
 
+namespace dnn {
 class Model {
     friend class ModelBuilder;
 
@@ -34,7 +35,8 @@ class Model {
     void AddOutput(const std::string &name, const Shaper::Shape &shape);
     void SetInputBuffer(const int32_t index, const float *buffer);
     void SetInputBuffer(const int32_t index, const uint8_t *buffer);
-    void SetInputBuffer(const int32_t index, const void *buffer, const size_t elemsize);
+    void SetInputBuffer(const int32_t index, const void *buffer,
+                        const size_t elemsize);
     void PrepareForExecution();
     void PredictAfterSetInputBuffer();
     bool prepared_for_exe_;
@@ -54,11 +56,13 @@ class Model {
     void SetOutputBuffer(const int32_t index, float *buffer);
     void SetOutputBuffer(const int32_t index, uint8_t *buffer);
     void SetOutputBuffer(const int32_t index, char *buffer);
-    void SetOutputBuffer(const int32_t index, void *buffer, const size_t elemsize);
+    void SetOutputBuffer(const int32_t index, void *buffer,
+                         const size_t elemsize);
     size_t GetSize(const std::string &name);
     Shaper::Shape GetShape(const std::string &name);
     std::vector<std::string> GetInputs();
     std::vector<std::string> GetOutputs();
 };
+}
 
 #endif  // NNAPIEXAMPLE_MODEL_H

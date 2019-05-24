@@ -12,6 +12,7 @@
 #include <common/helper.h>
 #include <glog/logging.h>
 
+namespace dnn {
 template void Model::Predict<float>(const std::vector<float> &);
 template void Model::Predict<uint8_t>(const std::vector<uint8_t> &);
 template void Model::Predict<float>(const std::vector<std::vector<float>> &);
@@ -163,4 +164,5 @@ void Model::Predict(const std::vector<T *> &inputs) {
         SetInputBuffer(i, inputs[i]);
     }
     PredictAfterSetInputBuffer();
+}
 }

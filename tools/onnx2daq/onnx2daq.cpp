@@ -6,11 +6,13 @@
 #include <glog/logging.h>
 #include "tools/onnx2daq/OnnxConverter.h"
 
+using dnn::OnnxConverter;
 using std::string;
 using std::vector;
 
 void usage(const std::string &filename) {
-    std::cout << "Usage: " << filename << " onnx_model output_filename [table_file]" << std::endl;
+    std::cout << "Usage: " << filename
+              << " onnx_model output_filename [table_file]" << std::endl;
 }
 
 int main(int argc, char **argv) {

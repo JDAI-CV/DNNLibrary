@@ -34,6 +34,7 @@
             std::string(", ") + (note));                                  \
     }
 
+namespace dnn {
 using std::array;
 using std::ifstream;
 using std::ios;
@@ -946,4 +947,5 @@ ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
     (void) allowed;
 #endif
     return *this;
+}
 }

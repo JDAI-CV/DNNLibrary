@@ -3,6 +3,7 @@
 #include <tools/onnx2daq/OnnxConverter.h>
 
 namespace py = pybind11;
+using dnn::OnnxConverter;
 
 void convert(const std::string &model_str,
                             const std::string &filepath,

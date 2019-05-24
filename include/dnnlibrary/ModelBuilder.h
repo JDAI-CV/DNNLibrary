@@ -18,6 +18,7 @@
 #include <common/StrKeyMap.h>
 #include <dnnlibrary/Model.h>
 
+namespace dnn {
 class ModelBuilder {
    public:
     using Index = uint32_t;
@@ -279,4 +280,5 @@ class ModelBuilder {
         (indexes.push_back(OperandFromScalar(args)), ...);
     }
 };
+}
 #endif  // NNAPIEXAMPLE_MODELBUILDER_H

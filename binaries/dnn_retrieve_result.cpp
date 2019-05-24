@@ -23,6 +23,10 @@ using std::cout;
 using std::endl;
 using std::string;
 using Clock = std::chrono::high_resolution_clock;
+using dnn::DaqReader;
+using dnn::Model;
+using dnn::ModelBuilder;
+using dnn::OnnxReader;
 
 bool hasEnding(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {

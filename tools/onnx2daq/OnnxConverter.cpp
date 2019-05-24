@@ -16,6 +16,7 @@ using std::string;
 using std::vector;
 using Shape = Shaper::Shape;
 
+namespace dnn {
 std::string OnnxConverter::m(const std::string &str) {
     if (name_map_.find(str) != name_map_.end()) {
         return name_map_[str];
@@ -1053,3 +1054,4 @@ std::unique_ptr<uint8_t[]> OnnxConverter::GetBuf() {
     memcpy(ptr.get(), builder_.GetBufferPointer(), builder_.GetSize());
     return std::move(ptr);
 }
+}  // namespace dnn

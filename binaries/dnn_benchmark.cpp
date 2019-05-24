@@ -19,6 +19,9 @@ using std::cout;
 using std::endl;
 using std::string;
 using Clock = std::chrono::high_resolution_clock;
+using dnn::DaqReader;
+using dnn::Model;
+using dnn::ModelBuilder;
 
 auto GetModel(css &daq_name, const bool allow_fp16,
               const PreferenceCode &compile_preference) {
