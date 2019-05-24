@@ -29,21 +29,23 @@ if (${DNN_SYSTEM_PROTOBUF})
     treat_warnings_as_errors(onnx2daq)
 endif()
 
-include(GNUInstallDirs)
-if (CMAKE_SYSTEM_NAME STREQUAL "Android")
-    # Build DNNLibrary (on Android)
-    install(TARGETS onnx2daq
-        EXPORT DNNLibraryTargets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
-else()
-    # Build onnx2daq (on non-Android)
-    install(TARGETS onnx2daq
-        EXPORT ONNX2daqTargets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        )
+if (DNN_CMAKE_INSTALL)
+    include(GNUInstallDirs)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+        # Build DNNLibrary (on Android)
+        install(TARGETS onnx2daq
+            EXPORT DNNLibraryTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            )
+    else()
+        # Build onnx2daq (on non-Android)
+        install(TARGETS onnx2daq
+            EXPORT ONNX2daqTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            )
+    endif()
 endif()
 add_library(dnnlibrary::onnx2daq ALIAS onnx2daq)
 
@@ -57,9 +59,11 @@ if (NOT ONNX2DAQ_ONLY_LIB)
         treat_warnings_as_errors(onnx2daq-bin)
     endif()
     set_target_properties(onnx2daq-bin PROPERTIES OUTPUT_NAME "onnx2daq")
-    install(TARGETS onnx2daq-bin
-        EXPORT ONNX2daqTargets
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    if (DNN_CMAKE_INSTALL)
+        install(TARGETS onnx2daq-bin
+            EXPORT ONNX2daqTargets
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    endif()
     
 	add_executable(dnnlibrary::onnx2daq-bin ALIAS onnx2daq-bin)
 
@@ -78,14 +82,16 @@ if (NOT ONNX2DAQ_ONLY_LIB)
 endif()
 
 if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-    install(EXPORT ONNX2daqTargets 
-        NAMESPACE dnnlibrary:: 
-        DESTINATION share/cmake/ONNX2daq
-        )
+    if (DNN_CMAKE_INSTALL)
+        install(EXPORT ONNX2daqTargets 
+            NAMESPACE dnnlibrary:: 
+            DESTINATION share/cmake/ONNX2daq
+            )
 
-    configure_file("${PROJECT_SOURCE_DIR}/cmake/ONNX2daqConfig.cmake.in"
-        "${PROJECT_BINARY_DIR}/cmake/ONNX2daqConfig.cmake"
-        @ONLY)
+        configure_file("${PROJECT_SOURCE_DIR}/cmake/ONNX2daqConfig.cmake.in"
+            "${PROJECT_BINARY_DIR}/cmake/ONNX2daqConfig.cmake"
+            @ONLY)
 
-    install(FILES "${PROJECT_BINARY_DIR}/cmake/ONNX2daqConfig.cmake" DESTINATION share/cmake/ONNX2daq)
+        install(FILES "${PROJECT_BINARY_DIR}/cmake/ONNX2daqConfig.cmake" DESTINATION share/cmake/ONNX2daq)
+    endif()
 endif()

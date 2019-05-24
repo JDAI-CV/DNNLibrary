@@ -7,6 +7,7 @@ option(DNN_READ_ONNX "Read ONNX model directly instead of converting to .daq" OF
 option(DNN_SYSTEM_PROTOBUF "Use system protobuf when building onnx2daq" OFF)
 option(DNN_BUILD_PYTHON "Build Python wrapper for onnx2daq" ON)
 option(DNN_USE_MSVC_STATIC_RUNTIME "Link onnx2daq to msvc static runtime" ON)
+option(DNN_CMAKE_INSTALL "Export targets in cmake (disable it for ONNXRuntime)" ON)
 
 include(cmake/system.cmake)
 include(cmake/glog.cmake)
@@ -21,7 +22,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     set (CMAKE_CXX_STANDARD 17)
 
     add_compile_options(-Os)
-    if (${DNN_READ_ONNX} AND NOT TARGET onnx)
+    if (${DNN_READ_ONNX})
         include(cmake/onnx.cmake)
         configure_onnx()
         set(ONNX2DAQ_ONLY_LIB ON)

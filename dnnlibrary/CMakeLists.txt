@@ -74,14 +74,16 @@ else()
     treat_warnings_as_errors(dnnlibrary)
 endif()
 
-include(GNUInstallDirs)
-install(TARGETS dnnlibrary
-    EXPORT DNNLibraryTargets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    )
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
-        DESTINATION include)
+if (DNN_CMAKE_INSTALL)
+    include(GNUInstallDirs)
+    install(TARGETS dnnlibrary
+        EXPORT DNNLibraryTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        )
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+            DESTINATION include)
+endif()
 add_library(dnnlibrary::dnnlibrary ALIAS dnnlibrary)
 
 if (DNN_BUILD_JNI)
@@ -91,19 +93,23 @@ if (DNN_BUILD_JNI)
         src/JavaWrapper.cpp)
     target_link_libraries(daq-jni
         dnnlibrary)
-    install(TARGETS daq-jni
-        EXPORT DNNLibraryTargets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    if (DNN_CMAKE_INSTALL)
+        install(TARGETS daq-jni
+            EXPORT DNNLibraryTargets
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    endif()
     add_library(dnnlibrary::daq-jni ALIAS daq-jni)
 endif()
 
-install(EXPORT DNNLibraryTargets 
-    NAMESPACE dnnlibrary:: 
-    DESTINATION share/cmake/DNNLibrary
-    )
+if (DNN_CMAKE_INSTALL)
+    install(EXPORT DNNLibraryTargets 
+        NAMESPACE dnnlibrary:: 
+        DESTINATION share/cmake/DNNLibrary
+        )
 
-configure_file("${PROJECT_SOURCE_DIR}/cmake/DNNLibraryConfig.cmake.in"
-    "${PROJECT_BINARY_DIR}/cmake/DNNLibraryConfig.cmake"
-    @ONLY)
+    configure_file("${PROJECT_SOURCE_DIR}/cmake/DNNLibraryConfig.cmake.in"
+        "${PROJECT_BINARY_DIR}/cmake/DNNLibraryConfig.cmake"
+        @ONLY)
 
-install(FILES "${PROJECT_BINARY_DIR}/cmake/DNNLibraryConfig.cmake" DESTINATION share/cmake/DNNLibrary)
+    install(FILES "${PROJECT_BINARY_DIR}/cmake/DNNLibraryConfig.cmake" DESTINATION share/cmake/DNNLibrary)
+endif()
