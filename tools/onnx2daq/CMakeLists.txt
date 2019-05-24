@@ -29,8 +29,19 @@ if (${DNN_SYSTEM_PROTOBUF})
     treat_warnings_as_errors(onnx2daq)
 endif()
 
+if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+    # Build DNNLibrary (on Android)
+    install(TARGETS onnx2daq
+        EXPORT DNNLibraryTargets)
+else()
+    # Build onnx2daq (on non-Android)
+    install(TARGETS onnx2daq
+        EXPORT ONNX2daqTargets)
+endif()
+
 
 if (NOT ONNX2DAQ_ONLY_LIB)
+    # Build onnx2daq-bin (on non-Android)
     add_executable(onnx2daq-bin
         ${CMAKE_CURRENT_SOURCE_DIR}/onnx2daq.cpp)
     target_link_libraries(onnx2daq-bin
@@ -39,6 +50,8 @@ if (NOT ONNX2DAQ_ONLY_LIB)
         treat_warnings_as_errors(onnx2daq-bin)
     endif()
     set_target_properties(onnx2daq-bin PROPERTIES OUTPUT_NAME "onnx2daq")
+    install(TARGETS onnx2daq-bin
+        EXPORT ONNX2daqTargets)
 
     if (${DNN_BUILD_PYTHON})
         pybind11_add_module(_onnx2daq ${CMAKE_CURRENT_SOURCE_DIR}/pywrapper.cpp)
@@ -52,4 +65,17 @@ if (NOT ONNX2DAQ_ONLY_LIB)
             pybind11::pybind11
             )
     endif()
+endif()
+
+if (NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    install(EXPORT ONNX2daqTargets 
+        NAMESPACE dnnlibrary:: 
+        DESTINATION share/cmake/ONNX2daq
+        )
+
+    configure_file("${PROJECT_SOURCE_DIR}/cmake/ONNX2daqConfig.cmake.in"
+        "${PROJECT_BINARY_DIR}/cmake/ONNX2daqConfig.cmake"
+        @ONLY)
+
+    install(FILES "${PROJECT_BINARY_DIR}/cmake/ONNX2daqConfig.cmake" DESTINATION share/cmake/ONNX2daq)
 endif()

@@ -1,0 +1,17 @@
+get_filename_component(ONNX2daq_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+if (NOT TARGET protobuf::libprotobuf)
+    find_package(Protobuf REQUIRED)
+endif()
+
+if (NOT TARGET onnx)
+    find_package(ONNX REQUIRED)
+endif()
+
+if (NOT TARGET glog::glog)
+    find_package(glog REQUIRED)
+endif()
+
+if (NOT TARGET dnnlibrary::onnx2daq)
+    include("${ONNX2daq_CMAKE_DIR}/ONNX2daqTargets.cmake")
+endif()

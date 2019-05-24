@@ -74,7 +74,10 @@ else()
     treat_warnings_as_errors(dnnlibrary)
 endif()
 
-
+install(TARGETS dnnlibrary
+    EXPORT DNNLibraryTargets)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
+        DESTINATION include)
 
 if (DNN_BUILD_JNI)
     add_library(
@@ -83,4 +86,17 @@ if (DNN_BUILD_JNI)
         src/JavaWrapper.cpp)
     target_link_libraries(daq-jni
         dnnlibrary)
+    install(TARGETS daq-jni
+        EXPORT DNNLibraryTargets)
 endif()
+
+install(EXPORT DNNLibraryTargets 
+    NAMESPACE dnnlibrary:: 
+    DESTINATION share/cmake/DNNLibrary
+    )
+
+configure_file("${PROJECT_SOURCE_DIR}/cmake/DNNLibraryConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/cmake/DNNLibraryConfig.cmake"
+    @ONLY)
+
+install(FILES "${PROJECT_BINARY_DIR}/cmake/DNNLibraryConfig.cmake" DESTINATION share/cmake/DNNLibrary)
