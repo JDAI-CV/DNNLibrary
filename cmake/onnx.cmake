@@ -1,4 +1,8 @@
-macro(configure_onnx)
+function(configure_onnx)
+    if (TARGET onnx)
+        return()
+    endif()
+
     if (NOT ${DNN_SYSTEM_PROTOBUF})
         include(${PROJECT_SOURCE_DIR}/cmake/protobuf.cmake)
         configure_protobuf()
@@ -30,4 +34,4 @@ macro(configure_onnx)
     # target_compile_definitions(onnx
     # PUBLIC
     # -DONNX_NAMESPACE=${DAQ_ONNX_NAMESPACE})
-endmacro()
+endfunction()

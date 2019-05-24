@@ -1,4 +1,7 @@
-macro(configure_glog)
+function(configure_glog)
+    if (TARGET glog::glog)
+        return()
+    endif()
     message(STATUS "Configureing glog...")
 
     set(TEMP_BUILD_TESTING ${BUILD_TESTING})
@@ -10,4 +13,4 @@ macro(configure_glog)
 
     set(BUILD_TESTING ${TEMP_BUILD_TESTING} CACHE BOOL "" FORCE)
     set(WITH_GFLAGS ${TEMP_WITH_GFLAGS} CACHE BOOL "" FORCE)
-endmacro()
+endfunction()
