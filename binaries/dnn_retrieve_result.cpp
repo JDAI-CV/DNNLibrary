@@ -26,7 +26,9 @@ using Clock = std::chrono::high_resolution_clock;
 using dnn::DaqReader;
 using dnn::Model;
 using dnn::ModelBuilder;
+#ifdef DNN_READ_ONNX
 using dnn::OnnxReader;
+#endif
 
 bool hasEnding(std::string const &fullString, std::string const &ending) {
     if (fullString.length() >= ending.length()) {
