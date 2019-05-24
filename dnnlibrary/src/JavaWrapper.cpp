@@ -11,6 +11,7 @@
 #include "jni_handle.h"
 
 using dnn::DaqReader;
+using dnn::Model;
 using dnn::ModelBuilder;
 using std::map;
 using std::string;

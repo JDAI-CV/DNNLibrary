@@ -74,8 +74,12 @@ else()
     treat_warnings_as_errors(dnnlibrary)
 endif()
 
+include(GNUInstallDirs)
 install(TARGETS dnnlibrary
-    EXPORT DNNLibraryTargets)
+    EXPORT DNNLibraryTargets
+    ARCHIVE DESTINATION ${LIBDIR}
+    LIBRARY DESTINATION ${LIBDIR}
+    )
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
         DESTINATION include)
 
@@ -87,7 +91,8 @@ if (DNN_BUILD_JNI)
     target_link_libraries(daq-jni
         dnnlibrary)
     install(TARGETS daq-jni
-        EXPORT DNNLibraryTargets)
+        EXPORT DNNLibraryTargets
+        ARCHIVE DESTINATION ${LIBDIR})
 endif()
 
 install(EXPORT DNNLibraryTargets 

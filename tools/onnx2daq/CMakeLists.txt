@@ -29,14 +29,21 @@ if (${DNN_SYSTEM_PROTOBUF})
     treat_warnings_as_errors(onnx2daq)
 endif()
 
+include(GNUInstallDirs)
 if (CMAKE_SYSTEM_NAME STREQUAL "Android")
     # Build DNNLibrary (on Android)
     install(TARGETS onnx2daq
-        EXPORT DNNLibraryTargets)
+        EXPORT DNNLibraryTargets
+        ARCHIVE DESTINATION ${LIBDIR}
+        LIBRARY DESTINATION ${LIBDIR}
+        )
 else()
     # Build onnx2daq (on non-Android)
     install(TARGETS onnx2daq
-        EXPORT ONNX2daqTargets)
+        EXPORT ONNX2daqTargets
+        ARCHIVE DESTINATION ${LIBDIR}
+        LIBRARY DESTINATION ${LIBDIR}
+        )
 endif()
 
 
@@ -51,7 +58,8 @@ if (NOT ONNX2DAQ_ONLY_LIB)
     endif()
     set_target_properties(onnx2daq-bin PROPERTIES OUTPUT_NAME "onnx2daq")
     install(TARGETS onnx2daq-bin
-        EXPORT ONNX2daqTargets)
+        EXPORT ONNX2daqTargets
+        RUNTIME DESTINATION ${BINDIR})
 
     if (${DNN_BUILD_PYTHON})
         pybind11_add_module(_onnx2daq ${CMAKE_CURRENT_SOURCE_DIR}/pywrapper.cpp)
