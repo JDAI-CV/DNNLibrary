@@ -45,7 +45,7 @@ else()
         LIBRARY DESTINATION ${LIBDIR}
         )
 endif()
-
+add_library(dnnlibrary::onnx2daq ALIAS onnx2daq)
 
 if (NOT ONNX2DAQ_ONLY_LIB)
     # Build onnx2daq-bin (on non-Android)
@@ -60,6 +60,8 @@ if (NOT ONNX2DAQ_ONLY_LIB)
     install(TARGETS onnx2daq-bin
         EXPORT ONNX2daqTargets
         RUNTIME DESTINATION ${BINDIR})
+    
+	add_library(dnnlibrary::onnx2daq-bin ALIAS onnx2daq-bin)
 
     if (${DNN_BUILD_PYTHON})
         pybind11_add_module(_onnx2daq ${CMAKE_CURRENT_SOURCE_DIR}/pywrapper.cpp)

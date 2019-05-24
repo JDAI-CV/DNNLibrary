@@ -82,6 +82,7 @@ install(TARGETS dnnlibrary
     )
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/
         DESTINATION include)
+add_library(dnnlibrary::dnnlibrary ALIAS dnnlibrary)
 
 if (DNN_BUILD_JNI)
     add_library(
@@ -93,6 +94,7 @@ if (DNN_BUILD_JNI)
     install(TARGETS daq-jni
         EXPORT DNNLibraryTargets
         ARCHIVE DESTINATION ${LIBDIR})
+    add_library(dnnlibrary::daq-jni ALIAS daq-jni)
 endif()
 
 install(EXPORT DNNLibraryTargets 
