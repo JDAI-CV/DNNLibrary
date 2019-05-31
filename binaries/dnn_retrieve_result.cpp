@@ -66,14 +66,12 @@ int main(int argc, char **argv) {
     FLAGS_logbuflevel = -1;
     FLAGS_alsologtostderr = true;
     FLAGS_v = cmdl("v", 5);
-    if (!cmdl(2)) {
-        return -1;
-    }
     string daqName = cmdl[1];
     bool quant_input = cmdl["quant_input"];
     bool quant_output = cmdl["quant_output"];
     bool nchw_result = cmdl["nchw_result"];
     bool use_external_input = cmdl(2);
+    PNT(use_external_input);
 
     std::unique_ptr<Model> model;
     ModelBuilder builder;
@@ -99,7 +97,7 @@ int main(int argc, char **argv) {
                "the number of outputs can only be 1 here");
     const auto outputLen = model->GetSize(model->GetOutputs()[0]);
     std::vector<std::vector<float>> inputs;
-    for (size_t i = 2, n = 0; i < cmdl.size(); i++, n++) {
+    for (size_t i = 2, n = 0; n < model->GetInputs().size(); i++, n++) {
         const auto &input_name = model->GetInputs()[n];
         const auto input_size = model->GetSize(input_name);
         std::vector<float> input_data;
