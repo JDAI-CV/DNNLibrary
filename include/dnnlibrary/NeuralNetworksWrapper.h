@@ -17,8 +17,8 @@
 #ifndef ANDROID_ML_NN_RUNTIME_NEURAL_NETWORKS_WRAPPER_H
 #define ANDROID_ML_NN_RUNTIME_NEURAL_NETWORKS_WRAPPER_H
 #include "NeuralNetworksMock.h"
+#include <common/data_types.h>
 #include <math.h>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -113,7 +113,7 @@ struct OperandType {
     ANeuralNetworksOperandType operandType;
     Type type;
     std::vector<uint32_t> dimensions;
-    std::optional<SymmPerChannelQuantParams> channelQuant;
+    dnn::optional<SymmPerChannelQuantParams> channelQuant;
     OperandType(Type type, std::vector<uint32_t> d = {}, float scale = 0.0f, int32_t zeroPoint = 0);
     OperandType(Type type, std::vector<uint32_t> data, float scale, int32_t zeroPoint,
                 SymmPerChannelQuantParams&& channelQuant);

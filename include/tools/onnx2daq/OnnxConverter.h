@@ -1,9 +1,9 @@
+#include <common/data_types.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/daq_generated.h>
 #include <glog/logging.h>
 #include <onnx/onnx_pb.h>
-#include "optional.h"
 
 namespace dnn {
 class OnnxConverter {
@@ -45,7 +45,7 @@ class OnnxConverter {
             QUANT16_ASYMM
         };
         std::vector<float> scales;
-        nonstd::optional<int32_t> zero_point;
+        dnn::optional<int32_t> zero_point;
         Type type;
     };
     StrKeyMap<QuantInfo> quant_infos_;
@@ -67,7 +67,7 @@ class OnnxConverter {
     std::vector<flatbuffers::Offset<DNN::Tensor>> tensors_;
 
     DNN::FuseCode ConvertFuseCodeType(FuseCode fuse_code);
-    std::pair<nonstd::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
+    std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
               FuseCode>
     FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                    const std::string &output_name);
@@ -87,7 +87,7 @@ class OnnxConverter {
                  const std::vector<int> &pads,
                  const std::vector<int> &dilations, int group,
                  const std::string &ori_weight_name,
-                 const nonstd::optional<std::string> &bias_name,
+                 const dnn::optional<std::string> &bias_name,
                  const std::string &output_name);
     void AddLayerPool(const std::string &op, const std::string &input_name,
                       const std::vector<int> &kernel_shape,
@@ -98,7 +98,7 @@ class OnnxConverter {
                      const std::string &output_name);
     // OnnxConverter auto generated methods start
     void AddLayerConvImpl(const std::string &input, const std::string &weight,
-                          const nonstd::optional<std::string> &bias,
+                          const dnn::optional<std::string> &bias,
                           const std::vector<int32_t> &pads,
                           const std::vector<int32_t> &strides,
                           const std::string &output);
@@ -115,7 +115,7 @@ class OnnxConverter {
     void AddLayerReLU(const std::string &input, const std::string &output);
     void AddLayerSoftmax(const std::string &input, const std::string &output);
     void AddLayerFC(const std::string &input, const std::string &weight,
-                    const nonstd::optional<std::string> &bias,
+                    const dnn::optional<std::string> &bias,
                     const std::string &output);
     void AddLayerAdd(const std::string &input1, const std::string &input2,
                      const std::string &output);
@@ -123,7 +123,7 @@ class OnnxConverter {
                         const std::string &output);
     void AddLayerDepthwiseConvImpl(const std::string &input,
                                    const std::string &weight,
-                                   const nonstd::optional<std::string> &bias,
+                                   const dnn::optional<std::string> &bias,
                                    const std::vector<int32_t> &pads,
                                    const std::vector<int32_t> &strides,
                                    int32_t depth_multiplier,

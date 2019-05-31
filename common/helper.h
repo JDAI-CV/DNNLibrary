@@ -2,6 +2,7 @@
 #define DNNLIBRARY_HELPER_H
 
 #include <common/log_helper.h>
+#include <dnnlibrary/NeuralNetworksWrapper.h>
 #include <numeric>
 #include <vector>
 
@@ -47,7 +48,7 @@ using css = const std::string;
 #define PNT_TO(stream, ...) stream FOR_EACH(PNT_VAR, __VA_ARGS__);
 #define PNT(...) PNT_TO(LOG(INFO), __VA_ARGS__)
 
-#define DNN_ASSERT(condition, ...)               \
+#define DNN_ASSERT(condition, ...)                \
     if (!(condition)) {                           \
         std::stringstream ss;                     \
         ss << std::string(XSTR(condition))        \
@@ -57,7 +58,55 @@ using css = const std::string;
         throw std::runtime_error(ss.str());       \
     }
 
-#define DNN_ASSERT_EQ(actual, expected)                                        \
-    DNN_ASSERT((actual) == (expected), XSTR(actual), "=", actual, ", the expected value is", XSTR(expected), "(which is", expected, ")" )
+#define DNN_ASSERT_EQ(actual, expected)                                \
+    DNN_ASSERT((actual) == (expected), XSTR(actual), "=", actual,      \
+               ", the expected value is", XSTR(expected), "(which is", \
+               expected, ")")
+
+#define THROW_ON_ERROR(val)                                                   \
+    {                                                                         \
+        const auto ret = (val);                                               \
+        if (ret != ANEURALNETWORKS_NO_ERROR) {                                \
+            throw std::invalid_argument(                                      \
+                std::string("Error in ") + __FILE__ + std::string(":") +      \
+                std::to_string(__LINE__) + std::string(", function name: ") + \
+                std::string(__func__) + "error, ret: " + GetErrorCause(ret)); \
+        }                                                                     \
+    }
+
+#define THROW_ON_ERROR_WITH_NOTE(val, note)                                   \
+    {                                                                         \
+        const auto ret = (val);                                               \
+        if (ret != ANEURALNETWORKS_NO_ERROR) {                                \
+            throw std::invalid_argument(                                      \
+                std::string("Error in ") + __FILE__ + std::string(":") +      \
+                std::to_string(__LINE__) + std::string(", function name: ") + \
+                std::string(__func__) + "error, ret: " + GetErrorCause(ret) + \
+                std::string(", ") + (note));                                  \
+        }                                                                     \
+    }
+
+inline std::string GetErrorCause(int errorCode) {
+    switch (errorCode) {
+        case ANEURALNETWORKS_OUT_OF_MEMORY:
+            return "Out of memory";
+        case ANEURALNETWORKS_BAD_DATA:
+            return "Bad data";
+        case ANEURALNETWORKS_BAD_STATE:
+            return "Bad state";
+        case ANEURALNETWORKS_INCOMPLETE:
+            return "Incomplete";
+        case ANEURALNETWORKS_UNEXPECTED_NULL:
+            return "Unexpected null";
+        case ANEURALNETWORKS_OP_FAILED:
+            return "Op failed";
+        case ANEURALNETWORKS_UNMAPPABLE:
+            return "Unmappable";
+        case ANEURALNETWORKS_NO_ERROR:
+            return "No error";
+        default:
+            return "Unknown error code";
+    }
+}
 
 #endif /* DNNLIBRARY_HELPER_H */

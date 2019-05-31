@@ -84,10 +84,10 @@ const DNN::QuantInfo *GetQuantInfo(const DNN::Model &model, css &name) {
     return nullptr;
 }
 
-std::optional<ModelBuilder::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(
+dnn::optional<ModelBuilder::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(
     const DNN::QuantInfo *daq_quant_info) {
     if (daq_quant_info == nullptr) {
-        return std::nullopt;
+        return dnn::nullopt;
     }
     using android::nn::wrapper::Type;
     ModelBuilder::QuantInfo quant_info;
@@ -185,7 +185,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 builder.AddConv(
                     input, strides[1], strides[0], pads[2], pads[3], pads[0],
                     pads[1], fuse, weight,
-                    (bias != "" ? std::make_optional(bias) : std::nullopt),
+                    (bias != "" ? dnn::make_optional(bias) : dnn::nullopt),
                     output, quant_info);
                 break;
             }
@@ -195,7 +195,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 builder.AddDepthWiseConv(
                     input, strides[1], strides[0], pads[2], pads[3], pads[1],
                     pads[0], fuse, multiplier, weight,
-                    (bias != "" ? std::make_optional(bias) : std::nullopt),
+                    (bias != "" ? dnn::make_optional(bias) : dnn::nullopt),
                     output, quant_info);
                 break;
             }
@@ -241,7 +241,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 UNPACK_LAYER_QUANT(fc, input, weight, bias, fuse, output);
                 builder.AddFC(
                     input, fuse, weight,
-                    (bias != "" ? std::make_optional(bias) : std::nullopt),
+                    (bias != "" ? dnn::make_optional(bias) : dnn::nullopt),
                     output, quant_info);
                 break;
             }

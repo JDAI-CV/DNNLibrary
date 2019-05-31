@@ -13,10 +13,11 @@
 #include <string>
 #include <vector>
 
-#include <dnnlibrary/NeuralNetworksWrapper.h>
+#include <common/data_types.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <dnnlibrary/Model.h>
+#include <dnnlibrary/NeuralNetworksWrapper.h>
 
 namespace dnn {
 class ModelBuilder {
@@ -28,7 +29,7 @@ class ModelBuilder {
     struct QuantInfo {
         android::nn::wrapper::Type type_;
         std::vector<float> scales_;
-        std::optional<int> zero_point_;
+        dnn::optional<int> zero_point_;
     };
 
    private:
@@ -81,7 +82,7 @@ class ModelBuilder {
         const android::nn::wrapper::Type &type);
     android::nn::wrapper::OperandType GetOperandType(
         const android::nn::wrapper::Type &type, const Shape &dims,
-        const std::optional<QuantInfo> &quant_info = std::nullopt);
+        const dnn::optional<QuantInfo> &quant_info = dnn::nullopt);
     android::nn::wrapper::OperandType GetOperandType(
         const QuantInfo &quant_info, const Shape &dims);
 
@@ -98,8 +99,6 @@ class ModelBuilder {
     static const uint32_t PREFERENCE_LOW_POWER =
         ANEURALNETWORKS_PREFER_LOW_POWER;
 
-    static std::string GetErrorCause(int errorCode);
-
     Index GetBlobIndex(const std::string &blobName);
     Shape GetBlobDim(const std::string &blobName);
     Shape GetBlobDim(Index index);
@@ -112,11 +111,11 @@ class ModelBuilder {
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddConv(
         const std::string &input, const std::string &weight,
-        const std::optional<std::string> &bias, int32_t padding_left,
+        const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t fuse_code,
         const std::string &output,
-        const std::optional<QuantInfo> &output_quant_info);
+        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddAvePool(
@@ -124,7 +123,7 @@ class ModelBuilder {
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
-        const std::optional<QuantInfo> &output_quant_info);
+        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddMaxPool(
@@ -132,7 +131,7 @@ class ModelBuilder {
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
-        const std::optional<QuantInfo> &output_quant_info);
+        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddReLU(const std::string &input,
@@ -145,15 +144,15 @@ class ModelBuilder {
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddFC(
         const std::string &input, const std::string &weight,
-        const std::optional<std::string> &bias, int32_t fuse_code,
+        const dnn::optional<std::string> &bias, int32_t fuse_code,
         const std::string &output,
-        const std::optional<QuantInfo> &output_quant_info);
+        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddAdd(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
-        const std::optional<QuantInfo> &output_quant_info);
+        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddConcat(const std::vector<std::string> &inputs,
@@ -162,11 +161,11 @@ class ModelBuilder {
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddDepthwiseConv(
         const std::string &input, const std::string &weight,
-        const std::optional<std::string> &bias, int32_t padding_left,
+        const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
         int32_t fuse_code, const std::string &output,
-        const std::optional<QuantInfo> &output_quant_info);
+        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 28
     ModelBuilder::Index AddBatchToSpaceND(
@@ -191,7 +190,7 @@ class ModelBuilder {
     ModelBuilder::Index AddMul(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
-        const std::optional<QuantInfo> &output_quant_info);
+        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
     ModelBuilder::Index AddAdd(const std::string &input, float scalar,
@@ -216,17 +215,17 @@ class ModelBuilder {
         int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
         int32_t paddingTop, int32_t activation, int32_t depthMultiplier,
         const std::string &weight_name,
-        const std::optional<std::string> &bias_name,
+        const dnn::optional<std::string> &bias_name,
         const std::string &output_name,
-        const std::optional<QuantInfo> &output_quant_info = std::nullopt);
+        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     Index AddConv(
         const std::string &input_name, int32_t strideX, int32_t strideY,
         int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
         int32_t paddingBottom, int32_t activation,
         const std::string &weight_name,
-        const std::optional<std::string> &bias_name,
+        const dnn::optional<std::string> &bias_name,
         const std::string &output_name,
-        const std::optional<QuantInfo> &output_quant_info = std::nullopt);
+        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     Index AddTensorFromBuffer(
         const std::string &name, const void *buffer,
         const android::nn::wrapper::OperandType &operand_type);
@@ -235,16 +234,16 @@ class ModelBuilder {
     Index AddFC(
         const std::string &input_name, int32_t activation,
         const std::string &weight_name,
-        const std::optional<std::string> &bias_name,
+        const dnn::optional<std::string> &bias_name,
         const std::string &output_name,
-        const std::optional<QuantInfo> &output_quant_info = std::nullopt);
+        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     Index AddPool(
         const std::string &input_name, int32_t strideX, int32_t strideY,
         int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
         int32_t paddingBottom, int32_t height, int32_t width,
         int32_t activation, PoolingType poolingType,
         const std::string &output_name,
-        const std::optional<QuantInfo> &output_quant_info = std::nullopt);
+        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     Index AddSoftMax(const std::string &input_name, float beta,
                      const std::string &output_name);
     Index AddOperationAdd(const std::string &input_name, float scalar,
@@ -252,13 +251,13 @@ class ModelBuilder {
     Index AddOperationAdd(
         const std::string &input1_name, const std::string &input2_name,
         const std::string &output_name,
-        const std::optional<QuantInfo> &output_quant_info = std::nullopt);
+        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     Index AddMul(const std::string &input_name, float scalar,
                  const std::string &output_name);
     Index AddMul(
         const std::string &input1_name, const std::string &input2_name,
         const std::string &output_name,
-        const std::optional<QuantInfo> &output_quant_info = std::nullopt);
+        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     ModelBuilder &AllowFp16(const bool allowed);
     ModelBuilder &AddOutput(const std::string &name);
     std::unique_ptr<Model> Compile(uint32_t preference);
@@ -280,5 +279,5 @@ class ModelBuilder {
         (indexes.push_back(OperandFromScalar(args)), ...);
     }
 };
-}
+}  // namespace dnn
 #endif  // NNAPIEXAMPLE_MODELBUILDER_H

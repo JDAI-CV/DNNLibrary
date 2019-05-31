@@ -12,27 +12,11 @@
 #include <sstream>
 #include <tuple>
 
+#include <common/data_types.h>
 #include <common/helper.h>
 #include <glog/logging.h>
 #include <operand_helper.h>
 #include "android_log_helper.h"
-
-#define THROW_ON_ERROR(val)                                               \
-    if ((val) != ANEURALNETWORKS_NO_ERROR) {                              \
-        throw std::invalid_argument(                                      \
-            std::string("Error in ") + __FILE__ + std::string(":") +      \
-            std::to_string(__LINE__) + std::string(", function name: ") + \
-            std::string(__func__) + "error, ret: " + GetErrorCause(val)); \
-    }
-
-#define THROW_ON_ERROR_WITH_NOTE(val, note)                               \
-    if ((val) != ANEURALNETWORKS_NO_ERROR) {                              \
-        throw std::invalid_argument(                                      \
-            std::string("Error in ") + __FILE__ + std::string(":") +      \
-            std::to_string(__LINE__) + std::string(", function name: ") + \
-            std::string(__func__) + "error, ret: " + GetErrorCause(val) + \
-            std::string(", ") + (note));                                  \
-    }
 
 namespace dnn {
 using std::array;
@@ -75,11 +59,11 @@ ModelBuilder::Index ModelBuilder::AddInput(std::string name,
 #if __ANDROID_API__ >= 27
 ModelBuilder::Index ModelBuilder::AddConv(
     const std::string &input, const std::string &weight,
-    const std::optional<std::string> &bias, int32_t padding_left,
+    const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
     int32_t stride_x, int32_t stride_y, int32_t fuse_code,
     const std::string &output,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -131,7 +115,7 @@ ModelBuilder::Index ModelBuilder::AddAvePool(
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
     int32_t fuse_code, const std::string &output,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -157,7 +141,7 @@ ModelBuilder::Index ModelBuilder::AddMaxPool(
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
     int32_t fuse_code, const std::string &output,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -216,9 +200,9 @@ ModelBuilder::Index ModelBuilder::AddSoftmax(const std::string &input,
 #if __ANDROID_API__ >= 27
 ModelBuilder::Index ModelBuilder::AddFC(
     const std::string &input, const std::string &weight,
-    const std::optional<std::string> &bias, int32_t fuse_code,
+    const dnn::optional<std::string> &bias, int32_t fuse_code,
     const std::string &output,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -266,7 +250,7 @@ ModelBuilder::Index ModelBuilder::AddFC(
 ModelBuilder::Index ModelBuilder::AddAdd(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
     const auto input1_idx = operand_indexes_.at(input1);
@@ -308,11 +292,11 @@ ModelBuilder::Index ModelBuilder::AddConcat(
 #if __ANDROID_API__ >= 27
 ModelBuilder::Index ModelBuilder::AddDepthwiseConv(
     const std::string &input, const std::string &weight,
-    const std::optional<std::string> &bias, int32_t padding_left,
+    const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
     int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
     int32_t fuse_code, const std::string &output,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -446,7 +430,7 @@ ModelBuilder::Index ModelBuilder::AddStridedSlice(
 ModelBuilder::Index ModelBuilder::AddMul(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
     const auto input1_idx = operand_indexes_.at(input1);
@@ -553,9 +537,9 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(
     const string &input_name, int32_t strideX, int32_t strideY,
     int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
     int32_t paddingTop, int32_t activation, int32_t depthMultiplier,
-    const string &weight_name, const std::optional<string> &bias_name,
+    const string &weight_name, const dnn::optional<string> &bias_name,
     const string &output_name,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     return AddDepthwiseConv(input_name, weight_name, bias_name, paddingLeft,
                             paddingRight, paddingTop, paddingBottom, strideX,
                             strideY, depthMultiplier, activation, output_name,
@@ -566,8 +550,8 @@ ModelBuilder::Index ModelBuilder::AddConv(
     const string &input_name, int32_t strideX, int32_t strideY,
     int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
     int32_t paddingBottom, int32_t activation, const string &weight_name,
-    const std::optional<string> &bias_name, const string &output_name,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<string> &bias_name, const string &output_name,
+    const dnn::optional<QuantInfo> &output_quant_info) {
     return AddConv(input_name, weight_name, bias_name, paddingLeft,
                    paddingRight, paddingTop, paddingBottom, strideX, strideY,
                    activation, output_name, output_quant_info);
@@ -578,7 +562,7 @@ ModelBuilder::Index ModelBuilder::AddPool(
     int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
     int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
     PoolingType poolingType, const string &output_name,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     if (height == -1 && width == -1) {
         VLOG(5) << "Global pool, input: " << input_name;
         const auto inputDimen = shaper_[input_name];
@@ -609,8 +593,8 @@ ModelBuilder::Index ModelBuilder::AddSoftMax(const string &input_name,
 
 ModelBuilder::Index ModelBuilder::AddFC(
     const string &input_name, int32_t activation, const string &weight_name,
-    const std::optional<string> &bias_name, const string &output_name,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<string> &bias_name, const string &output_name,
+    const dnn::optional<QuantInfo> &output_quant_info) {
     return AddFC(input_name, weight_name, bias_name, activation, output_name,
                  output_quant_info);
 }
@@ -624,7 +608,7 @@ ModelBuilder::Index ModelBuilder::AddOperationAdd(const string &input_name,
 ModelBuilder::Index ModelBuilder::AddOperationAdd(
     const string &input1_name, const string &input2_name,
     const string &output_name,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     return AddAdd(input1_name, input2_name, ANEURALNETWORKS_FUSED_NONE,
                   output_name, output_quant_info);
 }
@@ -637,7 +621,7 @@ ModelBuilder::Index ModelBuilder::AddMul(const string &input_name, float scalar,
 ModelBuilder::Index ModelBuilder::AddMul(
     const string &input1_name, const string &input2_name,
     const string &output_name,
-    const std::optional<QuantInfo> &output_quant_info) {
+    const dnn::optional<QuantInfo> &output_quant_info) {
     return AddMul(input1_name, input2_name, ANEURALNETWORKS_FUSED_NONE,
                   output_name, output_quant_info);
 }
@@ -649,7 +633,7 @@ OperandType ModelBuilder::GetOperandType(const Type &type) {
 
 OperandType ModelBuilder::GetOperandType(
     const Type &type, const Shape &dims,
-    const std::optional<QuantInfo> &quant_info) {
+    const dnn::optional<QuantInfo> &quant_info) {
     if (quant_info.has_value()) {
         const auto &quant_info_val = quant_info.value();
         return GetOperandType(quant_info_val, dims);
@@ -870,29 +854,6 @@ ModelBuilder::Shape ModelBuilder::GetBlobDim(uint32_t index) {
     throw std::invalid_argument("Wrong index in GetBlobDim");
 }
 
-string ModelBuilder::GetErrorCause(int errorCode) {
-    switch (errorCode) {
-        case ANEURALNETWORKS_OUT_OF_MEMORY:
-            return "Out of memory";
-        case ANEURALNETWORKS_BAD_DATA:
-            return "Bad data";
-        case ANEURALNETWORKS_BAD_STATE:
-            return "Bad state";
-        case ANEURALNETWORKS_INCOMPLETE:
-            return "Incomplete";
-        case ANEURALNETWORKS_UNEXPECTED_NULL:
-            return "Unexpected null";
-        case ANEURALNETWORKS_OP_FAILED:
-            return "Op failed";
-        case ANEURALNETWORKS_UNMAPPABLE:
-            return "Unmappable";
-        case ANEURALNETWORKS_NO_ERROR:
-            return "No error";
-        default:
-            return "Unknown error code";
-    }
-}
-
 template <typename... OperandTypes>
 ModelBuilder::IndexSeq ModelBuilder::AddOperation(
     int op, IndexSeq input_indexes, OperandTypes... operand_types) {
@@ -944,8 +905,8 @@ ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
     ANeuralNetworksModel_relaxComputationFloat32toFloat16(dnn_model_->model_,
                                                           allowed);
 #else
-    (void) allowed;
+    (void)allowed;
 #endif
     return *this;
 }
-}
+}  // namespace dnn

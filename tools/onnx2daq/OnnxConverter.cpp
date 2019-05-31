@@ -39,11 +39,11 @@ DNN::FuseCode OnnxConverter::ConvertFuseCodeType(FuseCode fuse_code) {
     throw std::invalid_argument("Invalid FuseCode");
 }
 
-std::pair<nonstd::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
+std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
           OnnxConverter::FuseCode>
 OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                               css &output_name) {
-    std::pair<nonstd::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
+    std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
               FuseCode>
         activation{{}, FuseCode::FUSED_NONE};
     int i = 0;
@@ -56,7 +56,7 @@ OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                 return {{}, FuseCode::FUSED_NONE};
             }
             const auto node_pair = std::make_pair(i, _node);
-            activation = std::make_pair(nonstd::make_optional(node_pair),
+            activation = std::make_pair(dnn::make_optional(node_pair),
                                         FuseCode::FUSED_RELU);
         }
         i++;
@@ -222,7 +222,7 @@ void OnnxConverter::AddConv(const string &input_name,
                             const std::vector<int> &pads,
                             const std::vector<int> &dilations, int group,
                             const string &ori_weight_name,
-                            const nonstd::optional<std::string> &bias_name,
+                            const dnn::optional<std::string> &bias_name,
                             const string &output_name) {
     flatbuffers::Offset<DNN::Layer> layer;
     if (dilations != vector<int>{1, 1}) {
@@ -312,7 +312,7 @@ void OnnxConverter::AddLayerPool(css &op, css &input_name,
 // OnnxConverter auto generated methods start
 void OnnxConverter::AddLayerConvImpl(const std::string &input,
                                      const std::string &weight,
-                                     const nonstd::optional<std::string> &bias,
+                                     const dnn::optional<std::string> &bias,
                                      const std::vector<int32_t> &pads,
                                      const std::vector<int32_t> &strides,
                                      const std::string &output) {
@@ -393,7 +393,7 @@ void OnnxConverter::AddLayerSoftmax(const std::string &input,
 
 void OnnxConverter::AddLayerFC(const std::string &input,
                                const std::string &weight,
-                               const nonstd::optional<std::string> &bias,
+                               const dnn::optional<std::string> &bias,
                                const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
     {
@@ -448,7 +448,7 @@ void OnnxConverter::AddLayerConcat(const std::vector<std::string> &inputs,
 
 void OnnxConverter::AddLayerDepthwiseConvImpl(
     const std::string &input, const std::string &weight,
-    const nonstd::optional<std::string> &bias, const std::vector<int32_t> &pads,
+    const dnn::optional<std::string> &bias, const std::vector<int32_t> &pads,
     const std::vector<int32_t> &strides, int32_t depth_multiplier,
     const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
@@ -680,7 +680,7 @@ void OnnxConverter::ReadTableFile(css &table_file) {
         std::string name;
         int scale_num, zero_point_num;
         std::vector<float> scales;
-        nonstd::optional<int> zero_point;
+        dnn::optional<int> zero_point;
 
         ss >> name >> scale_num;
         if (scale_num > 0) {
@@ -801,7 +801,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             CHECK_EQ(strides.size(), 2ul);
             CHECK_EQ(dilations.size(), 2ul);
             const auto group = helper.get("group", 1);
-            nonstd::optional<string> bias_name;
+            dnn::optional<string> bias_name;
             if (node.input_size() >= 3) {
                 bias_name = m(node.input(2));
             }
@@ -892,7 +892,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto input_name = m(node.input(0));
             const auto weight_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            nonstd::optional<string> bias_name;
+            dnn::optional<string> bias_name;
             if (node.input_size() >= 3) {
                 bias_name = m(node.input(2));
             }
