@@ -40,7 +40,7 @@ ModelBuilder::Index ModelBuilder::AddInput(string name, const uint32_t batch,
                                            const uint32_t height,
                                            const uint32_t width,
                                            const uint32_t depth) {
-    const vector<uint32_t> dimen{batch, width, height, depth};
+    const vector<uint32_t> dimen{batch, height, width, depth};
     return AddInput(name, {Type::TENSOR_FLOAT32, dimen});
 }
 
