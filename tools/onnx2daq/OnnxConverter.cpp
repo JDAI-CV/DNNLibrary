@@ -831,7 +831,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                     throw std::invalid_argument(
                         "storage_order == 1 is not supported");
                 }
-                if (helper.has_attr("auto_pad")) {
+                if (helper.get("auto_pad", "NOTSET") != "NOTSET") {
                     throw std::invalid_argument("auto_pad is not supported");
                 }
             } else {
