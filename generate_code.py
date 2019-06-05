@@ -194,11 +194,14 @@ const auto name = {x['name']};""")
                 elif x['cpp_type'] == 'optional_str':
                     cogoutl(f"""if ({x['name']}.has_value()) {{
 const auto name = {x['name']}.value();""")
-                cogoutl(f"""const auto &onnx_tensor = onnx_tensors_.at(name);
+                cogoutl(f"""if (onnx_tensors_.has(name)) {{
+const auto &onnx_tensor = onnx_tensors_.at(name);
 const auto new_tensor = {x['convert_func']}(onnx_tensor);
 shaper_.AddShape(name, new_tensor.shape); 
 nnapi_tensors_[name] = new_tensor;
-CreateTensorFb(name, new_tensor);""")
+CreateTensorFb(name, new_tensor);
+}}
+""")
                 cogoutl("}")
             if x['cpp_type'] == 'str_list':
                 cogoutl(f"const auto {x['name']}_fb = FbStrVector({x['name']});")

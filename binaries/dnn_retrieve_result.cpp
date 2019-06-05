@@ -25,7 +25,7 @@ using std::string;
 using Clock = std::chrono::high_resolution_clock;
 using dnn::DaqReader;
 using dnn::Model;
-using dnn::ModelBuilder;
+using dnn::Model;
 #ifdef DNN_READ_ONNX
 using dnn::OnnxReader;
 #endif
@@ -73,39 +73,38 @@ int main(int argc, char **argv) {
     bool use_external_input = cmdl(2);
     PNT(use_external_input);
 
-    std::unique_ptr<Model> model;
-    ModelBuilder builder;
+    Model model;
     if (hasEnding(daqName, ".daq")) {
         DaqReader daq_reader;
         // Set the last argument to true to use mmap. It may be more efficient
         // than memory buffer.
-        daq_reader.ReadDaq(daqName, builder, false);
+        daq_reader.ReadDaq(daqName, model, false);
 #ifdef DNN_READ_ONNX
     } else if (hasEnding(daqName, ".onnx")) {
         OnnxReader onnx_reader;
         // Set the last argument to true to use mmap. It may be more efficient
         // than memory buffer.
-        onnx_reader.ReadOnnx(daqName, builder);
+        onnx_reader.ReadOnnx(daqName, model);
 #endif
     } else {
         std::invalid_argument("Wrong model name " + daqName +
                               ". It must end with .daq or .onnx (.onnx is only "
                               "supported when DNN_READ_ONNX is ON)");
     }
-    model = builder.Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
-    DNN_ASSERT(model->GetOutputs().size() == 1,
+    model.Compile(ANEURALNETWORKS_PREFER_SUSTAINED_SPEED);
+    DNN_ASSERT(model.GetOutputs().size() == 1,
                "the number of outputs can only be 1 here");
-    const auto outputLen = model->GetSize(model->GetOutputs()[0]);
+    const auto outputLen = model.GetSize(model.GetOutputs()[0]);
     std::vector<std::vector<float>> inputs;
-    for (size_t i = 2, n = 0; n < model->GetInputs().size(); i++, n++) {
-        const auto &input_name = model->GetInputs()[n];
-        const auto input_size = model->GetSize(input_name);
+    for (size_t i = 2, n = 0; n < model.GetInputs().size(); i++, n++) {
+        const auto &input_name = model.GetInputs()[n];
+        const auto input_size = model.GetSize(input_name);
         std::vector<float> input_data;
         input_data.reserve(input_size);
         if (use_external_input) {
             std::ifstream ifs(cmdl[i]);
             float element;
-            FORZ(_, model->GetSize(input_name)) {
+            FORZ(_, model.GetSize(input_name)) {
                 if (!(ifs >> element)) {
                     throw std::invalid_argument("Read file error");
                 }
@@ -123,9 +122,9 @@ int main(int argc, char **argv) {
     std::vector<float> output_float(outputLen);
     PNT(quant_input, quant_output);
     if (quant_output) {
-        model->SetOutputBuffer(0, output_uint8.data());
+        model.SetOutputBuffer(0, output_uint8.data());
     } else {
-        model->SetOutputBuffer(0, output_float.data());
+        model.SetOutputBuffer(0, output_float.data());
     }
     if (quant_input) {
         std::vector<std::vector<uint8_t>> uint8_inputs;
@@ -133,11 +132,11 @@ int main(int argc, char **argv) {
             std::vector<uint8_t> uint8_input(input.begin(), input.end());
             uint8_inputs.push_back(uint8_input);
         }
-        model->Predict(uint8_inputs);
+        model.Predict(uint8_inputs);
     } else {
-        model->Predict(inputs);
+        model.Predict(inputs);
     }
-    const auto &output_shape = model->GetShape(model->GetOutputs()[0]);
+    const auto &output_shape = model.GetShape(model.GetOutputs()[0]);
     if (nchw_result && output_shape.size() == 4) {
         const size_t n = output_shape[0], h = output_shape[1],
                      w = output_shape[2], c = output_shape[3];

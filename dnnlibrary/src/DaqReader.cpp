@@ -15,7 +15,7 @@
 #include <glog/logging.h>
 
 namespace dnn {
-void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder);
+void ReadDaqImpl(const uint8_t *buf, Model &builder);
 
 std::string layer_type_to_str(DNN::LayerType type) {
     switch (type) {
@@ -84,13 +84,13 @@ const DNN::QuantInfo *GetQuantInfo(const DNN::Model &model, css &name) {
     return nullptr;
 }
 
-dnn::optional<ModelBuilder::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(
+dnn::optional<Model::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(
     const DNN::QuantInfo *daq_quant_info) {
     if (daq_quant_info == nullptr) {
         return dnn::nullopt;
     }
     using android::nn::wrapper::Type;
-    ModelBuilder::QuantInfo quant_info;
+    Model::QuantInfo quant_info;
     std::map<DNN::DataType, Type> type_mapping = {
         {DNN::DataType::Float32, Type::TENSOR_FLOAT32},
         {DNN::DataType::Int32, Type::TENSOR_INT32},
@@ -104,11 +104,11 @@ dnn::optional<ModelBuilder::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(
     return quant_info;
 }
 
-void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
+void AddInitializersFromBuffer(const DNN::Model &model, Model &builder) {
     using namespace android::nn::wrapper;
 
     for (const auto &tensor : *model.initializers()) {
-        ModelBuilder::Shape shape(tensor->shape()->begin(),
+        Model::Shape shape(tensor->shape()->begin(),
                                   tensor->shape()->end());
         if (tensor->data_type() == DNN::DataType::Float32) {
             builder.AddTensorFromBuffer(tensor->name()->str(),
@@ -144,10 +144,10 @@ void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
 }
 
 // TODO: combine it and AddInitializersFromBuffer
-void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
+void AddInitializersFromMmap(const DNN::Model &model, Model &builder) {
     for (const auto &tensor : *model.initializers()) {
         if (tensor->data_type() == DNN::DataType::Float32) {
-            ModelBuilder::Shape shape(tensor->shape()->begin(),
+            Model::Shape shape(tensor->shape()->begin(),
                                       tensor->shape()->end());
             builder.AddTensorFromMemory(tensor->name()->str(),
                                         tensor->float32_data()->Data(), shape);
@@ -155,11 +155,11 @@ void AddInitializersFromMmap(const DNN::Model &model, ModelBuilder &builder) {
     }
 }
 
-void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
+void AddInputs(const DNN::Model &model, Model &builder) {
     using namespace android::nn::wrapper;
     for (const auto &input : *model.inputs()) {
         css input_name = input->name()->str();
-        ModelBuilder::Shape shape(input->shape()->begin(),
+        Model::Shape shape(input->shape()->begin(),
                                   input->shape()->end());
         const auto *daq_quant_info = GetQuantInfo(model, input_name);
         if (daq_quant_info != nullptr) {
@@ -176,7 +176,7 @@ void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
     }
 }
 
-void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
+void AddLayers(const DNN::Model &model, Model &builder) {
     for (const auto layer : *model.layers()) {
         switch (layer->type()) {
             case DNN::LayerType::Conv2D: {
@@ -205,7 +205,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 builder.AddPool(
                     input, strides[1], strides[0], pads[1], pads[3], pads[0],
                     pads[2], kernel_shape[0], kernel_shape[1], fuse,
-                    ModelBuilder::PoolingType::AVE_POOL, output, quant_info);
+                    Model::PoolingType::AVE_POOL, output, quant_info);
                 break;
             }
             case DNN::LayerType::MaxPool: {
@@ -214,7 +214,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 builder.AddPool(
                     input, strides[1], strides[0], pads[1], pads[3], pads[0],
                     pads[2], kernel_shape[0], kernel_shape[1], fuse,
-                    ModelBuilder::PoolingType::MAX_POOL, output, quant_info);
+                    Model::PoolingType::MAX_POOL, output, quant_info);
                 break;
             }
             case DNN::LayerType::Relu: {
@@ -301,7 +301,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
  * @param filepath , like "/data/local/tmp/squeezenet.daq"
  * @param builder a ModelBuilder object
  */
-void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder,
+void DaqReader::ReadDaq(const std::string &filepath, Model &builder,
                         const bool use_mmap) {
     if (use_mmap) {
         const auto fd = open(filepath.c_str(), O_RDONLY);
@@ -318,7 +318,7 @@ void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder,
     }
 }
 
-void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder,
+void DaqReader::ReadDaq(const int &fd, Model &builder,
                         const off_t offset, size_t fsize) {
     if (fd == -1) {
         throw std::invalid_argument("Open file error " + std::to_string(errno));
@@ -342,18 +342,17 @@ void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder,
     ReadDaqImpl(static_cast<const uint8_t *>(data), builder);
 }
 
-void DaqReader::ReadDaq(std::unique_ptr<uint8_t[]> buf, ModelBuilder &builder) {
+void DaqReader::ReadDaq(std::unique_ptr<uint8_t[]> buf, Model &builder) {
     ReadDaq(buf.get(), builder);
     builder.RegisterBufferPointer(std::move(buf));
 }
 
-void DaqReader::ReadDaq(const uint8_t *buf, ModelBuilder &builder) {
+void DaqReader::ReadDaq(const uint8_t *buf, Model &builder) {
     VLOG(4) << "Read daq from buffer";
     ReadDaqImpl(buf, builder);
 }
 
-void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder) {
-    builder.Prepare();  // a daq file should be a full model, so prepare here
+void ReadDaqImpl(const uint8_t *buf, Model &builder) {
     auto model = DNN::GetModel(buf);
     AddInitializersFromBuffer(*model, builder);
     AddInputs(*model, builder);

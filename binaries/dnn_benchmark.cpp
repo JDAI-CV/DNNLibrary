@@ -21,21 +21,20 @@ using std::string;
 using Clock = std::chrono::high_resolution_clock;
 using dnn::DaqReader;
 using dnn::Model;
-using dnn::ModelBuilder;
+using dnn::Model;
 
 auto GetModel(css &daq_name, const bool allow_fp16,
               const PreferenceCode &compile_preference) {
-    std::unique_ptr<Model> model;
-    ModelBuilder builder;
+    Model model;
     DaqReader daq_reader;
     // Set the last argument to true to use mmap. It may be more efficient than
     // memory buffer.
-    daq_reader.ReadDaq(daq_name, builder, false);
+    daq_reader.ReadDaq(daq_name, model, false);
 #if __ANDROID_API__ >= __ANDROID_API_P__
-    model = builder.AllowFp16(allow_fp16).Compile(compile_preference);
+    builder.AllowFp16(allow_fp16).Compile(compile_preference);
 #else
     (void)allow_fp16;
-    model = builder.Compile(compile_preference);
+    model.Compile(compile_preference);
 #endif
     return model;
 }
@@ -70,16 +69,16 @@ int main(int argc, char **argv) {
     {
         auto model = GetModel(daq_name, false,
                               ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER);
-        input_len = model->GetSize(model->GetInputs()[0]);
-        output_len = model->GetSize(model->GetOutputs()[0]);
+        input_len = model.GetSize(model.GetInputs()[0]);
+        output_len = model.GetSize(model.GetOutputs()[0]);
     }
 #define WARM_UP                                                           \
     {                                                                     \
         auto model = GetModel(daq_name, false,                            \
                               ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER); \
         for (int i = 0; i < 10; i++) {                                    \
-            model->SetOutputBuffer(0, output);                            \
-            model->Predict(std::vector{data});                            \
+            model.SetOutputBuffer(0, output);                            \
+            model.Predict(std::vector{data});                            \
         }                                                                 \
     }
 
@@ -89,8 +88,8 @@ int main(int argc, char **argv) {
             auto model = GetModel(daq_name, allow_fp16, compile_preference);   \
             const auto t1 = Clock::now();                                      \
             for (int i = 0; i < number_running; i++) {                         \
-                model->SetOutputBuffer(0, output);                             \
-                model->Predict(std::vector{data});                             \
+                model.SetOutputBuffer(0, output);                             \
+                model.Predict(std::vector{data});                             \
             }                                                                  \
             const auto t2 = Clock::now();                                      \
             const auto total_time =                                            \

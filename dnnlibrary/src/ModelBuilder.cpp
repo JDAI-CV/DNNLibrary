@@ -28,42 +28,54 @@ using std::stringstream;
 using std::vector;
 using namespace android::nn::wrapper;
 
-void ModelBuilder::RegisterOperand(const std::string &name,
-                                   ModelBuilder::Index index,
-                                   const OperandType &operand_type) {
+template void Model::Predict<float>(const std::vector<float> &);
+template void Model::Predict<uint8_t>(const std::vector<uint8_t> &);
+template void Model::Predict<float>(const std::vector<std::vector<float>> &);
+template void Model::Predict<uint8_t>(
+    const std::vector<std::vector<uint8_t>> &);
+template void Model::Predict<float>(const float *);
+template void Model::Predict<uint8_t>(const uint8_t *);
+template void Model::Predict<float>(const std::vector<float *> &);
+template void Model::Predict<uint8_t>(const std::vector<uint8_t *> &);
+
+Model::Model() {
+    Prepare();
+}
+
+void Model::RegisterOperand(const std::string &name, Model::Index index,
+                            const OperandType &operand_type) {
     operand_indexes_[name] = index;
     ordered_operands_.push_back(name);
     operand_types_.insert({name, operand_type});
 }
 
-ModelBuilder::Index ModelBuilder::AddInput(string name, const uint32_t batch,
-                                           const uint32_t height,
-                                           const uint32_t width,
-                                           const uint32_t depth) {
+Model::Index Model::AddInput(string name, const uint32_t batch,
+                             const uint32_t height, const uint32_t width,
+                             const uint32_t depth) {
     const vector<uint32_t> dimen{batch, height, width, depth};
     return AddInput(name, {Type::TENSOR_FLOAT32, dimen});
 }
 
-ModelBuilder::Index ModelBuilder::AddInput(std::string name,
-                                           const OperandType &operand_type) {
+Model::Index Model::AddInput(std::string name,
+                             const OperandType &operand_type) {
     const auto index = AddNewOperand(operand_type);
 
     shaper_.AddShape(name, operand_type.dimensions);
     input_index_vec_.push_back(index);
-    dnn_model_->AddInput(name, shaper_[name]);
+    input_names_.push_back(name);
     RegisterOperand(name, index, operand_type);
     return index;
 }
 
 // ModelBuilder auto generated methods start
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddConv(
-    const std::string &input, const std::string &weight,
-    const dnn::optional<std::string> &bias, int32_t padding_left,
-    int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-    int32_t stride_x, int32_t stride_y, int32_t fuse_code,
-    const std::string &output,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddConv(const std::string &input, const std::string &weight,
+                            const dnn::optional<std::string> &bias,
+                            int32_t padding_left, int32_t padding_right,
+                            int32_t padding_top, int32_t padding_bottom,
+                            int32_t stride_x, int32_t stride_y,
+                            int32_t fuse_code, const std::string &output,
+                            const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -110,7 +122,7 @@ ModelBuilder::Index ModelBuilder::AddConv(
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddAvePool(
+Model::Index Model::AddAvePool(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -136,7 +148,7 @@ ModelBuilder::Index ModelBuilder::AddAvePool(
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddMaxPool(
+Model::Index Model::AddMaxPool(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -162,8 +174,8 @@ ModelBuilder::Index ModelBuilder::AddMaxPool(
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddReLU(const std::string &input,
-                                          const std::string &output) {
+Model::Index Model::AddReLU(const std::string &input,
+                            const std::string &output) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -179,9 +191,8 @@ ModelBuilder::Index ModelBuilder::AddReLU(const std::string &input,
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddSoftmax(const std::string &input,
-                                             float beta,
-                                             const std::string &output) {
+Model::Index Model::AddSoftmax(const std::string &input, float beta,
+                               const std::string &output) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -198,11 +209,10 @@ ModelBuilder::Index ModelBuilder::AddSoftmax(const std::string &input,
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddFC(
-    const std::string &input, const std::string &weight,
-    const dnn::optional<std::string> &bias, int32_t fuse_code,
-    const std::string &output,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddFC(const std::string &input, const std::string &weight,
+                          const dnn::optional<std::string> &bias,
+                          int32_t fuse_code, const std::string &output,
+                          const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -247,10 +257,9 @@ ModelBuilder::Index ModelBuilder::AddFC(
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddAdd(
-    const std::string &input1, const std::string &input2, int32_t fuse_code,
-    const std::string &output,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddAdd(const std::string &input1, const std::string &input2,
+                           int32_t fuse_code, const std::string &output,
+                           const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
     const auto input1_idx = operand_indexes_.at(input1);
@@ -270,9 +279,8 @@ ModelBuilder::Index ModelBuilder::AddAdd(
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddConcat(
-    const std::vector<std::string> &inputs, int32_t axis,
-    const std::string &output) {
+Model::Index Model::AddConcat(const std::vector<std::string> &inputs,
+                              int32_t axis, const std::string &output) {
     IndexSeq input_indexes;
     for (const auto &x : inputs) {
         imm_blob_inputs_.insert(x);
@@ -290,7 +298,7 @@ ModelBuilder::Index ModelBuilder::AddConcat(
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddDepthwiseConv(
+Model::Index Model::AddDepthwiseConv(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -427,10 +435,9 @@ ModelBuilder::Index ModelBuilder::AddStridedSlice(
 }
 #endif  // __ANDROID_API__ >= 28
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddMul(
-    const std::string &input1, const std::string &input2, int32_t fuse_code,
-    const std::string &output,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddMul(const std::string &input1, const std::string &input2,
+                           int32_t fuse_code, const std::string &output,
+                           const dnn::optional<QuantInfo> &output_quant_info) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
     const auto input1_idx = operand_indexes_.at(input1);
@@ -450,9 +457,8 @@ ModelBuilder::Index ModelBuilder::AddMul(
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddAdd(const std::string &input, float scalar,
-                                         int32_t fuse_code,
-                                         const std::string &output) {
+Model::Index Model::AddAdd(const std::string &input, float scalar,
+                           int32_t fuse_code, const std::string &output) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -472,9 +478,8 @@ ModelBuilder::Index ModelBuilder::AddAdd(const std::string &input, float scalar,
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
-                                         int32_t fuse_code,
-                                         const std::string &output) {
+Model::Index Model::AddMul(const std::string &input, float scalar,
+                           int32_t fuse_code, const std::string &output) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -494,8 +499,8 @@ ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
-                                                const std::string &output) {
+Model::Index Model::AddDequantize(const std::string &input,
+                                  const std::string &output) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -511,10 +516,8 @@ ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
 }
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
-                                         int32_t radius, float bias,
-                                         float alpha, float beta,
-                                         const std::string &output) {
+Model::Index Model::AddLRN(const std::string &input, int32_t radius, float bias,
+                           float alpha, float beta, const std::string &output) {
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -533,7 +536,7 @@ ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
 #endif  // __ANDROID_API__ >= 27
 // ModelBuilder auto generated methods end
 
-ModelBuilder::Index ModelBuilder::AddDepthWiseConv(
+Model::Index Model::AddDepthWiseConv(
     const string &input_name, int32_t strideX, int32_t strideY,
     int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
     int32_t paddingTop, int32_t activation, int32_t depthMultiplier,
@@ -546,23 +549,26 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(
                             output_quant_info);
 }
 
-ModelBuilder::Index ModelBuilder::AddConv(
-    const string &input_name, int32_t strideX, int32_t strideY,
-    int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
-    int32_t paddingBottom, int32_t activation, const string &weight_name,
-    const dnn::optional<string> &bias_name, const string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddConv(const string &input_name, int32_t strideX,
+                            int32_t strideY, int32_t paddingLeft,
+                            int32_t paddingRight, int32_t paddingTop,
+                            int32_t paddingBottom, int32_t activation,
+                            const string &weight_name,
+                            const dnn::optional<string> &bias_name,
+                            const string &output_name,
+                            const dnn::optional<QuantInfo> &output_quant_info) {
     return AddConv(input_name, weight_name, bias_name, paddingLeft,
                    paddingRight, paddingTop, paddingBottom, strideX, strideY,
                    activation, output_name, output_quant_info);
 }
 
-ModelBuilder::Index ModelBuilder::AddPool(
-    const string &input_name, int32_t strideX, int32_t strideY,
-    int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
-    int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
-    PoolingType poolingType, const string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddPool(const string &input_name, int32_t strideX,
+                            int32_t strideY, int32_t paddingLeft,
+                            int32_t paddingRight, int32_t paddingTop,
+                            int32_t paddingBottom, int32_t height,
+                            int32_t width, int32_t activation,
+                            PoolingType poolingType, const string &output_name,
+                            const dnn::optional<QuantInfo> &output_quant_info) {
     if (height == -1 && width == -1) {
         VLOG(5) << "Global pool, input: " << input_name;
         const auto inputDimen = shaper_[input_name];
@@ -585,27 +591,26 @@ ModelBuilder::Index ModelBuilder::AddPool(
     }
 }
 
-ModelBuilder::Index ModelBuilder::AddSoftMax(const string &input_name,
-                                             float beta,
-                                             const string &output_name) {
+Model::Index Model::AddSoftMax(const string &input_name, float beta,
+                               const string &output_name) {
     return AddSoftmax(input_name, beta, output_name);
 }
 
-ModelBuilder::Index ModelBuilder::AddFC(
-    const string &input_name, int32_t activation, const string &weight_name,
-    const dnn::optional<string> &bias_name, const string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddFC(const string &input_name, int32_t activation,
+                          const string &weight_name,
+                          const dnn::optional<string> &bias_name,
+                          const string &output_name,
+                          const dnn::optional<QuantInfo> &output_quant_info) {
     return AddFC(input_name, weight_name, bias_name, activation, output_name,
                  output_quant_info);
 }
 
-ModelBuilder::Index ModelBuilder::AddOperationAdd(const string &input_name,
-                                                  float scalar,
-                                                  string output_name) {
+Model::Index Model::AddOperationAdd(const string &input_name, float scalar,
+                                    string output_name) {
     return AddAdd(input_name, scalar, ANEURALNETWORKS_FUSED_NONE, output_name);
 }
 
-ModelBuilder::Index ModelBuilder::AddOperationAdd(
+Model::Index Model::AddOperationAdd(
     const string &input1_name, const string &input2_name,
     const string &output_name,
     const dnn::optional<QuantInfo> &output_quant_info) {
@@ -613,27 +618,25 @@ ModelBuilder::Index ModelBuilder::AddOperationAdd(
                   output_name, output_quant_info);
 }
 
-ModelBuilder::Index ModelBuilder::AddMul(const string &input_name, float scalar,
-                                         const string &output_name) {
+Model::Index Model::AddMul(const string &input_name, float scalar,
+                           const string &output_name) {
     return AddMul(input_name, scalar, ANEURALNETWORKS_FUSED_NONE, output_name);
 }
 
-ModelBuilder::Index ModelBuilder::AddMul(
-    const string &input1_name, const string &input2_name,
-    const string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
+Model::Index Model::AddMul(const string &input1_name, const string &input2_name,
+                           const string &output_name,
+                           const dnn::optional<QuantInfo> &output_quant_info) {
     return AddMul(input1_name, input2_name, ANEURALNETWORKS_FUSED_NONE,
                   output_name, output_quant_info);
 }
 //--------------------------------------------------------------------------------------------------//
 
-OperandType ModelBuilder::GetOperandType(const Type &type) {
+OperandType Model::GetOperandType(const Type &type) {
     return {type, {}};
 }
 
-OperandType ModelBuilder::GetOperandType(
-    const Type &type, const Shape &dims,
-    const dnn::optional<QuantInfo> &quant_info) {
+OperandType Model::GetOperandType(const Type &type, const Shape &dims,
+                                  const dnn::optional<QuantInfo> &quant_info) {
     if (quant_info.has_value()) {
         const auto &quant_info_val = quant_info.value();
         return GetOperandType(quant_info_val, dims);
@@ -641,8 +644,8 @@ OperandType ModelBuilder::GetOperandType(
     return {type, dims};
 }
 
-OperandType ModelBuilder::GetOperandType(const QuantInfo &quant_info,
-                                         const Shape &dims) {
+OperandType Model::GetOperandType(const QuantInfo &quant_info,
+                                  const Shape &dims) {
     if (quant_info.type_ == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL) {
         // FIXME: implement it
         throw std::invalid_argument("");
@@ -653,18 +656,18 @@ OperandType ModelBuilder::GetOperandType(const QuantInfo &quant_info,
     }
 }
 
-#define DEFINE_OPERAND_FROM_SCALAR(scalar_type, map_type, op_type)           \
-    ModelBuilder::Index ModelBuilder::OperandFromScalar(scalar_type value) { \
-        if (map_type##_operand_map_.find(value) ==                           \
-            map_type##_operand_map_.end()) {                                 \
-            const auto index = AddNewOperand({Type::op_type});               \
-            THROW_ON_ERROR_WITH_NOTE(                                        \
-                ANeuralNetworksModel_setOperandValue(                        \
-                    dnn_model_->model_, index, &value, sizeof(value)),       \
-                "value: " + std::to_string(value));                          \
-            map_type##_operand_map_[value] = index;                          \
-        }                                                                    \
-        return map_type##_operand_map_[value];                               \
+#define DEFINE_OPERAND_FROM_SCALAR(scalar_type, map_type, op_type)          \
+    Model::Index Model::OperandFromScalar(scalar_type value) {              \
+        if (map_type##_operand_map_.find(value) ==                          \
+            map_type##_operand_map_.end()) {                                \
+            const auto index = AddNewOperand({Type::op_type});              \
+            THROW_ON_ERROR_WITH_NOTE(                                       \
+                ANeuralNetworksModel_setOperandValue(model_, index, &value, \
+                                                     sizeof(value)),        \
+                "value: " + std::to_string(value));                         \
+            map_type##_operand_map_[value] = index;                         \
+        }                                                                   \
+        return map_type##_operand_map_[value];                              \
     }
 
 DEFINE_OPERAND_FROM_SCALAR(uint32_t, uint32, UINT32);
@@ -673,38 +676,34 @@ DEFINE_OPERAND_FROM_SCALAR(float, float32, FLOAT32);
 
 #undef DEFINE_OPERAND_FROM_SCALAR
 
-ModelBuilder::Index ModelBuilder::AddMissingOperand(
-    const OperandType &operand_type) {
+Model::Index Model::AddMissingOperand(const OperandType &operand_type) {
     const auto index = AddNewOperand(operand_type);
-    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_,
-                                                        index, nullptr, 0));
+    THROW_ON_ERROR(
+        ANeuralNetworksModel_setOperandValue(model_, index, nullptr, 0));
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::AddNewOperand(
-    const OperandType &operand_type) {
-    THROW_ON_ERROR(ANeuralNetworksModel_addOperand(dnn_model_->model_,
-                                                   &operand_type.operandType));
+Model::Index Model::AddNewOperand(const OperandType &operand_type) {
+    THROW_ON_ERROR(
+        ANeuralNetworksModel_addOperand(model_, &operand_type.operandType));
     return next_index_++;
 }
 
 // TODO: combine it and AddTensorFromBuffer
-ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name,
-                                                      const uint8_t *addr,
-                                                      Shape dimen) {
+Model::Index Model::AddTensorFromMemory(const string &name, const uint8_t *addr,
+                                        Shape dimen) {
     throw std::invalid_argument("");
     DNN_ASSERT(!dimen.empty(), "");
     const auto index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
     THROW_ON_ERROR(ANeuralNetworksModel_setOperandValueFromMemory(
-        dnn_model_->model_, index, dnn_model_->memory_,
-        addr - dnn_model_->data_, Product(dimen) * sizeof(float)));
+        model_, index, memory_, addr - data_, Product(dimen) * sizeof(float)));
     shaper_.AddShape(name, dimen);
     // RegisterOperand(name, index);
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
-    const string &name, const void *buffer, const OperandType &operand_type) {
+Model::Index Model::AddTensorFromBuffer(const string &name, const void *buffer,
+                                        const OperandType &operand_type) {
     DNN_ASSERT(!operand_type.dimensions.empty(), "");
     DNN_ASSERT(!isScalarType(operand_type.type), "");
     size_t element_size;
@@ -739,14 +738,50 @@ ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
     }
     uint32_t index = AddNewOperand(operand_type);
     THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(
-        dnn_model_->model_, index, buffer,
+        model_, index, buffer,
         Product(operand_type.dimensions) * element_size));
     shaper_.AddShape(name, operand_type.dimensions);
     RegisterOperand(name, index, operand_type);
     return index;
 }
 
-std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
+void Model::CompileInternal(uint32_t preference) {
+    if (compiled_) {
+        return;
+    }
+    THROW_ON_ERROR_WITH_NOTE(
+        ANeuralNetworksModel_identifyInputsAndOutputs(
+            model_, static_cast<uint32_t>(input_index_vec_.size()),
+            &input_index_vec_[0],
+            static_cast<uint32_t>(output_index_vec_.size()),
+            &output_index_vec_[0]),
+        "on identifyInputsAndOutputs");
+
+    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_finish(model_),
+                             "on model finish");
+
+    THROW_ON_ERROR_WITH_NOTE(
+        ANeuralNetworksCompilation_create(model_, &compilation_), "on create");
+
+    THROW_ON_ERROR_WITH_NOTE(
+        ANeuralNetworksCompilation_setPreference(compilation_, preference),
+        "on setPreference");
+
+    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksCompilation_finish(compilation_),
+                             "on compilation finish");
+
+    compiled_ = true;
+
+    VLOG(5) << "Finishing.. Here are operands in the model:";
+    for (const auto &name : ordered_operands_) {
+        VLOG(5) << name << ": " << shaper_[name];
+    }
+}
+
+void Model::Compile(uint32_t preference) {
+    if (compiled_) {
+        return;
+    }
     if (output_index_vec_.empty()) {
         std::set<std::string> outputs;
         std::set_difference(imm_blob_outputs_.begin(), imm_blob_outputs_.end(),
@@ -759,70 +794,43 @@ std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
             AddOutput(output);
         }
     }
-    THROW_ON_ERROR_WITH_NOTE(
-        ANeuralNetworksModel_identifyInputsAndOutputs(
-            dnn_model_->model_, static_cast<uint32_t>(input_index_vec_.size()),
-            &input_index_vec_[0],
-            static_cast<uint32_t>(output_index_vec_.size()),
-            &output_index_vec_[0]),
-        "on identifyInputsAndOutputs");
-
-    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_finish(dnn_model_->model_),
-                             "on model finish");
-
-    ;
-    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksCompilation_create(
-                                 dnn_model_->model_, &dnn_model_->compilation_),
-                             "on create");
-
-    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksCompilation_setPreference(
-                                 dnn_model_->compilation_, preference),
-                             "on setPreference");
-
-    THROW_ON_ERROR_WITH_NOTE(
-        ANeuralNetworksCompilation_finish(dnn_model_->compilation_),
-        "on compilation finish");
-
-    VLOG(5) << "Finishing.. Here are operands in the model:";
-    for (const auto &name : ordered_operands_) {
-        VLOG(5) << name << ": " << shaper_[name];
+    bool has_weight_in_inputs = false;
+    if (has_weight_in_inputs) {
+    } else {
+        CompileInternal(preference);
     }
-    operand_indexes_.clear();
-    ordered_operands_.clear();
-    shaper_.Clear();
-    return std::move(dnn_model_);
 }
 
-void ModelBuilder::RegisterBufferPointer(std::unique_ptr<uint8_t[]> &&pointer) {
-    dnn_model_->uint8_buf_pointers_.push_back(std::move(pointer));
+void Model::RegisterBufferPointer(std::unique_ptr<uint8_t[]> &&pointer) {
+    uint8_buf_pointers_.push_back(std::move(pointer));
 }
 
-void ModelBuilder::RegisterBufferPointer(std::unique_ptr<float[]> &&pointer) {
-    dnn_model_->float_buf_pointers_.push_back(std::move(pointer));
+void Model::RegisterBufferPointer(std::unique_ptr<float[]> &&pointer) {
+    float_buf_pointers_.push_back(std::move(pointer));
 }
 
-void ModelBuilder::RegisterBufferPointer(std::unique_ptr<int8_t[]> &&pointer) {
-    dnn_model_->int8_buf_pointers_.push_back(std::move(pointer));
+void Model::RegisterBufferPointer(std::unique_ptr<int8_t[]> &&pointer) {
+    int8_buf_pointers_.push_back(std::move(pointer));
 }
 
-void ModelBuilder::RegisterBufferPointer(std::unique_ptr<int32_t[]> &&pointer) {
-    dnn_model_->int32_buf_pointers_.push_back(std::move(pointer));
+void Model::RegisterBufferPointer(std::unique_ptr<int32_t[]> &&pointer) {
+    int32_buf_pointers_.push_back(std::move(pointer));
 }
 
-ModelBuilder::IndexSeq ModelBuilder::GetInputIndexes() {
+Model::IndexSeq Model::GetInputIndexes() {
     return input_index_vec_;
 }
 
-ModelBuilder::IndexSeq ModelBuilder::GetOutputIndexes() {
+Model::IndexSeq Model::GetOutputIndexes() {
     return output_index_vec_;
 }
 
-ModelBuilder::Index ModelBuilder::GetBlobIndex(const string &blobName) {
+Model::Index Model::GetBlobIndex(const string &blobName) {
     return operand_indexes_.at(blobName);
 }
 
 #define DEFINE_FILL_OPERAND(val_type, op_type)                            \
-    ModelBuilder::Index ModelBuilder::FillOperand(                        \
+    Model::Index Model::FillOperand(                                      \
         css &name, const OperandType &operand_type, const val_type val) { \
         DNN_ASSERT(operand_type.type == Type::TENSOR_##op_type, "");      \
         auto buf = std::unique_ptr<val_type[]>(                           \
@@ -840,11 +848,11 @@ DEFINE_FILL_OPERAND(int32_t, INT32);
 
 #undef DEFINE_FILL_OPERAND
 
-ModelBuilder::Shape ModelBuilder::GetBlobDim(const string &blobName) {
+Model::Shape Model::GetBlobDim(const string &blobName) {
     return shaper_[blobName];
 }
 
-ModelBuilder::Shape ModelBuilder::GetBlobDim(uint32_t index) {
+Model::Shape Model::GetBlobDim(uint32_t index) {
     for (const auto &p : operand_indexes_) {
         VLOG(5) << p.second;
         if (p.second == index) {
@@ -855,8 +863,8 @@ ModelBuilder::Shape ModelBuilder::GetBlobDim(uint32_t index) {
 }
 
 template <typename... OperandTypes>
-ModelBuilder::IndexSeq ModelBuilder::AddOperation(
-    int op, IndexSeq input_indexes, OperandTypes... operand_types) {
+Model::IndexSeq Model::AddOperation(int op, IndexSeq input_indexes,
+                                    OperandTypes... operand_types) {
     using android::nn::wrapper::OperandType;
     vector<OperandType> types;
     (types.push_back(operand_types), ...);
@@ -868,45 +876,161 @@ ModelBuilder::IndexSeq ModelBuilder::AddOperation(
 
     THROW_ON_ERROR_WITH_NOTE(
         ANeuralNetworksModel_addOperation(
-            dnn_model_->model_, op, input_indexes.size(), &input_indexes[0],
+            model_, op, input_indexes.size(), &input_indexes[0],
             output_indexes.size(), &output_indexes[0]),
         "op = " + std::to_string(op));
 
     return output_indexes;
 }
 
-void ModelBuilder::Prepare() {
-    dnn_model_ = std::unique_ptr<Model>(new Model());
-    const auto ret = ANeuralNetworksModel_create(&dnn_model_->model_);
+void Model::Prepare() {
+    const auto ret = ANeuralNetworksModel_create(&model_);
     if (ret == ANEURALNETWORKS_OUT_OF_MEMORY) {
         throw std::bad_alloc();
     }
 }
 
-void ModelBuilder::SetMemory(int fd, size_t size, size_t offset) {
+void Model::SetMemory(int fd, size_t size, size_t offset) {
     ANeuralNetworksMemory *mem = nullptr;
     THROW_ON_ERROR(
         ANeuralNetworksMemory_createFromFd(size, PROT_READ, fd, offset, &mem));
-    dnn_model_->memory_ = mem;
+    memory_ = mem;
 }
 
-void ModelBuilder::SetBasePtr(uint8_t *data) {
-    dnn_model_->data_ = data;
+void Model::SetBasePtr(uint8_t *data) {
+    data_ = data;
 }
 
-ModelBuilder &ModelBuilder::AddOutput(const std::string &name) {
+Model &Model::AddOutput(const std::string &name) {
     output_index_vec_.push_back(GetBlobIndex(name));
-    dnn_model_->AddOutput(name, shaper_[name]);
+    output_names_.push_back(name);
     return *this;
 }
 
-ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
+Model &Model::AllowFp16(const bool allowed) {
 #if __ANDROID_API__ >= __ANDROID_API_P__
-    ANeuralNetworksModel_relaxComputationFloat32toFloat16(dnn_model_->model_,
-                                                          allowed);
+    ANeuralNetworksModel_relaxComputationFloat32toFloat16(model_, allowed);
 #else
     (void)allowed;
 #endif
     return *this;
+}
+
+void Model::PrepareForExecution() {
+    if (compilation_ == nullptr) {
+        throw std::invalid_argument(
+            "Error in PrepareForExecution, compilation_ == nullptr");
+    }
+    THROW_ON_ERROR(ANeuralNetworksExecution_create(compilation_, &execution_));
+    prepared_for_exe_ = true;
+}
+
+Model::~Model() {
+    munmap(data_, data_size_);
+    ANeuralNetworksModel_free(model_);
+    ANeuralNetworksCompilation_free(compilation_);
+    ANeuralNetworksMemory_free(memory_);
+}
+
+void Model::SetInputBuffer(const int32_t index, const float *buffer) {
+    SetInputBuffer(index, buffer, 4);
+}
+
+void Model::SetInputBuffer(const int32_t index, const uint8_t *buffer) {
+    SetInputBuffer(index, buffer, 1);
+}
+
+void Model::SetInputBuffer(const int32_t index, const void *buffer,
+                           const size_t elemsize) {
+    if (!prepared_for_exe_) PrepareForExecution();
+    auto size = shaper_.GetSize(input_names_[index]) * elemsize;
+    THROW_ON_ERROR(ANeuralNetworksExecution_setInput(execution_, index, nullptr,
+                                                     buffer, size))
+}
+
+void Model::SetOutputBuffer(const int32_t index, float *buffer) {
+    SetOutputBuffer(index, buffer, 4);
+}
+
+void Model::SetOutputBuffer(const int32_t index, uint8_t *buffer) {
+    SetOutputBuffer(index, buffer, 1);
+}
+
+void Model::SetOutputBuffer(const int32_t index, char *buffer) {
+    SetOutputBuffer(index, reinterpret_cast<uint8_t *>(buffer));
+}
+
+void Model::SetOutputBuffer(const int32_t index, void *buffer,
+                            const size_t elemsize) {
+    if (!prepared_for_exe_) PrepareForExecution();
+    auto size = shaper_.GetSize(output_names_[index]) * elemsize;
+    THROW_ON_ERROR(ANeuralNetworksExecution_setOutput(execution_, index,
+                                                      nullptr, buffer, size))
+}
+
+void Model::PredictAfterSetInputBuffer() {
+    ANeuralNetworksEvent *event = nullptr;
+    THROW_ON_ERROR(ANeuralNetworksExecution_startCompute(execution_, &event));
+    THROW_ON_ERROR(ANeuralNetworksEvent_wait(event));
+
+    ANeuralNetworksEvent_free(event);
+    ANeuralNetworksExecution_free(execution_);
+    prepared_for_exe_ = false;
+}
+
+size_t Model::GetSize(const std::string &name) {
+    return shaper_.GetSize(name);
+}
+
+Shaper::Shape Model::GetShape(const std::string &name) {
+    return shaper_[name];
+}
+
+std::vector<std::string> Model::GetInputs() {
+    return input_names_;
+}
+
+std::vector<std::string> Model::GetOutputs() {
+    return output_names_;
+}
+
+template <typename T>
+void Model::Predict(const std::vector<T> &input) {
+    DNN_ASSERT_EQ(input.size(), GetSize(GetInputs()[0]));
+    // const_cast is a ugly workaround, vector<const T*> causes strange errors
+    Predict<T>({const_cast<T *>(input.data())});
+}
+template <typename T>
+void Model::Predict(const std::vector<std::vector<T>> &inputs) {
+    std::vector<T *> input_ptrs;
+    for (size_t i = 0; i < inputs.size(); i++) {
+        auto &input = inputs[i];
+        DNN_ASSERT_EQ(input.size(), GetSize(GetInputs()[i]));
+        // const_cast is a ugly workaround, vector<const T*> causes strange
+        // errors
+        input_ptrs.push_back(const_cast<T *>(input.data()));
+    }
+    Predict<T>(input_ptrs);
+}
+template <typename T>
+void Model::Predict(const T *input) {
+    // Predict<T>({input}) doesn't compile. Have no idea why.
+    std::vector<T *> inputs;
+    inputs.push_back(const_cast<T *>(input));
+    Predict<T>(inputs);
+}
+
+template <typename T>
+void Model::Predict(const std::vector<T *> &inputs) {
+    if (!compiled_) {
+        // TODO: Remove weights from inputs, transform the weight value, add
+        // them as operands
+    }
+    DNN_ASSERT_EQ(inputs.size(), GetInputs().size());
+    if (!prepared_for_exe_) PrepareForExecution();
+    for (size_t i = 0; i < inputs.size(); i++) {
+        SetInputBuffer(i, inputs[i]);
+    }
+    PredictAfterSetInputBuffer();
 }
 }  // namespace dnn

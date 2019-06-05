@@ -143,80 +143,6 @@ OnnxConverter::FbStrVector(const std::vector<std::string> &std_str_vector) {
     return fb_str_vector;
 }
 
-/**
- * onnx: [filter_out_channel, filter_in_channel / group, height, width]
- * nnapi: [1, height, width, depth_out]
- */
-OnnxConverter::Tensor OnnxConverter::OnnxToNnapiDwConvWeight(
-    const Tensor &src) {
-    Tensor dest = src;
-    size_t elemsize = 0;
-    if (src.data_type == Tensor::DataType::UINT8) {
-        elemsize = 1;
-    } else if (src.data_type == Tensor::DataType::FLOAT32) {
-        elemsize = 4;
-    }
-    dest.data.resize(Product(src.shape) * elemsize);
-    // t for total
-    auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
-         w_t = src.shape[3];
-    CHECK_EQ(in_t, 1u);
-    for (uint32_t out = 0; out < out_t; out++) {
-        for (uint32_t in = 0; in < in_t; in++) {
-            for (uint32_t h = 0; h < h_t; h++) {
-                for (uint32_t w = 0; w < w_t; w++) {
-                    auto onnx_idx =
-                        out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
-                    auto nnapi_idx = h * w_t * out_t + w * out_t + out;
-                    FORZ(i, elemsize) {
-                        dest.data[elemsize * nnapi_idx + i] =
-                            src.data[elemsize * onnx_idx + i];
-                    }
-                }
-            }
-        }
-    }
-    dest.shape = {in_t, h_t, w_t, out_t};
-    return dest;
-}
-
-OnnxConverter::Tensor OnnxConverter::OnnxToNnapiVanillaConvWeight(
-    const Tensor &src) {
-    Tensor dest = src;
-    size_t elemsize = 0;
-    if (src.data_type == Tensor::DataType::UINT8) {
-        elemsize = 1;
-    } else if (src.data_type == Tensor::DataType::FLOAT32) {
-        elemsize = 4;
-    }
-    dest.data.resize(Product(src.shape) * elemsize);
-    // t for total
-    auto out_t = src.shape[0], in_t = src.shape[1], h_t = src.shape[2],
-         w_t = src.shape[3];
-    for (uint32_t out = 0; out < out_t; out++) {
-        for (uint32_t in = 0; in < in_t; in++) {
-            for (uint32_t h = 0; h < h_t; h++) {
-                for (uint32_t w = 0; w < w_t; w++) {
-                    auto onnx_idx =
-                        out * in_t * h_t * w_t + in * h_t * w_t + h * w_t + w;
-                    auto nnapi_idx =
-                        out * h_t * w_t * in_t + h * w_t * in_t + w * in_t + in;
-                    FORZ(i, elemsize) {
-                        dest.data[elemsize * nnapi_idx + i] =
-                            src.data[elemsize * onnx_idx + i];
-                    }
-                }
-            }
-        }
-    }
-    dest.shape = {out_t, h_t, w_t, in_t};
-    return dest;
-}
-
-OnnxConverter::Tensor OnnxConverter::OnnxToNnapiIdentity(const Tensor &src) {
-    return src;
-}
-
 void OnnxConverter::AddConv(const string &input_name,
                             const std::vector<int> &strides,
                             const std::vector<int> &pads,
@@ -280,13 +206,24 @@ void OnnxConverter::AddConv(const string &input_name,
         return;
     }
 
-    const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
+    bool is_depthwise_conv = false;
+    if (onnx_tensors_.has(ori_weight_name)) {
+        const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
+        is_depthwise_conv = onnx_weight.shape[1] == 1;
+    } else {
+        const auto &nnapi_shape = shaper_[ori_weight_name];
+        // [depth_out, filter_height, filter_width, depth_in]
+        is_depthwise_conv = nnapi_shape[3] == 1;
+    }
     if (group == 1) {
         LOG(INFO) << "Vanilla conv";
         AddLayerConvImpl(input_name, ori_weight_name, bias_name, pads, strides,
                          output_name);
-    } else if (onnx_weight.shape[1] == 1) {  // depthwise
+    } else if (is_depthwise_conv) {  // depthwise
         LOG(INFO) << "Depthwise conv";
+        Shape shape_for_vanilla_conv = shaper_[ori_weight_name];
+        Shape shape_for_depthwise_conv{shape_for_vanilla_conv[3], shape_for_vanilla_conv[1], shape_for_vanilla_conv[2], shape_for_vanilla_conv[0]};
+        shaper_.AddShape(ori_weight_name, shape_for_depthwise_conv);
         AddLayerDepthwiseConvImpl(input_name, ori_weight_name, bias_name, pads,
                                   strides, 1, output_name);
     } else {
@@ -319,19 +256,23 @@ void OnnxConverter::AddLayerConvImpl(const std::string &input,
     const auto activation = FindActivation(model_proto_, output);
     {
         const auto name = weight;
-        const auto &onnx_tensor = onnx_tensors_.at(name);
-        const auto new_tensor = OnnxToNnapiVanillaConvWeight(onnx_tensor);
-        shaper_.AddShape(name, new_tensor.shape);
-        nnapi_tensors_[name] = new_tensor;
-        CreateTensorFb(name, new_tensor);
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiVanillaConvWeight(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
     }
     if (bias.has_value()) {
         const auto name = bias.value();
-        const auto &onnx_tensor = onnx_tensors_.at(name);
-        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        shaper_.AddShape(name, new_tensor.shape);
-        nnapi_tensors_[name] = new_tensor;
-        CreateTensorFb(name, new_tensor);
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
     }
     shaper_.Conv(m(input), m(weight), pads, strides, output);
     const auto param = DNN::CreateConv2DDirect(
@@ -398,19 +339,23 @@ void OnnxConverter::AddLayerFC(const std::string &input,
     const auto activation = FindActivation(model_proto_, output);
     {
         const auto name = weight;
-        const auto &onnx_tensor = onnx_tensors_.at(name);
-        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        shaper_.AddShape(name, new_tensor.shape);
-        nnapi_tensors_[name] = new_tensor;
-        CreateTensorFb(name, new_tensor);
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
     }
     if (bias.has_value()) {
         const auto name = bias.value();
-        const auto &onnx_tensor = onnx_tensors_.at(name);
-        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        shaper_.AddShape(name, new_tensor.shape);
-        nnapi_tensors_[name] = new_tensor;
-        CreateTensorFb(name, new_tensor);
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
     }
     shaper_.FC(m(input), m(weight), output);
     const auto param = DNN::CreateFCDirect(
@@ -454,19 +399,23 @@ void OnnxConverter::AddLayerDepthwiseConvImpl(
     const auto activation = FindActivation(model_proto_, output);
     {
         const auto name = weight;
-        const auto &onnx_tensor = onnx_tensors_.at(name);
-        const auto new_tensor = OnnxToNnapiDwConvWeight(onnx_tensor);
-        shaper_.AddShape(name, new_tensor.shape);
-        nnapi_tensors_[name] = new_tensor;
-        CreateTensorFb(name, new_tensor);
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiDwConvWeight(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
     }
     if (bias.has_value()) {
         const auto name = bias.value();
-        const auto &onnx_tensor = onnx_tensors_.at(name);
-        const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
-        shaper_.AddShape(name, new_tensor.shape);
-        nnapi_tensors_[name] = new_tensor;
-        CreateTensorFb(name, new_tensor);
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiIdentity(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
     }
     shaper_.DepthwiseConv(m(input), m(weight), pads, strides, output);
     const auto param = DNN::CreateDepthwiseConv2DDirect(
@@ -642,6 +591,7 @@ OnnxConverter::GetInputOfOnnxModel() {
     vector<flatbuffers::Offset<DNN::Input>> inputs;
 
     for (const auto &input : model_proto_.graph().input()) {
+        // TODO: Not depend on global variable operands_ here
         if (std::find(operands_.begin(), operands_.end(), input.name()) !=
             operands_.end()) {
             continue;
@@ -657,7 +607,34 @@ OnnxConverter::GetInputOfOnnxModel() {
                     "The input of graph doesn't have dim_value");
             }
         }
-        const Shape nnapi_shape{shape[0], shape[2], shape[3], shape[1]};
+        Shape nnapi_shape = shape;
+
+        bool marked_as_input = false;
+        for (const auto &node : model_proto_.graph().node()) {
+            int idx = -1;
+            for (int i = 0; i < node.input_size(); i++) {
+                if (node.input(i) == input.name()) {
+                    if (idx == -1) {
+                        idx = i;
+                    } else {
+                        throw std::invalid_argument("Reused weight is not supported");
+                    }
+                }
+            }
+            if (idx == -1) {
+                continue;
+            }
+
+            if (marked_as_input) {
+                throw std::invalid_argument("Reused weight is not supported");
+            }
+
+            if (shape.size() == 4) {
+                nnapi_shape = Shape{shape[0], shape[2], shape[3], shape[1]};
+            }
+            marked_as_input = true;
+        }
+
         shaper_.AddShape(input.name(), nnapi_shape);
         const auto flat_input = DNN::CreateInputDirect(builder_, &nnapi_shape,
                                                        input.name().c_str());

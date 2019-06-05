@@ -9,6 +9,8 @@ add_library(onnx2daq
     ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h
     ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
+    ${PROJECT_SOURCE_DIR}/include/common/Tensor.h 
+    ${PROJECT_SOURCE_DIR}/common/Tensor.cpp
     )
 target_link_libraries(onnx2daq
     protobuf::libprotobuf-lite

@@ -13,14 +13,14 @@
 #include <string>
 #include <vector>
 
-#include <common/data_types.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
+#include <common/data_types.h>
 #include <dnnlibrary/Model.h>
 #include <dnnlibrary/NeuralNetworksWrapper.h>
 
 namespace dnn {
-class ModelBuilder {
+class Model {
    public:
     using Index = uint32_t;
     using IndexSeq = std::vector<Index>;
@@ -33,7 +33,29 @@ class ModelBuilder {
     };
 
    private:
-    std::unique_ptr<Model> dnn_model_;
+    ANeuralNetworksModel *model_;
+    ANeuralNetworksCompilation *compilation_;
+    ANeuralNetworksExecution *execution_;
+    ANeuralNetworksMemory *memory_;
+    unsigned char *data_;
+    size_t data_size_;
+    std::vector<std::unique_ptr<uint8_t[]>> uint8_buf_pointers_;
+    std::vector<std::unique_ptr<int8_t[]>> int8_buf_pointers_;
+    std::vector<std::unique_ptr<float[]>> float_buf_pointers_;
+    std::vector<std::unique_ptr<int32_t[]>> int32_buf_pointers_;
+    std::vector<std::string> input_names_;
+    std::vector<std::string> output_names_;
+    std::vector<uint32_t> input_idxes_;
+    std::vector<uint32_t> output_idxes_;
+    void SetInputBuffer(const int32_t index, const float *buffer);
+    void SetInputBuffer(const int32_t index, const uint8_t *buffer);
+    void SetInputBuffer(const int32_t index, const void *buffer,
+                        const size_t elemsize);
+    void PrepareForExecution();
+    void PredictAfterSetInputBuffer();
+    bool compiled_ = false;
+    bool prepared_for_exe_;
+
     std::vector<std::string> ordered_operands_;  // operands in insertion order,
                                                  // for printing in finish()
     StrKeyMap<Index> operand_indexes_;
@@ -54,6 +76,8 @@ class ModelBuilder {
     uint32_t float32_missing_index = UINT32_MAX;
 
     uint32_t next_index_ = 0;
+
+    void Prepare();
 
     void RegisterOperand(const std::string &name, Index index,
                          const android::nn::wrapper::OperandType &operand_type);
@@ -86,7 +110,14 @@ class ModelBuilder {
     android::nn::wrapper::OperandType GetOperandType(
         const QuantInfo &quant_info, const Shape &dims);
 
+    void CompileInternal(uint32_t preference);
    public:
+    Model();
+    Model(const Model &) = delete;
+    Model &operator=(const Model &) = delete;
+    Model(Model &&) = default;
+    Model &operator=(Model &&) = default;
+
     enum class PoolingType { MAX_POOL, AVE_POOL };
 
     static const int32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;
@@ -109,57 +140,56 @@ class ModelBuilder {
                    const android::nn::wrapper::OperandType &operand_type);
     // ModelBuilder auto generated methods start
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddConv(
-        const std::string &input, const std::string &weight,
-        const dnn::optional<std::string> &bias, int32_t padding_left,
-        int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-        int32_t stride_x, int32_t stride_y, int32_t fuse_code,
-        const std::string &output,
-        const dnn::optional<QuantInfo> &output_quant_info);
+    Model::Index AddConv(const std::string &input, const std::string &weight,
+                         const dnn::optional<std::string> &bias,
+                         int32_t padding_left, int32_t padding_right,
+                         int32_t padding_top, int32_t padding_bottom,
+                         int32_t stride_x, int32_t stride_y, int32_t fuse_code,
+                         const std::string &output,
+                         const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddAvePool(
-        const std::string &input, int32_t padding_left, int32_t padding_right,
-        int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
-        int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-        int32_t fuse_code, const std::string &output,
-        const dnn::optional<QuantInfo> &output_quant_info);
+    Model::Index AddAvePool(const std::string &input, int32_t padding_left,
+                            int32_t padding_right, int32_t padding_top,
+                            int32_t padding_bottom, int32_t stride_x,
+                            int32_t stride_y, int32_t kernel_width,
+                            int32_t kernel_height, int32_t fuse_code,
+                            const std::string &output,
+                            const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddMaxPool(
-        const std::string &input, int32_t padding_left, int32_t padding_right,
-        int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
-        int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-        int32_t fuse_code, const std::string &output,
-        const dnn::optional<QuantInfo> &output_quant_info);
+    Model::Index AddMaxPool(const std::string &input, int32_t padding_left,
+                            int32_t padding_right, int32_t padding_top,
+                            int32_t padding_bottom, int32_t stride_x,
+                            int32_t stride_y, int32_t kernel_width,
+                            int32_t kernel_height, int32_t fuse_code,
+                            const std::string &output,
+                            const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddReLU(const std::string &input,
-                                const std::string &output);
+    Model::Index AddReLU(const std::string &input, const std::string &output);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddSoftmax(const std::string &input, float beta,
-                                   const std::string &output);
+    Model::Index AddSoftmax(const std::string &input, float beta,
+                            const std::string &output);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddFC(
-        const std::string &input, const std::string &weight,
-        const dnn::optional<std::string> &bias, int32_t fuse_code,
-        const std::string &output,
-        const dnn::optional<QuantInfo> &output_quant_info);
+    Model::Index AddFC(const std::string &input, const std::string &weight,
+                       const dnn::optional<std::string> &bias,
+                       int32_t fuse_code, const std::string &output,
+                       const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddAdd(
-        const std::string &input1, const std::string &input2, int32_t fuse_code,
-        const std::string &output,
-        const dnn::optional<QuantInfo> &output_quant_info);
+    Model::Index AddAdd(const std::string &input1, const std::string &input2,
+                        int32_t fuse_code, const std::string &output,
+                        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddConcat(const std::vector<std::string> &inputs,
-                                  int32_t axis, const std::string &output);
+    Model::Index AddConcat(const std::vector<std::string> &inputs, int32_t axis,
+                           const std::string &output);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddDepthwiseConv(
+    Model::Index AddDepthwiseConv(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -187,27 +217,25 @@ class ModelBuilder {
                                         const std::string &output);
 #endif  // __ANDROID_API__ >= 28
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddMul(
-        const std::string &input1, const std::string &input2, int32_t fuse_code,
-        const std::string &output,
-        const dnn::optional<QuantInfo> &output_quant_info);
+    Model::Index AddMul(const std::string &input1, const std::string &input2,
+                        int32_t fuse_code, const std::string &output,
+                        const dnn::optional<QuantInfo> &output_quant_info);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddAdd(const std::string &input, float scalar,
-                               int32_t fuse_code, const std::string &output);
+    Model::Index AddAdd(const std::string &input, float scalar,
+                        int32_t fuse_code, const std::string &output);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddMul(const std::string &input, float scalar,
-                               int32_t fuse_code, const std::string &output);
+    Model::Index AddMul(const std::string &input, float scalar,
+                        int32_t fuse_code, const std::string &output);
 #endif  // __ANDROID_API__ >= 27
 #if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddDequantize(const std::string &input,
-                                      const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
-    ModelBuilder::Index AddLRN(const std::string &input, int32_t radius,
-                               float bias, float alpha, float beta,
+    Model::Index AddDequantize(const std::string &input,
                                const std::string &output);
+#endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
+    Model::Index AddLRN(const std::string &input, int32_t radius, float bias,
+                        float alpha, float beta, const std::string &output);
 #endif  // __ANDROID_API__ >= 27
         // ModelBuilder auto generated methods end
     Index AddDepthWiseConv(
@@ -258,9 +286,9 @@ class ModelBuilder {
         const std::string &input1_name, const std::string &input2_name,
         const std::string &output_name,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    ModelBuilder &AllowFp16(const bool allowed);
-    ModelBuilder &AddOutput(const std::string &name);
-    std::unique_ptr<Model> Compile(uint32_t preference);
+    Model &AllowFp16(const bool allowed);
+    Model &AddOutput(const std::string &name);
+    void Compile(uint32_t preference);
     IndexSeq GetInputIndexes();
     IndexSeq GetOutputIndexes();
     void RegisterBufferPointer(std::unique_ptr<int8_t[]> &&pointer);
@@ -268,7 +296,6 @@ class ModelBuilder {
     void RegisterBufferPointer(std::unique_ptr<uint8_t[]> &&pointer);
     void RegisterBufferPointer(std::unique_ptr<int32_t[]> &&pointer);
 
-    void Prepare();
     void SetMemory(int fd, size_t size, size_t offset);
     void SetBasePtr(uint8_t *data);
     // Add scalar operands, aka ANEURALNETWORKS_FLOAT32, ANEURALNETWORKS_INT32,
@@ -278,6 +305,26 @@ class ModelBuilder {
     void AddScalarOperands(IndexSeq &indexes, Args... args) {
         (indexes.push_back(OperandFromScalar(args)), ...);
     }
+
+    template <typename T>
+    void Predict(const std::vector<T> &input);
+    template <typename T>
+    void Predict(const std::vector<std::vector<T>> &inputs);
+    template <typename T>
+    void Predict(const T *input);
+    template <typename T>
+    void Predict(const std::vector<T *> &inputs);
+
+    ~Model();
+    void SetOutputBuffer(const int32_t index, float *buffer);
+    void SetOutputBuffer(const int32_t index, uint8_t *buffer);
+    void SetOutputBuffer(const int32_t index, char *buffer);
+    void SetOutputBuffer(const int32_t index, void *buffer,
+                         const size_t elemsize);
+    size_t GetSize(const std::string &name);
+    Shaper::Shape GetShape(const std::string &name);
+    std::vector<std::string> GetInputs();
+    std::vector<std::string> GetOutputs();
 };
 }  // namespace dnn
 #endif  // NNAPIEXAMPLE_MODELBUILDER_H

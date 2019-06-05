@@ -9,7 +9,7 @@
 #include <google/protobuf/io/zero_copy_stream_impl_lite.h>
 
 namespace dnn {
-void OnnxReader::ReadOnnx(const std::string &filepath, ModelBuilder &builder) {
+void OnnxReader::ReadOnnx(const std::string &filepath, Model &builder) {
     ONNX_NAMESPACE::ModelProto model_proto;
     {
         std::ifstream ifs(filepath, std::ios::in | std::ios::binary);
@@ -22,14 +22,14 @@ void OnnxReader::ReadOnnx(const std::string &filepath, ModelBuilder &builder) {
     ReadOnnx(model_proto, builder);
 }
 
-void OnnxReader::ReadOnnx(const uint8_t *buf, const size_t size, ModelBuilder &builder) {
+void OnnxReader::ReadOnnx(const uint8_t *buf, const size_t size, Model &builder) {
     ONNX_NAMESPACE::ModelProto model_proto;
     // FIXME: Handle the return value
     model_proto.ParseFromArray(buf, size);
     ReadOnnx(model_proto, builder);
 }
 
-void OnnxReader::ReadOnnx(const ONNX_NAMESPACE::ModelProto &model_proto, ModelBuilder &builder) {
+void OnnxReader::ReadOnnx(const ONNX_NAMESPACE::ModelProto &model_proto, Model &builder) {
     OnnxConverter converter;
     converter.Convert(model_proto);
     auto buf = converter.GetBuf();
