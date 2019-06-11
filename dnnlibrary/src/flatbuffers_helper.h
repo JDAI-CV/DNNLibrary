@@ -25,7 +25,7 @@
     const auto *param = layer->name##_param();                \
     FOR_EACH(UNPACK, __VA_ARGS__)                             \
     VLOG(5) << "Layer: " << XSTR(name);                       \
-    PNT_TO(VLOG(5), __VA_ARGS__);                                         \
+    PNT_TO(VLOG(5), __VA_ARGS__);                             \
     const auto *daq_quant_info = GetQuantInfo(model, output); \
     const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
 

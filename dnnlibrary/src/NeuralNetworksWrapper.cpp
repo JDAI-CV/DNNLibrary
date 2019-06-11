@@ -6,8 +6,8 @@ namespace android {
 namespace nn {
 namespace wrapper {
 
-    OperandType::OperandType(Type type, std::vector<uint32_t> d, float scale,
-            int32_t zeroPoint)
+OperandType::OperandType(Type type, std::vector<uint32_t> d, float scale,
+                         int32_t zeroPoint)
     : type(type), dimensions(std::move(d)), channelQuant(std::nullopt) {
     if (dimensions.empty()) {
         DNN_ASSERT(isScalarType(type), typeToStr(type));
@@ -23,7 +23,8 @@ namespace wrapper {
     };
 }
 OperandType::OperandType(Type type, std::vector<uint32_t> data, float scale,
-            int32_t zeroPoint, SymmPerChannelQuantParams&& channelQuant)
+                         int32_t zeroPoint,
+                         SymmPerChannelQuantParams&& channelQuant)
     : type(type),
       dimensions(std::move(data)),
       channelQuant(std::move(channelQuant)) {

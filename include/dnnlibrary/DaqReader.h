@@ -8,8 +8,8 @@
 #include <memory>
 #include <string>
 
-#include <dnnlibrary/ModelBuilder.h>
 #include <common/daq_generated.h>
+#include <dnnlibrary/ModelBuilder.h>
 #include <flatbuffers/flatbuffers.h>
 
 namespace dnn {
@@ -22,6 +22,6 @@ class DaqReader {
     void ReadDaq(std::unique_ptr<uint8_t[]> buf, ModelBuilder &builder);
     void ReadDaq(const uint8_t *buf, ModelBuilder &builder);
 };
-}
+}  // namespace dnn
 
 #endif  // DNNLIBRARY_DAQREADER_H

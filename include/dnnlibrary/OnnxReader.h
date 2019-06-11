@@ -19,8 +19,9 @@ class OnnxReader {
    public:
     void ReadOnnx(const std::string &filepath, ModelBuilder &builder);
     void ReadOnnx(const uint8_t *buf, const size_t size, ModelBuilder &builder);
-    void ReadOnnx(const ONNX_NAMESPACE::ModelProto &model_proto, ModelBuilder &builder);
+    void ReadOnnx(const ONNX_NAMESPACE::ModelProto &model_proto,
+                  ModelBuilder &builder);
 };
-}
+}  // namespace dnn
 
 #endif  // DNNLIBRARY_ONNXREADER_H
