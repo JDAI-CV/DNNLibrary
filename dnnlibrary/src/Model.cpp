@@ -11,6 +11,7 @@
 
 #include <common/helper.h>
 #include <glog/logging.h>
+#include <nnapi_helper.h>
 
 namespace dnn {
 template void Model::Predict<float>(const std::vector<float> &);

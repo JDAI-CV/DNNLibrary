@@ -15,6 +15,7 @@
 #include <common/data_types.h>
 #include <common/helper.h>
 #include <glog/logging.h>
+#include <nnapi_helper.h>
 #include <operand_helper.h>
 #include "android_log_helper.h"
 
