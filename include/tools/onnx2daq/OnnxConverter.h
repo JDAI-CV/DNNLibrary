@@ -1,7 +1,7 @@
-#include <common/data_types.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/daq_generated.h>
+#include <common/data_types.h>
 #include <glog/logging.h>
 #include <onnx/onnx_pb.h>
 
@@ -172,10 +172,19 @@ class OnnxConverter {
     Tensor OnnxToNnapiIdentity(const Tensor &src);
 
    public:
-    void Convert(const std::string &model_str, const std::string &filepath,
-                 const std::string &table_file = "");
-    void Convert(const ONNX_NAMESPACE::ModelProto &model,
-                 const std::string &table_file = "");
+    struct Error {
+        int index;
+        std::string err_msg;
+        Error(int index, std::string err_msg)
+            : index(index), err_msg(err_msg){};
+    };
+    dnn::optional<Error> Convert(const std::string &model_str, const std::string &filepath,
+                 const std::string &table_file = "",
+                 const bool optimized = true, const int start_index = 0);
+    dnn::optional<Error> Convert(const ONNX_NAMESPACE::ModelProto &model,
+                                 const std::string &table_file = "",
+                                 const bool optimized = true,
+                                 const int start_index = 0);
     void Save(const std::string &filename);
     std::unique_ptr<uint8_t[]> GetBuf();
 };

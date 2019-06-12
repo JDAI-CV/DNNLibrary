@@ -596,6 +596,7 @@ void OnnxConverter::HandleInitializer() {
     for (const auto &tensor : model_proto_.graph().initializer()) {
         DNN_ASSERT(tensor.has_name(), "");
         css name = tensor.name();
+        LOG(INFO) << "initilaizer name: " << name;
         Shape shape;
         for (auto dim : tensor.dims()) {
             shape.push_back(static_cast<uint32_t>(dim));
@@ -642,6 +643,7 @@ OnnxConverter::GetInputOfOnnxModel() {
     vector<flatbuffers::Offset<DNN::Input>> inputs;
 
     for (const auto &input : model_proto_.graph().input()) {
+        PNT(input.name());
         if (std::find(operands_.begin(), operands_.end(), input.name()) !=
             operands_.end()) {
             continue;
@@ -739,34 +741,46 @@ OnnxConverter::ConvertQuantInfosToFbs() {
     return ret;
 }
 
-void OnnxConverter::Convert(const std::string &model_str,
-                            const std::string &filepath,
-                            const css &table_file) {
+dnn::optional<OnnxConverter::Error> OnnxConverter::Convert(const std::string &model_str,
+                            const std::string &filepath, const css &table_file,
+                            const bool optimized, const int start_index) {
     ONNX_NAMESPACE::ModelProto model_proto;
+    {
     bool ret = model_proto.ParseFromString(model_str);
     if (!ret) {
         throw std::invalid_argument("Read protobuf string failed");
     }
-    Convert(model_proto, table_file);
+    }
+    const auto ret = Convert(model_proto, table_file, optimized);
+    if (ret.has_value()) {
+        return ret;
+    }
     Save(filepath);
+    return dnn::nullopt;
 }
 
-void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
-                            const css &table_file) {
+dnn::optional<OnnxConverter::Error> OnnxConverter::Convert(
+    const ONNX_NAMESPACE::ModelProto &model_proto, const css &table_file,
+    const bool optimized, const int start_index) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    model_proto_ = ONNX_NAMESPACE::optimization::OptimizeFixed(
-        model_proto,
-        vector<string>{
-            "eliminate_deadend", "eliminate_identity", "eliminate_nop_dropout",
-            "eliminate_nop_monotone_argmax", "eliminate_nop_pad",
-            "extract_constant_to_initializer", "eliminate_unused_initializer",
-            "eliminate_nop_transpose", "fuse_add_bias_into_conv",
-            "fuse_bn_into_conv", "fuse_consecutive_concats",
-            "fuse_consecutive_log_softmax", "fuse_consecutive_reduce_unsqueeze",
-            "fuse_consecutive_squeezes", "fuse_consecutive_transposes",
-            "fuse_matmul_add_bias_into_gemm", "fuse_pad_into_conv",
-            "fuse_transpose_into_gemm"});
+    if (optimized) {
+        model_proto_ = ONNX_NAMESPACE::optimization::OptimizeFixed(
+            model_proto,
+            vector<string>{
+                "eliminate_deadend", "eliminate_identity",
+                "eliminate_nop_dropout", "eliminate_nop_monotone_argmax",
+                "eliminate_nop_pad", "extract_constant_to_initializer",
+                "eliminate_unused_initializer", "eliminate_nop_transpose",
+                "fuse_add_bias_into_conv", "fuse_bn_into_conv",
+                "fuse_consecutive_concats", "fuse_consecutive_log_softmax",
+                "fuse_consecutive_reduce_unsqueeze",
+                "fuse_consecutive_squeezes", "fuse_consecutive_transposes",
+                "fuse_matmul_add_bias_into_gemm", "fuse_pad_into_conv",
+                "fuse_transpose_into_gemm"});
+    } else {
+        model_proto_ = model_proto;
+    }
 
     if (!table_file.empty()) {
         ReadTableFile(table_file);
@@ -777,7 +791,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     const auto inputs = GetInputOfOnnxModel();
 
     bool has_reshape = false;
-    for (int i = 0; i < model_proto_.graph().node_size(); i++) {
+
+#define RETURN(msg) return Error(i, msg)
+
+    for (int i = start_index; i < model_proto_.graph().node_size(); i++) {
         const auto &node = model_proto_.graph().node(i);
         NodeAttrHelper helper(node);
         const auto &op = node.op_type();
@@ -788,7 +805,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             continue;
         }
         if (has_reshape && op != "Gemm") {
-            throw std::invalid_argument(
+            RETURN(
                 "Reshape can only be the last layer or precede a gemm layer "
                 "for now");
         }
@@ -863,7 +880,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto imm4_name = output_name + "_imm4";
             if (onnx_tensors_[slope_name].shape != Shape{1}) {
                 // TODO: support it
-                throw std::invalid_argument("Only support one element slope.");
+                RETURN("Only support one element slope.");
             }
             AddLayerReLU(input_name, imm1_name);
             AddLayerMul(input_name, -onnx_tensors_[slope_name].data[0],
@@ -903,7 +920,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
                 AddLayerFC(input_name, weight_name, bias_name, output_name);
             } else {
-                throw std::invalid_argument(
+                RETURN(
                     "Only transA == 0, transB == 1, alpha == 1.0 and beta == "
                     "1.0 is "
                     "supported.");
@@ -935,9 +952,11 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
 
         } else if (op == "BatchNormalization") {
             LOG(INFO) << "Start converting BatchNormalization";
-            DNN_ASSERT(node.output_size() == 1,
-                       "Your onnx model may be in training mode, please export "
-                       "it in test mode.")
+            if (node.output_size() != 1) {
+                RETURN(
+                    "Your onnx model may be in training mode, please export "
+                    "it in test mode.");
+            }
             const auto input_name = m(node.input(0));
 
             const auto scale_name = m(node.input(1));
@@ -989,7 +1008,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
         } else if (op == "LRN") {
             LOG(INFO) << "Start converting LRN";
             if (!helper.has_attr("size")) {
-                throw std::invalid_argument(
+                RETURN(
                     "Invalid ONNX model, attribute \"size\" is required in "
                     "LRN");
             }
@@ -1007,7 +1026,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                         node.output(0));
             LOG(INFO) << "Converting LRN completed";
         } else {
-            throw std::invalid_argument("Unsupported operator " + op);
+            RETURN("Unsupported operator " + op);
         }
         FORZ(i, node.output_size()) {
             const auto output = node.output(i);
@@ -1019,6 +1038,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             }
         }
     }
+#undef RETURN
     const auto flat_layers = builder_.CreateVector(layers_);
     const auto flat_inputs = builder_.CreateVector(inputs);
     const auto flat_tensors = builder_.CreateVector(tensors_);
@@ -1040,6 +1060,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     nnapi_tensors_.clear();
     onnx_tensors_.clear();
     shaper_.Clear();
+
+    return dnn::nullopt;
 }
 
 void OnnxConverter::Save(const std::string &filename) {
