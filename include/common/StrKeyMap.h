@@ -23,7 +23,7 @@ class StrKeyMap {
     inline V &operator[](const std::string &key) {
         return map_[key];
     }
-    inline const V &at(const std::string &key) {
+    inline const V &at(const std::string &key) const {
         try {
             return map_.at(key);
         } catch (const std::out_of_range &e) {
