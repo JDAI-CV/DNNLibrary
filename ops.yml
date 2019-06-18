@@ -204,6 +204,7 @@
             input: true
             cpp_type: str
             needed_by_shaper: true
+            convert_func: OnnxToNnapiIdentity
         -
             predefined: optional_bias
     nnapi: FULLY_CONNECTED
