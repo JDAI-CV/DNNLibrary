@@ -17,9 +17,9 @@ using std::vector;
 using Shape = Shaper::Shape;
 
 namespace dnn {
-std::string OnnxConverter::m(const std::string &str) {
+std::string OnnxConverter::m(const std::string &str) const {
     if (name_map_.find(str) != name_map_.end()) {
-        return name_map_[str];
+        return name_map_.at(str);
     }
 
     return str;
@@ -751,6 +751,125 @@ void OnnxConverter::Convert(const std::string &model_str,
     Save(filepath);
 }
 
+std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
+    const ONNX_NAMESPACE::NodeProto &node) const {
+    NodeAttrHelper helper(node);
+    const auto &op = node.op_type();
+    const std::vector<std::string> supported_types{
+        "Conv",          "AveragePool",
+        "MaxPool",       "GlobalAveragePool",
+        "GlobalMaxPool", "Relu",
+        "PRelu",         "Add",
+        "Mul",           "Gemm",
+        "Softmax",       "Concat",
+        "Dropout",       "BatchNormalization",
+        "Reshape",       "LRN",
+        "Identity"};
+    if (std::find(supported_types.begin(), supported_types.end(), op) ==
+        supported_types.end()) {
+        return {false, "Unsupported operator " + op};
+    }
+    if (op == "Conv") {
+        const auto strides = helper.get("strides", vector<int>{1, 1});
+        const auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+        const auto dilations = helper.get("dilations", vector<int>{1, 1});
+        CHECK_EQ(pads.size(), 4ul);
+        CHECK_EQ(strides.size(), 2ul);
+        CHECK_EQ(dilations.size(), 2ul);
+        const auto group = helper.get("group", 1);
+        if (dilations != vector<int>{1, 1} && strides != vector<int>{1, 1}) {
+            return {false,
+                    "Both dilations and strides > 1 is not supported for now"};
+        }
+        const auto weight_name = m(node.input(1));
+        const auto &onnx_weight = onnx_tensors_.at(weight_name);
+        if (group != 1 && onnx_weight.shape[1] != 1) {
+            return {false, "group != 1 is not supported"};
+        }
+    } else if (op == "AveragePool" || op == "MaxPool") {
+        const auto count_include_pad = helper.get("count_include_pad", 0);
+        if (count_include_pad == 1) {
+            return {false, "count_include_pad == 1 is not supported"};
+        }
+        const auto storage_order = helper.get("storage_order", 0);
+        if (storage_order == 1) {
+            return {false, "storage_order == 1 is not supported"};
+        }
+        if (helper.get("auto_pad", "NOTSET") != "NOTSET") {
+            return {false, "auto_pad is not supported"};
+        }
+    } else if (op == "PRelu") {
+        const auto slope_name = m(node.input(1));
+        if (onnx_tensors_.at(slope_name).shape != Shape{1}) {
+            // TODO: support it
+            return {false, "Only support one element slope."};
+        }
+    } else if (op == "Gemm") {
+        const auto transA = helper.get("transA", 0);
+        const auto transB = helper.get("transB", 0);
+        const auto alpha = helper.get("alpha", 1.0f);
+        const auto beta = helper.get("beta", 1.0f);
+        if (!(transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f)) {
+            return {false,
+                    "Only transA == 0, transB == 1, alpha == 1.0 and beta == "
+                    "1.0 is supported."};
+        }
+    } else if (op == "BatchNormalization") {
+        if (node.output_size() != 1) {
+            return {false,
+                    "Your onnx model may be in training mode, please export "
+                    "it in test mode."};
+        }
+    } else if (op == "LRN") {
+        const auto size = helper.get("size", 1);
+        if (size % 2 == 0) {
+            return {false, "NNAPI only support odd size for LRN"};
+        }
+    } else if (op == "Reshape") {
+        const auto output_name = node.output(0);
+        for (const auto another_node : model_proto_.graph().node()) {
+            for (const auto input_name : another_node.input()) {
+                if (input_name == output_name &&
+                    another_node.op_type() != "Gemm") {
+                    return {false,
+                            "Reshape can only be the last layer or precede a "
+                            "gemm layer for now"};
+                }
+            }
+        }
+    }
+    return {true, ""};
+}
+
+std::vector<std::vector<int>> OnnxConverter::GetSupportedNodes(
+    const ONNX_NAMESPACE::ModelProto &model_proto) {
+    GOOGLE_PROTOBUF_VERIFY_VERSION;
+    model_proto_ = model_proto;
+    HandleInitializer();
+
+    std::vector<std::vector<int>> supported_node_vecs;
+    std::vector<int> supported_node_vec;
+    for (size_t i = 0; i < model_proto.graph().node_size(); i++) {
+        bool supported;
+        std::string error_msg;
+        std::tie(supported, error_msg) =
+            IsNodeSupported(model_proto_.graph().node(i));
+        if (supported) {
+            supported_node_vec.push_back(i);
+        } else {
+            if (!supported_node_vec.empty()) {
+                supported_node_vecs.push_back(supported_node_vec);
+                supported_node_vec.clear();
+            }
+        }
+    }
+    if (!supported_node_vec.empty()) {
+        supported_node_vecs.push_back(supported_node_vec);
+    }
+    Clear();
+    return supported_node_vecs;
+}
+
 void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                             const css &table_file) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -1032,6 +1151,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     LOG(INFO) << "Shapes: ";
     LOG(INFO) << shaper_;
 
+    Clear();
+}
+
+void OnnxConverter::Clear() {
     skipped_act_.clear();
     layers_.clear();
     operands_.clear();

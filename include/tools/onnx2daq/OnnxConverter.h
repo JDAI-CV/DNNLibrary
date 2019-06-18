@@ -1,7 +1,7 @@
-#include <common/data_types.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/daq_generated.h>
+#include <common/data_types.h>
 #include <glog/logging.h>
 #include <onnx/onnx_pb.h>
 
@@ -52,7 +52,7 @@ class OnnxConverter {
 
     std::map<std::string, std::string> name_map_;
 
-    std::string m(const std::string &str);
+    std::string m(const std::string &str) const;
 
     ONNX_NAMESPACE::ModelProto model_proto_;
     flatbuffers::FlatBufferBuilder builder_;
@@ -82,6 +82,9 @@ class OnnxConverter {
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
     void ReadTableFile(const std::string &table_file);
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
+
+    std::pair<bool, std::string> IsNodeSupported(
+        const ONNX_NAMESPACE::NodeProto &node_proto) const;
 
     void AddConv(const std::string &input_name, const std::vector<int> &strides,
                  const std::vector<int> &pads,
@@ -171,7 +174,11 @@ class OnnxConverter {
      */
     Tensor OnnxToNnapiIdentity(const Tensor &src);
 
+    void Clear();
+
    public:
+    std::vector<std::vector<int>> GetSupportedNodes(
+        const ONNX_NAMESPACE::ModelProto &model);
     void Convert(const std::string &model_str, const std::string &filepath,
                  const std::string &table_file = "");
     void Convert(const ONNX_NAMESPACE::ModelProto &model,
