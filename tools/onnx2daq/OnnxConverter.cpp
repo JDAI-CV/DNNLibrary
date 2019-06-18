@@ -849,7 +849,7 @@ std::vector<std::vector<int>> OnnxConverter::GetSupportedNodes(
 
     std::vector<std::vector<int>> supported_node_vecs;
     std::vector<int> supported_node_vec;
-    for (size_t i = 0; i < model_proto.graph().node_size(); i++) {
+    for (int i = 0; i < model_proto.graph().node_size(); i++) {
         bool supported;
         std::string error_msg;
         std::tie(supported, error_msg) =
@@ -1175,6 +1175,6 @@ void OnnxConverter::Save(const std::string &filename) {
 std::unique_ptr<uint8_t[]> OnnxConverter::GetBuf() {
     std::unique_ptr<uint8_t[]> ptr(new uint8_t[builder_.GetSize()]);
     memcpy(ptr.get(), builder_.GetBufferPointer(), builder_.GetSize());
-    return std::move(ptr);
+    return ptr;
 }
 }  // namespace dnn
