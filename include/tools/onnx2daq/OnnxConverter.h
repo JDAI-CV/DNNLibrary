@@ -158,16 +158,21 @@ class OnnxConverter {
     // OnnxConverter auto generated methods end
 
     /**
+     * transpose axes to [1, 2, 3, 0]
+     * for onnx dw conv weight to nnapi dw conv weight
      * onnx: [filter_out_channel, filter_in_channel / group, height, width]
      * nnapi: [1, height, width, depth_out]
      */
-    Tensor OnnxToNnapiDwConvWeight(const Tensor &src);
+    Tensor OnnxToNnapiAxes1230(const Tensor &src);
 
     /**
+     * transpose axes to [0, 2, 3, 1]
+     * for nchw (onnx) -> nhwc (nnapi)
+     * or onnx conv weight to nnapi conv (not dw conv) weight:
      * onnx: [filter_out_channel, filter_in_channel, height, width]
      * nnapi: [depth_out, height, width, depth_in]
      */
-    Tensor OnnxToNnapiVanillaConvWeight(const Tensor &src);
+    Tensor OnnxToNnapiAxes0231(const Tensor &src);
 
     /**
      * Just return the same tensor

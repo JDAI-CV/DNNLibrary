@@ -7,9 +7,8 @@
         -
             name: weight
             nnapi_type: tensor
-            # "learnable" stands for the tensor is read from serialized model file
-            learnable: true
-            convert_func: OnnxToNnapiVanillaConvWeight
+            # "input" stands for onnx input instead of attribute (TODO: a new name)
+            input: true
             cpp_type: str
             needed_by_shaper: true
         -
@@ -202,7 +201,7 @@
         -
             name: weight
             nnapi_type: tensor
-            learnable: true
+            input: true
             cpp_type: str
             needed_by_shaper: true
         -
@@ -238,8 +237,8 @@
         -
             name: weight
             nnapi_type: tensor
-            learnable: true
-            convert_func: OnnxToNnapiDwConvWeight
+            input: true
+            convert_func: OnnxToNnapiAxes1230
             cpp_type: str
             needed_by_shaper: true
         -
