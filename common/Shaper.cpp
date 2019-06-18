@@ -243,8 +243,9 @@ void Shaper::Eltwise(const std::string &input1_name,
                      const std::string &output_name) {
     auto shape1 = shape_map_.at(input1_name);
     auto shape2 = shape_map_.at(input2_name);
+    // TODO: broadcasting
     auto output_shape =
-        shape1.size() > shape2.size() ? shape1 : shape2;  // broadcasting
+        shape1.size() >= shape2.size() ? shape1 : shape2;
     shape_map_[output_name] = output_shape;
 }
 

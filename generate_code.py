@@ -98,14 +98,14 @@ def infer_cfg(cfg, target: Target):
             op['input'] = []
         if 'base_input_num' not in op or op['base_input_num'] == 1:
             op['input'].insert(0,
-                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True})
+                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True, 'needed_by_shaper': True})
         elif op['base_input_num'] == 2:
-            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True},
-                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}] \
+            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,  'needed_by_shaper': True},
+                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,  'needed_by_shaper': True}] \
                           + op['input']
         elif op['base_input_num'] == 'n':
             op['input'].insert(0,
-                               {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list',
+                               {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'input': True,
                                 'needed_by_shaper': True})
         elif op['base_input_num'] == 0:
             pass
@@ -145,11 +145,12 @@ def infer_cfg(cfg, target: Target):
                 ipt['name'] = 'bias'
                 ipt['nnapi_type'] = 'tensor'
                 ipt['cpp_type'] = 'optional_str'
-                ipt['learnable'] = True
-            if 'learnable' not in ipt:
-                ipt['learnable'] = False
-            if ipt['learnable'] and 'convert_func' not in ipt:
+                ipt['input'] = True
                 ipt['convert_func'] = 'OnnxToNnapiIdentity'
+            if 'input' not in ipt:
+                ipt['input'] = False
+            if 'convert_func' not in ipt:
+                ipt['convert_func'] = 'OnnxToNnapiAxes0231'
             if 'needed_by_shaper' not in ipt:
                 ipt['needed_by_shaper'] = False
 
@@ -186,20 +187,28 @@ def generate_onnx_converter():
         if op['fused']:
             cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
         for x in op['input']:
-            if x['learnable']:
-                assert x['cpp_type'] in ['str', 'optional_str']
+            if x['input']:
                 if x['cpp_type'] == 'str':
-                    cogoutl(f"""{{
-const auto name = {x['name']};""")
+                    cogoutl(f"""
+                    {{
+                        const auto name = {x['name']};""")
                 elif x['cpp_type'] == 'optional_str':
-                    cogoutl(f"""if ({x['name']}.has_value()) {{
-const auto name = {x['name']}.value();""")
-                cogoutl(f"""const auto &onnx_tensor = onnx_tensors_.at(name);
-const auto new_tensor = {x['convert_func']}(onnx_tensor);
-shaper_.AddShape(name, new_tensor.shape); 
-nnapi_tensors_[name] = new_tensor;
-CreateTensorFb(name, new_tensor);""")
-                cogoutl("}")
+                    cogoutl(f"""
+                    if ({x['name']}.has_value()) {{
+                        const auto name = {x['name']}.value();""")
+                elif x['cpp_type'] == 'str_list':
+                    cogoutl(f"""
+                    for (const auto &name : {x['name']}) {{""")
+                cogoutl(f"""
+                        if (onnx_tensors_.has(name)) {{
+                            const auto &onnx_tensor = onnx_tensors_.at(name);
+                            const auto new_tensor = {x['convert_func']}(onnx_tensor);
+                            shaper_.AddShape(name, new_tensor.shape); 
+                            nnapi_tensors_[name] = new_tensor;
+                            CreateTensorFb(name, new_tensor);
+                        }}
+                    }}
+                """)
             if x['cpp_type'] == 'str_list':
                 cogoutl(f"const auto {x['name']}_fb = FbStrVector({x['name']});")
 

@@ -13,9 +13,9 @@
 #include <string>
 #include <vector>
 
-#include <common/data_types.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
+#include <common/data_types.h>
 #include <dnnlibrary/Model.h>
 #include <dnnlibrary/NeuralNetworksWrapper.h>
 
