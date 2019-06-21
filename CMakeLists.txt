@@ -10,13 +10,16 @@ option(DNN_USE_MSVC_STATIC_RUNTIME "Link onnx2daq to msvc static runtime" ON)
 option(DNN_CMAKE_INSTALL "Export targets in cmake (disable it for ONNXRuntime)" ON)
 
 include(cmake/system.cmake)
-include(cmake/glog.cmake)
 include(cmake/common.cmake)
 
 include(cmake/utils.cmake)
 dnn_add_msvc_runtime_flag()
 
+include(cmake/glog.cmake)
 configure_glog()
+
+include(cmake/flatbuffers.cmake)
+configure_flatbuffers()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     set (CMAKE_CXX_STANDARD 17)
