@@ -54,6 +54,7 @@ find_library(
 target_link_libraries(
     dnnlibrary
     glog::glog
+    flatbuffers
     ${android-lib}
     ${log-lib}
     ${neural-networks-lib}

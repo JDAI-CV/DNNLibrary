@@ -11,6 +11,7 @@ add_library(onnx2daq
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     )
 target_link_libraries(onnx2daq
+    flatbuffers
     protobuf::libprotobuf-lite
     glog::glog
     onnx)
