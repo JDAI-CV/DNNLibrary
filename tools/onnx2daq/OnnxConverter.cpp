@@ -933,7 +933,7 @@ std::vector<flatbuffers::Offset<flatbuffers::String>>
 OnnxConverter::GetOutputOfOnnxModel() {
     std::vector<std::string> outputs;
     for (const auto &output : model_proto_.graph().output()) {
-        outputs.push_back(output.name());
+        outputs.push_back(m(output.name()));
     }
     return FbStrVector(outputs);
 }
@@ -1165,7 +1165,6 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     HandleInitializer();
 
     const auto inputs = GetInputOfOnnxModel();
-    const auto outputs = GetOutputOfOnnxModel();
 
     bool has_reshape = false;
     for (int i = 0; i < model_proto_.graph().node_size(); i++) {
@@ -1410,6 +1409,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             }
         }
     }
+    const auto outputs = GetOutputOfOnnxModel();
+
     const auto flat_layers = builder_.CreateVector(layers_);
     const auto flat_inputs = builder_.CreateVector(inputs);
     const auto flat_tensors = builder_.CreateVector(tensors_);
