@@ -190,6 +190,7 @@ table Model {
     initializers:[Tensor];
     inputs:[Input];
     quant_infos:[QuantInfo];
+    outputs:[string];
 }
 
 root_type Model;

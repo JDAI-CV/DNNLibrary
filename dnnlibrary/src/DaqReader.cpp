@@ -177,6 +177,18 @@ void AddInputs(const DNN::Model &model, ModelBuilder &builder) {
     }
 }
 
+void AddOutputs(const DNN::Model &model, ModelBuilder &builder) {
+    using namespace android::nn::wrapper;
+    if (model.outputs() == nullptr) {
+        return;
+    }
+    for (const auto &output : *model.outputs()) {
+        PNT(output->str());
+        css output_name = output->str();
+        builder.AddOutput(output_name);
+    }
+}
+
 void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
     for (const auto layer : *model.layers()) {
         switch (layer->type()) {
@@ -359,5 +371,6 @@ void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder) {
     AddInitializersFromBuffer(*model, builder);
     AddInputs(*model, builder);
     AddLayers(*model, builder);
+    AddOutputs(*model, builder);
 }
 }  // namespace dnn
