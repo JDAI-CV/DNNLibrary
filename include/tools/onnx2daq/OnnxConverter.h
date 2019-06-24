@@ -80,6 +80,7 @@ class OnnxConverter {
 
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
+    std::vector<flatbuffers::Offset<flatbuffers::String>> GetOutputOfOnnxModel();
     void ReadTableFile(const std::string &table_file);
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
 

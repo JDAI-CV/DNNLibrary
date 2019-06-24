@@ -914,14 +914,28 @@ OnnxConverter::GetInputOfOnnxModel() {
                     "The input of graph doesn't have dim_value");
             }
         }
-        const Shape nnapi_shape{shape[0], shape[2], shape[3], shape[1]};
+        Shape nnapi_shape;
+        if (shape.size() == 4) {
+            nnapi_shape = Shape{shape[0], shape[2], shape[3], shape[1]};
+        } else {
+            nnapi_shape = shape;
+        }
         shaper_.AddShape(input.name(), nnapi_shape);
-        const auto flat_input = DNN::CreateInputDirect(builder_, &nnapi_shape,
-                                                       input.name().c_str());
+        const auto flat_input =
+            DNN::CreateInputDirect(builder_, &nnapi_shape, input.name().c_str());
         inputs.push_back(flat_input);
     }
 
     return inputs;
+}
+
+std::vector<flatbuffers::Offset<flatbuffers::String>>
+OnnxConverter::GetOutputOfOnnxModel() {
+    std::vector<std::string> outputs;
+    for (const auto &output : model_proto_.graph().output()) {
+        outputs.push_back(m(output.name()));
+    }
+    return FbStrVector(outputs);
 }
 
 void OnnxConverter::ReadTableFile(css &table_file) {
@@ -1395,13 +1409,17 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             }
         }
     }
+    const auto outputs = GetOutputOfOnnxModel();
+
     const auto flat_layers = builder_.CreateVector(layers_);
     const auto flat_inputs = builder_.CreateVector(inputs);
     const auto flat_tensors = builder_.CreateVector(tensors_);
     const auto flat_quant_infos =
         builder_.CreateVector(ConvertQuantInfosToFbs());
-    const auto flat_model = DNN::CreateModel(
-        builder_, flat_layers, flat_tensors, flat_inputs, flat_quant_infos);
+    const auto flat_outputs = builder_.CreateVector(outputs);
+    const auto flat_model =
+        DNN::CreateModel(builder_, flat_layers, flat_tensors, flat_inputs,
+                         flat_quant_infos, flat_outputs);
 
     builder_.Finish(flat_model);
 
