@@ -5,20 +5,20 @@ set(dnnlibrary_src
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/Model.h
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/DaqReader.h
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/NeuralNetworksWrapper.h
-    src/android_log_helper.h
-    src/operand_helper.h
-    src/flatbuffers_helper.h
-    src/ModelBuilder.cpp
-    src/Model.cpp
-    src/DaqReader.cpp 
-    src/NeuralNetworksWrapper.cpp
+    android_log_helper.h
+    operand_helper.h
+    flatbuffers_helper.h
+    ModelBuilder.cpp
+    Model.cpp
+    DaqReader.cpp 
+    NeuralNetworksWrapper.cpp
     ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h 
     )
 if (DNN_READ_ONNX)
     list(APPEND dnnlibrary_src 
-        src/OnnxReader.cpp
+        OnnxReader.cpp
         ${PROJECT_SOURCE_DIR}/include/dnnlibrary/OnnxReader.h)
 endif()
 
@@ -33,7 +33,7 @@ target_include_directories(
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR})
 
 find_library(
@@ -91,7 +91,7 @@ if (DNN_BUILD_JNI)
     add_library(
         daq-jni
         SHARED
-        src/JavaWrapper.cpp)
+        JavaWrapper.cpp)
     target_link_libraries(daq-jni
         dnnlibrary)
     if (DNN_CMAKE_INSTALL)
