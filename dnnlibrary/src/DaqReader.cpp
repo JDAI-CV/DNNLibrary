@@ -183,7 +183,6 @@ void AddOutputs(const DNN::Model &model, ModelBuilder &builder) {
         return;
     }
     for (const auto &output : *model.outputs()) {
-        PNT(output->str());
         css output_name = output->str();
         builder.AddOutput(output_name);
     }

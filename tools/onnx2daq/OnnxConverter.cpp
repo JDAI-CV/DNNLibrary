@@ -228,7 +228,7 @@ void OnnxConverter::AddConv(const string &input_name,
             throw std::invalid_argument(
                 "Both dilations and strides > 1 is not supported for now");
         }
-        LOG(INFO) << "Dilations of conv: " << dilations << ", converting..";
+        VLOG(5) << "Dilations of conv: " << dilations << ", converting..";
         const auto s2b_name = input_name + "_s2b";
         const auto im_name = input_name + "_conv_imm";
         const auto b2s_name = input_name + "_b2s";
@@ -240,7 +240,7 @@ void OnnxConverter::AddConv(const string &input_name,
         new_pads[3] = (input_shape[2] + pads[3] + (dilations[1] - 1)) /
                           dilations[1] * dilations[1] -
                       input_shape[2];
-        LOG(INFO) << input_shape << ", " << pads << ", " << dilations << ", "
+        VLOG(5) << input_shape << ", " << pads << ", " << dilations << ", "
                   << new_pads;
         // Why "AllowShortBlocksOnASingleLine: false" doesn't work on it?
         // clang-format off
@@ -280,11 +280,11 @@ void OnnxConverter::AddConv(const string &input_name,
 
     const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
     if (group == 1) {
-        LOG(INFO) << "Vanilla conv";
+        VLOG(5) << "Vanilla conv";
         AddLayerConvImpl(input_name, ori_weight_name, bias_name, pads, strides,
                          output_name);
     } else if (onnx_weight.shape[1] == 1) {  // depthwise
-        LOG(INFO) << "Depthwise conv";
+        VLOG(5) << "Depthwise conv";
         AddLayerDepthwiseConvImpl(input_name, ori_weight_name, bias_name, pads,
                                   strides, 1, output_name);
     } else {
@@ -1171,10 +1171,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
         const auto &node = model_proto_.graph().node(i);
         NodeAttrHelper helper(node);
         const auto &op = node.op_type();
-        LOG(INFO) << "Node " << node.name();
+        VLOG(5) << "Node " << node.name();
         if (std::find(skipped_act_.begin(), skipped_act_.end(), i) !=
             skipped_act_.end()) {
-            LOG(INFO) << "Skip layer " << node.name();
+            VLOG(5) << "Skip layer " << node.name();
             continue;
         }
         if (has_reshape && op != "Gemm") {
@@ -1183,7 +1183,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 "for now");
         }
         if (op == "Conv") {
-            LOG(INFO) << "Start converting Conv";
+            VLOG(5) << "Start converting Conv";
             const auto strides = helper.get("strides", vector<int>{1, 1});
             const auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
             const auto dilations = helper.get("dilations", vector<int>{1, 1});
@@ -1199,10 +1199,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto ori_weight_name = m(node.input(1));
             AddConv(m(node.input(0)), strides, pads, dilations, group,
                     ori_weight_name, bias_name, m(node.output(0)));
-            LOG(INFO) << "Converting Conv completed";
+            VLOG(5) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" ||
                    op == "GlobalAveragePool" || op == "GlobalMaxPool") {
-            LOG(INFO) << "Start converting Pool";
+            VLOG(5) << "Start converting Pool";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
             vector<int> strides, pads, kernel_shape;
@@ -1234,16 +1234,16 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             CHECK_EQ(strides.size(), 2ul);
             AddLayerPool(op, input_name, kernel_shape, pads, strides,
                          output_name);
-            LOG(INFO) << "Converting Pool completed";
+            VLOG(5) << "Converting Pool completed";
         } else if (op == "Relu") {
-            LOG(INFO) << "Start converting Relu";
+            VLOG(5) << "Start converting Relu";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
             AddLayerReLU(input_name, output_name);
-            LOG(INFO) << "Converting Relu completed";
+            VLOG(5) << "Converting Relu completed";
 
         } else if (op == "PRelu") {
-            LOG(INFO) << "Start converting PRelu";
+            VLOG(5) << "Start converting PRelu";
             const auto input_name = m(node.input(0));
             const auto slope_name = m(node.input(1));
             const auto output_name = m(node.output(0));
@@ -1262,23 +1262,23 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             AddLayerMul(imm3_name, -1.f, imm4_name);
             AddLayerAdd(imm1_name, imm4_name, output_name);
             // TODO:
-            LOG(INFO) << "Converting PRelu completed";
+            VLOG(5) << "Converting PRelu completed";
         } else if (op == "Add") {
-            LOG(INFO) << "Start converting Add";
+            VLOG(5) << "Start converting Add";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
             AddLayerAdd(input1_name, input2_name, output_name);
-            LOG(INFO) << "Converting Add completed";
+            VLOG(5) << "Converting Add completed";
         } else if (op == "Mul") {
-            LOG(INFO) << "Start converting Mul";
+            VLOG(5) << "Start converting Mul";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
             AddLayerMul(input1_name, input2_name, output_name);
-            LOG(INFO) << "Converting Mul completed";
+            VLOG(5) << "Converting Mul completed";
         } else if (op == "Gemm") {
-            LOG(INFO) << "Start converting Gemm";
+            VLOG(5) << "Start converting Gemm";
             const auto input_name = m(node.input(0));
             const auto weight_name = m(node.input(1));
             const auto output_name = m(node.output(0));
@@ -1299,15 +1299,15 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                     "supported.");
             }
             has_reshape = false;
-            LOG(INFO) << "Converting Gemm completed";
+            VLOG(5) << "Converting Gemm completed";
         } else if (op == "Softmax") {
-            LOG(INFO) << "Start converting Softmax";
+            VLOG(5) << "Start converting Softmax";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
             AddLayerSoftmax(input_name, output_name);
-            LOG(INFO) << "Converting Softmax completed";
+            VLOG(5) << "Converting Softmax completed";
         } else if (op == "Concat") {
-            LOG(INFO) << "Start converting Concat";
+            VLOG(5) << "Start converting Concat";
             vector<std::string> concat_inputs_str;
             for (const auto &onnx_input : node.input()) {
                 concat_inputs_str.push_back(m(onnx_input));
@@ -1317,14 +1317,14 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto output_name = m(node.output(0));
             AddLayerConcat(concat_inputs_str, axis_nchw_to_nhwc[axis],
                            output_name);
-            LOG(INFO) << "Converting Concat completed";
+            VLOG(5) << "Converting Concat completed";
         } else if (op == "Dropout") {
-            LOG(INFO) << "Start converting Dropout";
+            VLOG(5) << "Start converting Dropout";
             SetIdentity(node.input(0), node.output(0));
-            LOG(INFO) << "Converting Dropout completed";
+            VLOG(5) << "Converting Dropout completed";
 
         } else if (op == "BatchNormalization") {
-            LOG(INFO) << "Start converting BatchNormalization";
+            VLOG(5) << "Start converting BatchNormalization";
             DNN_ASSERT(node.output_size() == 1,
                        "Your onnx model may be in training mode, please export "
                        "it in test mode.")
@@ -1370,14 +1370,14 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             AddLayerMul(input_name, tensor_a_name, tensor_imm_product_name);
             AddLayerAdd(tensor_imm_product_name, tensor_b_name, output_name);
 
-            LOG(INFO) << "Converting BatchNormalization completed";
+            VLOG(5) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
-            LOG(INFO) << "Start converting Reshape";
+            VLOG(5) << "Start converting Reshape";
             has_reshape = true;
             SetIdentity(node.input(0), node.output(0));
-            LOG(INFO) << "Converting Reshape completed";
+            VLOG(5) << "Converting Reshape completed";
         } else if (op == "LRN") {
-            LOG(INFO) << "Start converting LRN";
+            VLOG(5) << "Start converting LRN";
             if (!helper.has_attr("size")) {
                 throw std::invalid_argument(
                     "Invalid ONNX model, attribute \"size\" is required in "
@@ -1395,7 +1395,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                             // that of NNAPI LRN
             AddLayerLRN(node.input(0), radius, bias, alpha, beta,
                         node.output(0));
-            LOG(INFO) << "Converting LRN completed";
+            VLOG(5) << "Converting LRN completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
         }
@@ -1423,8 +1423,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
 
     builder_.Finish(flat_model);
 
-    LOG(INFO) << "Shapes: ";
-    LOG(INFO) << shaper_;
+    VLOG(5) << "Shapes: ";
+    VLOG(5) << shaper_;
 
     Clear();
 }
