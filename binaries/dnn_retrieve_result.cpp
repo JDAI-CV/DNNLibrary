@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
         onnx_reader.ReadOnnx(daqName, builder);
 #endif
     } else {
-        std::invalid_argument("Wrong model name " + daqName +
+        throw std::invalid_argument("Wrong model name " + daqName +
                               ". It must end with .daq or .onnx (.onnx is only "
                               "supported when DNN_READ_ONNX is ON)");
     }
