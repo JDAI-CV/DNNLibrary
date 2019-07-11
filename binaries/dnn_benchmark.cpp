@@ -13,6 +13,9 @@
 #include <common/helper.h>
 #include <dnnlibrary/DaqReader.h>
 #include <dnnlibrary/ModelBuilder.h>
+#ifdef DNN_READ_ONNX
+#include <dnnlibrary/OnnxReader.h>
+#endif
 #include <glog/logging.h>
 
 using std::cout;
@@ -22,15 +25,40 @@ using Clock = std::chrono::high_resolution_clock;
 using dnn::DaqReader;
 using dnn::Model;
 using dnn::ModelBuilder;
+#ifdef DNN_READ_ONNX
+using dnn::OnnxReader;
+#endif
 
-auto GetModel(css &daq_name, const bool allow_fp16,
+bool hasEnding(std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare(fullString.length() - ending.length(),
+                                        ending.length(), ending));
+    } else {
+        return false;
+    }
+}
+
+auto GetModel(css &daqName, const bool allow_fp16,
               const PreferenceCode &compile_preference) {
     std::unique_ptr<Model> model;
     ModelBuilder builder;
-    DaqReader daq_reader;
-    // Set the last argument to true to use mmap. It may be more efficient than
-    // memory buffer.
-    daq_reader.ReadDaq(daq_name, builder, false);
+    if (hasEnding(daqName, ".daq")) {
+        DaqReader daq_reader;
+        // Set the last argument to true to use mmap. It may be more efficient
+        // than memory buffer.
+        daq_reader.ReadDaq(daqName, builder, false);
+#ifdef DNN_READ_ONNX
+    } else if (hasEnding(daqName, ".onnx")) {
+        OnnxReader onnx_reader;
+        // Set the last argument to true to use mmap. It may be more efficient
+        // than memory buffer.
+        onnx_reader.ReadOnnx(daqName, builder);
+#endif
+    } else {
+        throw std::invalid_argument("Wrong model name " + daqName +
+                              ". It must end with .daq or .onnx (.onnx is only "
+                              "supported when DNN_READ_ONNX is ON)");
+    }
 #if __ANDROID_API__ >= __ANDROID_API_P__
     model = builder.AllowFp16(allow_fp16).Compile(compile_preference);
 #else
@@ -59,7 +87,7 @@ int main(int argc, char **argv) {
     FLAGS_logtostderr = true;
     FLAGS_logbuflevel = -1;
     FLAGS_v = 0;
-    if (argc != 5) {
+    if (argc != 4) {
         return -1;
     }
     css daq_name = argv[1];
