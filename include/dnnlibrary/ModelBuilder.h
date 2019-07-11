@@ -99,6 +99,8 @@ class ModelBuilder {
     static const uint32_t PREFERENCE_LOW_POWER =
         ANEURALNETWORKS_PREFER_LOW_POWER;
 
+    static int32_t GetAndroidSdkVersion();
+
     Index GetBlobIndex(const std::string &blobName);
     Shape GetBlobDim(const std::string &blobName);
     Shape GetBlobDim(Index index);

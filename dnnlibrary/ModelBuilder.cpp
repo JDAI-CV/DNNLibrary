@@ -4,6 +4,7 @@
 #include <dnnlibrary/ModelBuilder.h>
 
 #include <sys/mman.h>
+#include <sys/system_properties.h>
 #include <algorithm>
 #include <array>
 #include <ctime>
@@ -28,6 +29,41 @@ using std::string;
 using std::stringstream;
 using std::vector;
 using namespace android::nn::wrapper;
+
+// Copy from
+// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/nnapi/nnapi_implementation.cc
+int32_t ModelBuilder::GetAndroidSdkVersion() {
+    const char *sdkProp = "ro.build.version.sdk";
+    char sdkVersion[PROP_VALUE_MAX];
+    int length = __system_property_get(sdkProp, sdkVersion);
+    if (length != 0) {
+        int32_t result = 0;
+        for (int i = 0; i < length; ++i) {
+            int digit = sdkVersion[i] - '0';
+            if (digit < 0 || digit > 9) {
+                // Non-numeric SDK version, assume it's higher than expected;
+                return 0xffff;
+            }
+            result = result * 10 + digit;
+        }
+        // TODO(levp): remove once SDK gets updated to 29th level
+        // Upgrade SDK version for pre-release Q to be able to test
+        // functionality available from SDK level 29.
+        if (result == 28) {
+            char versionCodename[PROP_VALUE_MAX];
+            const char *versionCodenameProp = "ro.build.version.codename";
+            length =
+                __system_property_get(versionCodenameProp, versionCodename);
+            if (length != 0) {
+                if (versionCodename[0] == 'Q') {
+                    return 29;
+                }
+            }
+        }
+        return result;
+    }
+    return 0;
+}
 
 void ModelBuilder::RegisterOperand(const std::string &name,
                                    ModelBuilder::Index index,
@@ -902,12 +938,10 @@ ModelBuilder &ModelBuilder::AddOutput(const std::string &name) {
 }
 
 ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
-#if __ANDROID_API__ >= __ANDROID_API_P__
-    ANeuralNetworksModel_relaxComputationFloat32toFloat16(dnn_model_->model_,
-                                                          allowed);
-#else
-    (void)allowed;
-#endif
+    if (GetAndroidSdkVersion() >= __ANDROID_API_P__) {
+        ANeuralNetworksModel_relaxComputationFloat32toFloat16(
+            dnn_model_->model_, allowed);
+    }
     return *this;
 }
 }  // namespace dnn

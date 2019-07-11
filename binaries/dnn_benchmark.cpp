@@ -55,16 +55,12 @@ auto GetModel(css &daqName, const bool allow_fp16,
         onnx_reader.ReadOnnx(daqName, builder);
 #endif
     } else {
-        throw std::invalid_argument("Wrong model name " + daqName +
-                              ". It must end with .daq or .onnx (.onnx is only "
-                              "supported when DNN_READ_ONNX is ON)");
+        throw std::invalid_argument(
+            "Wrong model name " + daqName +
+            ". It must end with .daq or .onnx (.onnx is only "
+            "supported when DNN_READ_ONNX is ON)");
     }
-#if __ANDROID_API__ >= __ANDROID_API_P__
     model = builder.AllowFp16(allow_fp16).Compile(compile_preference);
-#else
-    (void)allow_fp16;
-    model = builder.Compile(compile_preference);
-#endif
     return model;
 }
 
@@ -152,11 +148,10 @@ int main(int argc, char **argv) {
 
         WARM_UP;
 
-#if __ANDROID_API__ >= __ANDROID_API_P__
-        const std::vector<bool> fp16_candidates{false, true};
-#else
-        const std::vector<bool> fp16_candidates{false};
-#endif
+        const std::vector<bool> fp16_candidates =
+            ModelBuilder::GetAndroidSdkVersion() >= __ANDROID_API_P__
+                ? std::vector<bool>{false, true}
+                : std::vector<bool>{false};
         BENCHMARK(fp16_candidates, preference_candidates);
     }
 }
