@@ -148,6 +148,9 @@ OnnxConverter::FbStrVector(const std::vector<std::string> &std_str_vector) {
  * nnapi: [1, height, width, depth_out]
  */
 OnnxConverter::Tensor OnnxConverter::OnnxToNnapiAxes1230(const Tensor &src) {
+    if (src.shape.size() != 4) {
+        return src;
+    }
     Tensor dest = src;
     size_t elemsize = 0;
     if (src.data_type == Tensor::DataType::UINT8) {
@@ -180,6 +183,9 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiAxes1230(const Tensor &src) {
 }
 
 OnnxConverter::Tensor OnnxConverter::OnnxToNnapiAxes0231(const Tensor &src) {
+    if (src.shape.size() != 4) {
+        return src;
+    }
     Tensor dest = src;
     size_t elemsize = 0;
     if (src.data_type == Tensor::DataType::UINT8) {
