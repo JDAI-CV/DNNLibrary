@@ -289,7 +289,7 @@ void OnnxConverter::AddConv(const string &input_name,
     } else if (onnx_weight.shape[1] == 1) {  // depthwise
         VLOG(5) << "Depthwise conv";
         AddLayerDepthwiseConvImpl(input_name, ori_weight_name, bias_name, pads,
-                                  strides, 1, output_name);
+                                  strides, onnx_weight.shape[0] / group, output_name);
     } else {
         // TODO: Support it
         throw std::invalid_argument("group != 1 is not supported");
