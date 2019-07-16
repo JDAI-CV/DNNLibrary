@@ -1047,9 +1047,6 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
         const auto strides = helper.get("strides", vector<int>{1, 1});
         const auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
         const auto dilations = helper.get("dilations", vector<int>{1, 1});
-        CHECK_EQ(pads.size(), 4ul);
-        CHECK_EQ(strides.size(), 2ul);
-        CHECK_EQ(dilations.size(), 2ul);
         const auto group = helper.get("group", 1);
         if (dilations != vector<int>{1, 1} && strides != vector<int>{1, 1}) {
             return {false,
@@ -1060,6 +1057,9 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
             const auto &onnx_weight = onnx_tensors_.at(weight_name);
             if (group != 1 && onnx_weight.shape[1] != 1) {
                 return {false, "group != 1 is not supported"};
+            }
+            if (onnx_weight.shape.size() != 4) {
+                return {false, "Only conv 2d is supported."};
             }
         } else {
             return {false, "The weight of convolution must be known"};
@@ -1075,6 +1075,9 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
         }
         if (helper.get("auto_pad", "NOTSET") != "NOTSET") {
             return {false, "auto_pad is not supported"};
+        }
+        if (helper.get("kernel_shape", std::vector<int>{1, 1}).size() != 2) {
+            return {false, "Only pooling 2d is supported"};
         }
     } else if (op == "PRelu") {
         const auto slope_name = m(node.input(1));
