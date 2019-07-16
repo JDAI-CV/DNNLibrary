@@ -241,7 +241,7 @@ void OnnxConverter::AddConv(const string &input_name,
                           dilations[1] * dilations[1] -
                       input_shape[2];
         VLOG(5) << input_shape << ", " << pads << ", " << dilations << ", "
-                  << new_pads;
+                << new_pads;
         // Why "AllowShortBlocksOnASingleLine: false" doesn't work on it?
         // clang-format off
         {
@@ -278,6 +278,9 @@ void OnnxConverter::AddConv(const string &input_name,
         return;
     }
 
+    if (!onnx_tensors_.has(ori_weight_name)) {
+        throw std::invalid_argument("The weight of convolution must be known");
+    }
     const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
     if (group == 1) {
         VLOG(5) << "Vanilla conv";
@@ -921,8 +924,8 @@ OnnxConverter::GetInputOfOnnxModel() {
             nnapi_shape = shape;
         }
         shaper_.AddShape(input.name(), nnapi_shape);
-        const auto flat_input =
-            DNN::CreateInputDirect(builder_, &nnapi_shape, input.name().c_str());
+        const auto flat_input = DNN::CreateInputDirect(builder_, &nnapi_shape,
+                                                       input.name().c_str());
         inputs.push_back(flat_input);
     }
 
@@ -1053,9 +1056,13 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
                     "Both dilations and strides > 1 is not supported for now"};
         }
         const auto weight_name = m(node.input(1));
-        const auto &onnx_weight = onnx_tensors_.at(weight_name);
-        if (group != 1 && onnx_weight.shape[1] != 1) {
-            return {false, "group != 1 is not supported"};
+        if (onnx_tensors_.has(weight_name)) {
+            const auto &onnx_weight = onnx_tensors_.at(weight_name);
+            if (group != 1 && onnx_weight.shape[1] != 1) {
+                return {false, "group != 1 is not supported"};
+            }
+        } else {
+            return {false, "The weight of convolution must be known"};
         }
     } else if (op == "AveragePool" || op == "MaxPool") {
         const auto count_include_pad = helper.get("count_include_pad", 0);
