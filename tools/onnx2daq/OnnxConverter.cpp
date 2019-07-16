@@ -1132,6 +1132,22 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
     return {true, ""};
 }
 
+bool IsValidSupportedNodesVec(const std::vector<int> &supported_node_vec,
+                              const ONNX_NAMESPACE::ModelProto &model_proto) {
+    if (!supported_node_vec.empty()) {
+        if (supported_node_vec.size() == 1) {
+            const auto &node = model_proto.graph().node(supported_node_vec[0]);
+            // Reshape and Dropout are simply ignored in DNNLibrary, causing the
+            // input == output, which is not allowed in NNAPI
+            if (node.op_type() == "Reshape" || node.op_type() == "Dropout") {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 std::vector<std::vector<int>> OnnxConverter::GetSupportedNodes(
     const ONNX_NAMESPACE::ModelProto &model_proto) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -1144,17 +1160,17 @@ std::vector<std::vector<int>> OnnxConverter::GetSupportedNodes(
         bool supported;
         std::string error_msg;
         std::tie(supported, error_msg) =
-            IsNodeSupported(model_proto_.graph().node(i));
+            IsNodeSupported(model_proto.graph().node(i));
         if (supported) {
             supported_node_vec.push_back(i);
         } else {
-            if (!supported_node_vec.empty()) {
+            if (IsValidSupportedNodesVec(supported_node_vec, model_proto)) {
                 supported_node_vecs.push_back(supported_node_vec);
                 supported_node_vec.clear();
             }
         }
     }
-    if (!supported_node_vec.empty()) {
+    if (IsValidSupportedNodesVec(supported_node_vec, model_proto)) {
         supported_node_vecs.push_back(supported_node_vec);
     }
     Clear();
