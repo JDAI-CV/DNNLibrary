@@ -80,11 +80,13 @@ class OnnxConverter {
 
     void HandleInitializer();
     std::vector<flatbuffers::Offset<DNN::Input>> GetInputOfOnnxModel();
-    std::vector<flatbuffers::Offset<flatbuffers::String>> GetOutputOfOnnxModel();
+    std::vector<flatbuffers::Offset<flatbuffers::String>>
+    GetOutputOfOnnxModel();
     void ReadTableFile(const std::string &table_file);
     std::vector<flatbuffers::Offset<DNN::QuantInfo>> ConvertQuantInfosToFbs();
 
     std::pair<bool, std::string> IsNodeSupported(
+        const ONNX_NAMESPACE::ModelProto &model_proto,
         const ONNX_NAMESPACE::NodeProto &node_proto) const;
 
     void AddConv(const std::string &input_name, const std::vector<int> &strides,
@@ -184,7 +186,7 @@ class OnnxConverter {
 
    public:
     std::vector<std::vector<int>> GetSupportedNodes(
-        const ONNX_NAMESPACE::ModelProto &model);
+        ONNX_NAMESPACE::ModelProto model_proto);
     void Convert(const std::string &model_str, const std::string &filepath,
                  const std::string &table_file = "");
     void Convert(const ONNX_NAMESPACE::ModelProto &model,

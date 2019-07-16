@@ -10,7 +10,9 @@ OperandType::OperandType(Type type, std::vector<uint32_t> d, float scale,
                          int32_t zeroPoint)
     : type(type), dimensions(std::move(d)), channelQuant(std::nullopt) {
     if (dimensions.empty()) {
-        DNN_ASSERT(isScalarType(type), typeToStr(type));
+        if (!isScalarType(type)) {
+            dimensions = {1};
+        }
     } else {
         DNN_ASSERT(!isScalarType(type), typeToStr(type));
     }
