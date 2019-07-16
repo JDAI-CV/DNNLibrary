@@ -40,7 +40,7 @@ class StrKeyMap {
     void clear() {
         map_.clear();
     }
-    bool has(const std::string &key) {
+    bool has(const std::string &key) const {
         return map_.find(key) != map_.end();
     }
 

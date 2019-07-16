@@ -1078,9 +1078,13 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
         }
     } else if (op == "PRelu") {
         const auto slope_name = m(node.input(1));
-        if (onnx_tensors_.at(slope_name).shape != Shape{1}) {
-            // TODO: support it
-            return {false, "Only support one element slope."};
+        if (onnx_tensors_.has(slope_name)) {
+            if (onnx_tensors_.at(slope_name).shape != Shape{1}) {
+                // TODO: support it
+                return {false, "PRelu only support one element slope."};
+            }
+        } else {
+            return {false, "PRelu slope must be known"};
         }
     } else if (op == "Gemm") {
         const auto transA = helper.get("transA", 0);
