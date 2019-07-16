@@ -289,7 +289,8 @@ void OnnxConverter::AddConv(const string &input_name,
     } else if (onnx_weight.shape[1] == 1) {  // depthwise
         VLOG(5) << "Depthwise conv";
         AddLayerDepthwiseConvImpl(input_name, ori_weight_name, bias_name, pads,
-                                  strides, onnx_weight.shape[0] / group, output_name);
+                                  strides, onnx_weight.shape[0] / group,
+                                  output_name);
     } else {
         // TODO: Support it
         throw std::invalid_argument("group != 1 is not supported");
@@ -1121,6 +1122,11 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
                             "gemm layer for now"};
                 }
             }
+        }
+    } else if (op == "Softmax") {
+        const auto axis = helper.get("axis", 1);
+        if (axis != 1) {
+            return {false, "Only axis == 1 is supported in Softmax"};
         }
     }
     return {true, ""};
