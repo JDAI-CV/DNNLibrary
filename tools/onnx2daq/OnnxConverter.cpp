@@ -1086,6 +1086,15 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
         if (helper.get("kernel_shape", std::vector<int>{1, 1}).size() != 2) {
             return {false, "Only pooling 2d is supported"};
         }
+        if (helper.get("ceil_mode", 0) == 1) {
+            return {false, "ceil_mode == 1 is not supported for pooling"};
+        }
+        if (helper.get("dilations", std::vector<int>{1, 1}) != std::vector<int>{1, 1}) {
+            return {false, "Dilations of pooling is not supported"};
+        }
+        if (node.output_size() != 1) {
+            return {false, "Argmax in maxpooling is not supported"};
+        }
     } else if (op == "PRelu") {
         const auto slope_name = m(node.input(1));
         if (onnx_tensors_.has(slope_name)) {
@@ -1111,6 +1120,22 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
             return {false,
                     "Your onnx model may be in training mode, please export "
                     "it in test mode."};
+        }
+        const auto scale_name = m(node.input(1));
+        const auto b_name = m(node.input(2));
+        const auto mean_name = m(node.input(3));
+        const auto var_name = m(node.input(4));
+        if (!onnx_tensors_.has(scale_name)) {
+            return {false, "Scale of BN must be known"};
+        }
+        if (!onnx_tensors_.has(b_name)) {
+            return {false, "B of BN must be known"};
+        }
+        if (!onnx_tensors_.has(mean_name)) {
+            return {false, "Mean of BN must be known"};
+        }
+        if (!onnx_tensors_.has(var_name)) {
+            return {false, "Var of BN must be known"};
         }
     } else if (op == "LRN") {
         const auto size = helper.get("size", 1);
@@ -1145,7 +1170,8 @@ bool IsValidSupportedNodesVec(const std::vector<int> &supported_node_vec,
             const auto &node = model_proto.graph().node(supported_node_vec[0]);
             // Reshape and Dropout are simply ignored in DNNLibrary, causing the
             // input == output, which is not allowed in NNAPI
-            if (node.op_type() == "Reshape" || node.op_type() == "Dropout") {
+            if (node.op_type() == "Reshape" || node.op_type() == "Dropout" ||
+                node.op_type() == "Identity") {
                 return false;
             }
         }
