@@ -16,7 +16,7 @@
 // Provides C++ classes to more easily use the Neural Networks API.
 #ifndef ANDROID_ML_NN_RUNTIME_NEURAL_NETWORKS_WRAPPER_H
 #define ANDROID_ML_NN_RUNTIME_NEURAL_NETWORKS_WRAPPER_H
-#include "NeuralNetworksMock.h"
+#include <dnnlibrary/nnapi_implementation.h>
 #include <common/data_types.h>
 #include <math.h>
 #include <string>
@@ -121,72 +121,6 @@ struct OperandType {
         return type == Type::TENSOR_QUANT8_SYMM_PER_CHANNEL || type == Type::TENSOR_QUANT16_SYMM || type == Type::TENSOR_QUANT16_ASYMM || type == Type::TENSOR_QUANT8_ASYMM || type == Type::TENSOR_INT32;
     }
     operator ANeuralNetworksOperandType() const {return operandType; }
-};
-class Memory {
-public:
-    Memory(size_t size, int protect, int fd, size_t offset) {
-        mValid = ANeuralNetworksMemory_createFromFd(size, protect, fd, offset, &mMemory) ==
-                 ANEURALNETWORKS_NO_ERROR;
-    }
-    Memory(AHardwareBuffer* buffer) {
-        mValid = ANeuralNetworksMemory_createFromAHardwareBuffer(buffer, &mMemory) ==
-                 ANEURALNETWORKS_NO_ERROR;
-    }
-    ~Memory() { ANeuralNetworksMemory_free(mMemory); }
-    // Disallow copy semantics to ensure the runtime object can only be freed
-    // once. Copy semantics could be enabled if some sort of reference counting
-    // or deep-copy system for runtime objects is added later.
-    Memory(const Memory&) = delete;
-    Memory& operator=(const Memory&) = delete;
-    // Move semantics to remove access to the runtime object from the wrapper
-    // object that is being moved. This ensures the runtime object will be
-    // freed only once.
-    Memory(Memory&& other) { *this = std::move(other); }
-    Memory& operator=(Memory&& other) {
-        if (this != &other) {
-            ANeuralNetworksMemory_free(mMemory);
-            mMemory = other.mMemory;
-            mValid = other.mValid;
-            other.mMemory = nullptr;
-            other.mValid = false;
-        }
-        return *this;
-    }
-    ANeuralNetworksMemory* get() const { return mMemory; }
-    bool isValid() const { return mValid; }
-private:
-    ANeuralNetworksMemory* mMemory = nullptr;
-    bool mValid = true;
-};
-class Event {
-public:
-    Event() {}
-    ~Event() { ANeuralNetworksEvent_free(mEvent); }
-    // Disallow copy semantics to ensure the runtime object can only be freed
-    // once. Copy semantics could be enabled if some sort of reference counting
-    // or deep-copy system for runtime objects is added later.
-    Event(const Event&) = delete;
-    Event& operator=(const Event&) = delete;
-    // Move semantics to remove access to the runtime object from the wrapper
-    // object that is being moved. This ensures the runtime object will be
-    // freed only once.
-    Event(Event&& other) { *this = std::move(other); }
-    Event& operator=(Event&& other) {
-        if (this != &other) {
-            ANeuralNetworksEvent_free(mEvent);
-            mEvent = other.mEvent;
-            other.mEvent = nullptr;
-        }
-        return *this;
-    }
-    Result wait() { return static_cast<Result>(ANeuralNetworksEvent_wait(mEvent)); }
-    // Only for use by Execution
-    void set(ANeuralNetworksEvent* newEvent) {
-        ANeuralNetworksEvent_free(mEvent);
-        mEvent = newEvent;
-    }
-private:
-    ANeuralNetworksEvent* mEvent = nullptr;
 };
 }  // namespace wrapper
 }  // namespace nn

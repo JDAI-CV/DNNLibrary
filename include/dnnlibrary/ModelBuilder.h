@@ -86,7 +86,11 @@ class ModelBuilder {
     android::nn::wrapper::OperandType GetOperandType(
         const QuantInfo &quant_info, const Shape &dims);
 
+
+    const NnApi* nnapi_ = nullptr;
+
    public:
+    ModelBuilder();
     enum class PoolingType { MAX_POOL, AVE_POOL };
 
     static const int32_t ACTIVATION_NONE = ANEURALNETWORKS_FUSED_NONE;

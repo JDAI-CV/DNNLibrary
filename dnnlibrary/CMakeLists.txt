@@ -4,7 +4,7 @@ set(dnnlibrary_src
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/ModelBuilder.h
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/Model.h
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/DaqReader.h
-    ${PROJECT_SOURCE_DIR}/include/dnnlibrary/NeuralNetworksWrapper.h
+    ${PROJECT_SOURCE_DIR}/include/dnnlibrary/nnapi_implementation.h
     android_log_helper.h
     operand_helper.h
     flatbuffers_helper.h
@@ -12,6 +12,7 @@ set(dnnlibrary_src
     Model.cpp
     DaqReader.cpp 
     NeuralNetworksWrapper.cpp
+    nnapi_implementation.cc
     ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h 

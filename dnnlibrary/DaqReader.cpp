@@ -59,13 +59,13 @@ std::string layer_type_to_str(DNN::LayerType type) {
 int convert_fuse_code_to_nnapi(const DNN::FuseCode fuse_code) {
     switch (fuse_code) {
         case DNN::FuseCode::None:
-            return FuseCode::ANEURALNETWORKS_FUSED_NONE;
+            return ANEURALNETWORKS_FUSED_NONE;
         case DNN::FuseCode::Relu:
-            return FuseCode::ANEURALNETWORKS_FUSED_RELU;
+            return ANEURALNETWORKS_FUSED_RELU;
         case DNN::FuseCode::Relu1:
-            return FuseCode::ANEURALNETWORKS_FUSED_RELU1;
+            return ANEURALNETWORKS_FUSED_RELU1;
         case DNN::FuseCode::Relu6:
-            return FuseCode::ANEURALNETWORKS_FUSED_RELU6;
+            return ANEURALNETWORKS_FUSED_RELU6;
     }
     throw std::invalid_argument("Invalid fuse_code");
 }
