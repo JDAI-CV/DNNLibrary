@@ -30,41 +30,6 @@ using std::stringstream;
 using std::vector;
 using namespace android::nn::wrapper;
 
-// Copy from
-// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/lite/nnapi/nnapi_implementation.cc
-int32_t ModelBuilder::GetAndroidSdkVersion() {
-    const char *sdkProp = "ro.build.version.sdk";
-    char sdkVersion[PROP_VALUE_MAX];
-    int length = __system_property_get(sdkProp, sdkVersion);
-    if (length != 0) {
-        int32_t result = 0;
-        for (int i = 0; i < length; ++i) {
-            int digit = sdkVersion[i] - '0';
-            if (digit < 0 || digit > 9) {
-                // Non-numeric SDK version, assume it's higher than expected;
-                return 0xffff;
-            }
-            result = result * 10 + digit;
-        }
-        // TODO(levp): remove once SDK gets updated to 29th level
-        // Upgrade SDK version for pre-release Q to be able to test
-        // functionality available from SDK level 29.
-        if (result == 28) {
-            char versionCodename[PROP_VALUE_MAX];
-            const char *versionCodenameProp = "ro.build.version.codename";
-            length =
-                __system_property_get(versionCodenameProp, versionCodename);
-            if (length != 0) {
-                if (versionCodename[0] == 'Q') {
-                    return 29;
-                }
-            }
-        }
-        return result;
-    }
-    return 0;
-}
-
 void ModelBuilder::RegisterOperand(const std::string &name,
                                    ModelBuilder::Index index,
                                    const OperandType &operand_type) {
@@ -539,7 +504,7 @@ ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
     input_indexes.push_back(input_idx);
     shaper_.Identity(input, output);
     const OperandType operand_type =
-        GetOperandType(Type::FLOAT32, shaper_[output]);
+        GetOperandType(Type::TENSOR_FLOAT32, shaper_[output]);
     const auto output_idx = AddOperation(ANEURALNETWORKS_DEQUANTIZE,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
@@ -696,7 +661,7 @@ OperandType ModelBuilder::GetOperandType(const QuantInfo &quant_info,
             map_type##_operand_map_.end()) {                                 \
             const auto index = AddNewOperand({Type::op_type});               \
             THROW_ON_ERROR_WITH_NOTE(                                        \
-                ANeuralNetworksModel_setOperandValue(                        \
+                nnapi_->ANeuralNetworksModel_setOperandValue(                \
                     dnn_model_->model_, index, &value, sizeof(value)),       \
                 "value: " + std::to_string(value));                          \
             map_type##_operand_map_[value] = index;                          \
@@ -713,15 +678,15 @@ DEFINE_OPERAND_FROM_SCALAR(float, float32, FLOAT32);
 ModelBuilder::Index ModelBuilder::AddMissingOperand(
     const OperandType &operand_type) {
     const auto index = AddNewOperand(operand_type);
-    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(dnn_model_->model_,
-                                                        index, nullptr, 0));
+    THROW_ON_ERROR(nnapi_->ANeuralNetworksModel_setOperandValue(
+        dnn_model_->model_, index, nullptr, 0));
     return index;
 }
 
 ModelBuilder::Index ModelBuilder::AddNewOperand(
     const OperandType &operand_type) {
-    THROW_ON_ERROR(ANeuralNetworksModel_addOperand(dnn_model_->model_,
-                                                   &operand_type.operandType));
+    THROW_ON_ERROR(nnapi_->ANeuralNetworksModel_addOperand(
+        dnn_model_->model_, &operand_type.operandType));
     return next_index_++;
 }
 
@@ -732,7 +697,7 @@ ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name,
     throw std::invalid_argument("");
     DNN_ASSERT(!dimen.empty(), "");
     const auto index = AddNewOperand({Type::TENSOR_FLOAT32, dimen});
-    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValueFromMemory(
+    THROW_ON_ERROR(nnapi_->ANeuralNetworksModel_setOperandValueFromMemory(
         dnn_model_->model_, index, dnn_model_->memory_,
         addr - dnn_model_->data_, Product(dimen) * sizeof(float)));
     shaper_.AddShape(name, dimen);
@@ -775,7 +740,7 @@ ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
                                         typeToStr(operand_type.type));
     }
     uint32_t index = AddNewOperand(operand_type);
-    THROW_ON_ERROR(ANeuralNetworksModel_setOperandValue(
+    THROW_ON_ERROR(nnapi_->ANeuralNetworksModel_setOperandValue(
         dnn_model_->model_, index, buffer,
         Product(operand_type.dimensions) * element_size));
     shaper_.AddShape(name, operand_type.dimensions);
@@ -797,27 +762,28 @@ std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
         }
     }
     THROW_ON_ERROR_WITH_NOTE(
-        ANeuralNetworksModel_identifyInputsAndOutputs(
+        nnapi_->ANeuralNetworksModel_identifyInputsAndOutputs(
             dnn_model_->model_, static_cast<uint32_t>(input_index_vec_.size()),
             &input_index_vec_[0],
             static_cast<uint32_t>(output_index_vec_.size()),
             &output_index_vec_[0]),
         "on identifyInputsAndOutputs");
 
-    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksModel_finish(dnn_model_->model_),
-                             "on model finish");
+    THROW_ON_ERROR_WITH_NOTE(
+        nnapi_->ANeuralNetworksModel_finish(dnn_model_->model_),
+        "on model finish");
 
     ;
-    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksCompilation_create(
+    THROW_ON_ERROR_WITH_NOTE(nnapi_->ANeuralNetworksCompilation_create(
                                  dnn_model_->model_, &dnn_model_->compilation_),
                              "on create");
 
-    THROW_ON_ERROR_WITH_NOTE(ANeuralNetworksCompilation_setPreference(
+    THROW_ON_ERROR_WITH_NOTE(nnapi_->ANeuralNetworksCompilation_setPreference(
                                  dnn_model_->compilation_, preference),
                              "on setPreference");
 
     THROW_ON_ERROR_WITH_NOTE(
-        ANeuralNetworksCompilation_finish(dnn_model_->compilation_),
+        nnapi_->ANeuralNetworksCompilation_finish(dnn_model_->compilation_),
         "on compilation finish");
 
     VLOG(5) << "Finishing.. Here are operands in the model:";
@@ -904,7 +870,7 @@ ModelBuilder::IndexSeq ModelBuilder::AddOperation(
     }
 
     THROW_ON_ERROR_WITH_NOTE(
-        ANeuralNetworksModel_addOperation(
+        nnapi_->ANeuralNetworksModel_addOperation(
             dnn_model_->model_, op, input_indexes.size(), &input_indexes[0],
             output_indexes.size(), &output_indexes[0]),
         "op = " + std::to_string(op));
@@ -914,7 +880,7 @@ ModelBuilder::IndexSeq ModelBuilder::AddOperation(
 
 void ModelBuilder::Prepare() {
     dnn_model_ = std::unique_ptr<Model>(new Model());
-    const auto ret = ANeuralNetworksModel_create(&dnn_model_->model_);
+    const auto ret = nnapi_->ANeuralNetworksModel_create(&dnn_model_->model_);
     if (ret == ANEURALNETWORKS_OUT_OF_MEMORY) {
         throw std::bad_alloc();
     }
@@ -922,8 +888,8 @@ void ModelBuilder::Prepare() {
 
 void ModelBuilder::SetMemory(int fd, size_t size, size_t offset) {
     ANeuralNetworksMemory *mem = nullptr;
-    THROW_ON_ERROR(
-        ANeuralNetworksMemory_createFromFd(size, PROT_READ, fd, offset, &mem));
+    THROW_ON_ERROR(nnapi_->ANeuralNetworksMemory_createFromFd(
+        size, PROT_READ, fd, offset, &mem));
     dnn_model_->memory_ = mem;
 }
 
@@ -938,10 +904,14 @@ ModelBuilder &ModelBuilder::AddOutput(const std::string &name) {
 }
 
 ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
-    if (GetAndroidSdkVersion() >= __ANDROID_API_P__) {
-        ANeuralNetworksModel_relaxComputationFloat32toFloat16(
+    if (nnapi_->ANeuralNetworksModel_relaxComputationFloat32toFloat16 !=
+        nullptr) {
+        nnapi_->ANeuralNetworksModel_relaxComputationFloat32toFloat16(
             dnn_model_->model_, allowed);
     }
     return *this;
+}
+
+ModelBuilder::ModelBuilder() : nnapi_(NnApiImplementation()) {
 }
 }  // namespace dnn

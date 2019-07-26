@@ -39,7 +39,7 @@ bool hasEnding(std::string const &fullString, std::string const &ending) {
 }
 
 auto GetModel(css &daqName, const bool allow_fp16,
-              const PreferenceCode &compile_preference) {
+              const int compile_preference) {
     std::unique_ptr<Model> model;
     ModelBuilder builder;
     if (hasEnding(daqName, ".daq")) {
@@ -64,7 +64,7 @@ auto GetModel(css &daqName, const bool allow_fp16,
     return model;
 }
 
-auto PrefCodeToStr(const PreferenceCode &preference_code) {
+auto PrefCodeToStr(const int &preference_code) {
     if (preference_code == ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER) {
         return "fast single";
     }
@@ -129,13 +129,13 @@ int main(int argc, char **argv) {
         }                                                                      \
     }
 
-    const std::vector<PreferenceCode> preference_candidates{
+    const std::vector<int> preference_candidates{
         ANEURALNETWORKS_PREFER_FAST_SINGLE_ANSWER,
         ANEURALNETWORKS_PREFER_SUSTAINED_SPEED,
         ANEURALNETWORKS_PREFER_LOW_POWER};
     if (quant) {
         uint8_t data[input_len];
-        uint8_t output[output_len];
+        float output[output_len];
         WARM_UP;
         const std::vector<bool> fp16_candidates{false};
         BENCHMARK(fp16_candidates, preference_candidates);
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
         WARM_UP;
 
         const std::vector<bool> fp16_candidates =
-            ModelBuilder::GetAndroidSdkVersion() >= __ANDROID_API_P__
+            GetAndroidSdkVersion() >= __ANDROID_API_P__
                 ? std::vector<bool>{false, true}
                 : std::vector<bool>{false};
         BENCHMARK(fp16_candidates, preference_candidates);

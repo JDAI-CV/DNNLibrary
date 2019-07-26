@@ -18,12 +18,12 @@ class Model {
     friend class ModelBuilder;
 
    private:
-    ANeuralNetworksModel *model_;
-    ANeuralNetworksCompilation *compilation_;
-    ANeuralNetworksExecution *execution_;
-    ANeuralNetworksMemory *memory_;
-    unsigned char *data_;
-    size_t data_size_;
+    ANeuralNetworksModel *model_ = nullptr;
+    ANeuralNetworksCompilation *compilation_ = nullptr;
+    ANeuralNetworksExecution *execution_ = nullptr;
+    ANeuralNetworksMemory *memory_ = nullptr;
+    unsigned char *data_ = nullptr;
+    size_t data_size_ = 0;
     std::vector<std::unique_ptr<uint8_t[]>> uint8_buf_pointers_;
     std::vector<std::unique_ptr<int8_t[]>> int8_buf_pointers_;
     std::vector<std::unique_ptr<float[]>> float_buf_pointers_;
@@ -39,8 +39,9 @@ class Model {
                         const size_t elemsize);
     void PrepareForExecution();
     void PredictAfterSetInputBuffer();
-    bool prepared_for_exe_;
-    Model() = default;
+    bool prepared_for_exe_ = false;
+    const NnApi *nnapi_ = nullptr;
+    Model();
 
    public:
     template <typename T>

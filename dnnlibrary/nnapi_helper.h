@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <dnnlibrary/NeuralNetworksWrapper.h>
+#include <dnnlibrary/NeuralNetworksTypes.h>
 
 #define THROW_ON_ERROR(val)                                                   \
     {                                                                         \

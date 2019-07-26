@@ -14,7 +14,7 @@ OperandType::OperandType(Type type, std::vector<uint32_t> d, float scale,
             dimensions = {1};
         }
     } else {
-        DNN_ASSERT(!isScalarType(type), typeToStr(type));
+        DNN_ASSERT(!isScalarType(type), typeToStr(type), " ", dimensions);
     }
     operandType = {
         .type = static_cast<int32_t>(type),
