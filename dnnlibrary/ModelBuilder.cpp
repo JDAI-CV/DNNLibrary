@@ -915,7 +915,7 @@ ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
 ModelBuilder::ModelBuilder() : nnapi_(NnApiImplementation()) {
 }
 
-dnn::optional<std::vector<Device>> ModelBuilder::getDevices() {
+dnn::optional<std::vector<Device>> ModelBuilder::GetDevices() {
     if (nnapi_->android_sdk_version >= __ANDROID_API_Q__) {
         uint32_t device_count;
         THROW_ON_ERROR(nnapi_->ANeuralNetworks_getDeviceCount(&device_count));

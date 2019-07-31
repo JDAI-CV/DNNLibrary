@@ -284,7 +284,7 @@ class ModelBuilder {
         (indexes.push_back(OperandFromScalar(args)), ...);
     }
 
-    dnn::optional<std::vector<Device>> getDevices();
+    dnn::optional<std::vector<Device>> GetDevices();
 };
 }  // namespace dnn
 #endif  // NNAPIEXAMPLE_MODELBUILDER_H
