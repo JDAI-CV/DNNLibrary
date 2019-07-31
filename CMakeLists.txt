@@ -22,9 +22,8 @@ include(cmake/flatbuffers.cmake)
 configure_flatbuffers()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
-    set (CMAKE_CXX_STANDARD 17)
-
     add_compile_options(-Os)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if (${DNN_READ_ONNX})
         include(cmake/onnx.cmake)
         configure_onnx()

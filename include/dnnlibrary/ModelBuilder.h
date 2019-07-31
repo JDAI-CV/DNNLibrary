@@ -16,6 +16,7 @@
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/data_types.h>
+#include <dnnlibrary/Device.h>
 #include <dnnlibrary/Model.h>
 #include <dnnlibrary/NeuralNetworksWrapper.h>
 
@@ -102,8 +103,6 @@ class ModelBuilder {
         ANEURALNETWORKS_PREFER_SUSTAINED_SPEED;
     static const uint32_t PREFERENCE_LOW_POWER =
         ANEURALNETWORKS_PREFER_LOW_POWER;
-
-    static int32_t GetAndroidSdkVersion();
 
     Index GetBlobIndex(const std::string &blobName);
     Shape GetBlobDim(const std::string &blobName);
@@ -284,6 +283,8 @@ class ModelBuilder {
     void AddScalarOperands(IndexSeq &indexes, Args... args) {
         (indexes.push_back(OperandFromScalar(args)), ...);
     }
+
+    dnn::optional<std::vector<Device>> GetDevices();
 };
 }  // namespace dnn
 #endif  // NNAPIEXAMPLE_MODELBUILDER_H
