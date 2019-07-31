@@ -8,7 +8,7 @@ namespace wrapper {
 
 OperandType::OperandType(Type type, std::vector<uint32_t> d, float scale,
                          int32_t zeroPoint)
-    : type(type), dimensions(std::move(d)), channelQuant(std::nullopt) {
+    : type(type), dimensions(std::move(d)), channelQuant(dnn::nullopt) {
     if (dimensions.empty()) {
         if (!isScalarType(type)) {
             dimensions = {1};
