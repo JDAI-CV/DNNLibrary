@@ -37,4 +37,14 @@ if (DNN_BUILD_BIN)
     if ((NOT DNN_READ_ONNX) OR DNN_SYSTEM_PROTOBUF)
         treat_warnings_as_errors(ex_model_builder)
     endif()
+
+    add_executable(get_devices
+        get_devices.cpp)
+    target_link_libraries(get_devices
+        dnnlibrary)
+    target_include_directories(get_devices
+        PRIVATE
+        ${PROJECT_SOURCE_DIR}
+        )
+
 endif()

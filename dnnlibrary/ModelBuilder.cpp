@@ -914,4 +914,31 @@ ModelBuilder &ModelBuilder::AllowFp16(const bool allowed) {
 
 ModelBuilder::ModelBuilder() : nnapi_(NnApiImplementation()) {
 }
+
+dnn::optional<std::vector<Device>> ModelBuilder::getDevices() {
+    if (nnapi_->android_sdk_version >= __ANDROID_API_Q__) {
+        uint32_t device_count;
+        THROW_ON_ERROR(nnapi_->ANeuralNetworks_getDeviceCount(&device_count));
+        std::vector<Device> devices;
+        FORZ(i, device_count) {
+            ANeuralNetworksDevice *nn_device;
+            nnapi_->ANeuralNetworks_getDevice(i, &nn_device);
+            const char *nn_name_ptr;
+            nnapi_->ANeuralNetworksDevice_getName(nn_device, &nn_name_ptr);
+            const std::string device_name(nn_name_ptr);
+            int64_t feature_level;
+            nnapi_->ANeuralNetworksDevice_getFeatureLevel(nn_device, &feature_level);
+            int type;
+            nnapi_->ANeuralNetworksDevice_getType(nn_device, &type);
+            const char *nn_version_ptr;
+            nnapi_->ANeuralNetworksDevice_getVersion(nn_device, &nn_version_ptr);
+            const std::string version(nn_version_ptr);
+            Device device{device_name, feature_level, type, version};
+            devices.push_back(device);
+        }
+        return devices;
+    } else {
+        return dnn::nullopt;
+    }
+}
 }  // namespace dnn
