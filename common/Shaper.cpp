@@ -33,18 +33,6 @@ void Shaper::Conv(const std::string &input_name,
                  paddings[1], paddings[3], paddings[0], paddings[2],
                  weight_name, output_name);
 }
-
-void Shaper::Conv(const std::string &input_name,
-                  const std::vector<int32_t> paddings,
-                  const std::vector<int32_t> strides,
-                  const std::vector<int32_t> dilations,
-                  const std::string &weight_name, const std::string &bias_name,
-                  const std::string &output_name) {
-    (void)bias_name;
-    Shaper::Conv(input_name, strides, dilations, paddings, weight_name,
-                 output_name);
-}
-
 void Shaper::Conv(const std::string &input, const std::string &weight,
                   int32_t padding_left, int32_t padding_right,
                   int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
