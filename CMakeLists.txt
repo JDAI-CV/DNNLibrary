@@ -23,6 +23,7 @@ configure_flatbuffers()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
     add_compile_options(-Os)
+    # Workaround for cmake 3.15, https://gitlab.kitware.com/cmake/cmake/issues/19515.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     if (${DNN_READ_ONNX})
         include(cmake/onnx.cmake)
