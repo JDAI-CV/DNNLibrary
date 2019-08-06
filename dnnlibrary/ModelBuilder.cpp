@@ -266,27 +266,6 @@ ModelBuilder::Shape ModelBuilder::GetBlobDim(uint32_t index) {
     throw std::invalid_argument("Wrong index in GetBlobDim");
 }
 
-template <typename... OperandTypes>
-ModelBuilder::IndexSeq ModelBuilder::AddOperation(
-    int op, IndexSeq input_indexes, OperandTypes... operand_types) {
-    using android::nn::wrapper::OperandType;
-    vector<OperandType> types;
-    (types.push_back(operand_types), ...);
-    IndexSeq output_indexes;
-    for (const auto &type : types) {
-        auto index = AddNewOperand(type);
-        output_indexes.push_back(index);
-    }
-
-    THROW_ON_ERROR_WITH_NOTE(
-        nnapi_->ANeuralNetworksModel_addOperation(
-            dnn_model_->model_, op, input_indexes.size(), &input_indexes[0],
-            output_indexes.size(), &output_indexes[0]),
-        "op = " + std::to_string(op));
-
-    return output_indexes;
-}
-
 void ModelBuilder::Prepare() {
     dnn_model_ = std::unique_ptr<Model>(new Model());
     const auto ret = nnapi_->ANeuralNetworksModel_create(&dnn_model_->model_);
