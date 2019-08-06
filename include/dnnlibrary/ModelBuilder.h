@@ -213,6 +213,14 @@ class ModelBuilder {
                                float bias, float alpha, float beta,
                                const std::string &output);
 #endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
+    ModelBuilder::Index AddTanh(const std::string &input,
+                                const std::string &output);
+#endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
+    ModelBuilder::Index AddFloor(const std::string &input,
+                                 const std::string &output);
+#endif  // __ANDROID_API__ >= 27
         // ModelBuilder auto generated methods end
     Index AddDepthWiseConv(
         const std::string &input_name, int32_t strideX, int32_t strideY,

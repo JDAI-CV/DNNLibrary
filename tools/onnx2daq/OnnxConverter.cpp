@@ -849,6 +849,52 @@ void OnnxConverter::AddLayerLRN(const std::string &input, int32_t radius,
     layers_.push_back(layer);
 }
 
+void OnnxConverter::AddLayerTanh(const std::string &input,
+                                 const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto param =
+        DNN::CreateTanhDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Tanh, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerFloor(const std::string &input,
+                                  const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto param =
+        DNN::CreateFloorDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Floor, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
 // OnnxConverter auto generated methods end
 
 void OnnxConverter::SetIdentity(css &input_name, css &output_name) {
@@ -1079,7 +1125,8 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
         "Softmax",       "Concat",
         "Dropout",       "BatchNormalization",
         "Reshape",       "LRN",
-        "Identity"};
+        "Identity",      "Tanh",
+        "Floor"};
     if (std::find(supported_types.begin(), supported_types.end(), op) ==
         supported_types.end()) {
         return {false, "Unsupported operator " + op};
@@ -1514,6 +1561,18 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             AddLayerLRN(node.input(0), radius, bias, alpha, beta,
                         node.output(0));
             VLOG(5) << "Converting LRN completed";
+        } else if (op == "Tanh") {
+            VLOG(5) << "Start converting Tanh";
+            const auto input_name = m(node.input(0));
+            const auto output_name = m(node.output(0));
+            AddLayerTanh(input_name, output_name);
+            VLOG(5) << "Converting Tanh completed";
+        } else if (op == "Floor") {
+            VLOG(5) << "Start converting Floor";
+            const auto input_name = m(node.input(0));
+            const auto output_name = m(node.output(0));
+            AddLayerFloor(input_name, output_name);
+            VLOG(5) << "Converting Floor completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
         }

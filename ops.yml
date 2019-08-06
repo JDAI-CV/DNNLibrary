@@ -417,3 +417,11 @@
     shaper: Identity
     pos: 16
     api: 27
+-
+    name: Tanh
+    shaper: Identity
+    api: 27
+-
+    name: Floor
+    shaper: Identity
+    api: 27

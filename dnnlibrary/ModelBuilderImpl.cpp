@@ -487,6 +487,40 @@ ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
     return output_idx;
 }
 #endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
+ModelBuilder::Index ModelBuilder::AddTanh(const std::string &input,
+                                          const std::string &output) {
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_TANH, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
+#endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
+ModelBuilder::Index ModelBuilder::AddFloor(const std::string &input,
+                                           const std::string &output) {
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_FLOOR, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
+#endif  // __ANDROID_API__ >= 27
 // ModelBuilder auto generated methods end
 
 // Methods for backward compatibility
