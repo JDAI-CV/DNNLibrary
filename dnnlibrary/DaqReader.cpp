@@ -53,6 +53,10 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "dequantize";
         case DNN::LayerType::LRN:
             return "LRN";
+        case DNN::LayerType::Tanh:
+            return "tanh";
+        case DNN::LayerType::Floor:
+            return "floor";
     }
 }
 
@@ -259,7 +263,7 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
             }
             case DNN::LayerType::Softmax: {
                 UNPACK_LAYER(softmax, input, output);
-                builder.AddSoftMax(input, 1.f, output);
+                builder.AddSoftmax(input, 1.f, output);
                 break;
             }
             case DNN::LayerType::Concat: {
@@ -298,6 +302,14 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
             }
             case DNN::LayerType::LRN: {
                 ADD_LAYER(lrn, LRN, input, radius, bias, alpha, beta, output);
+                break;
+            }
+            case DNN::LayerType::Tanh: {
+                ADD_LAYER(tanh, Tanh, input, output);
+                break;
+            }
+            case DNN::LayerType::Floor: {
+                ADD_LAYER(floor, Floor, input, output);
                 break;
             }
         }
