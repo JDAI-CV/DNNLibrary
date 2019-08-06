@@ -87,8 +87,7 @@ class ModelBuilder {
     android::nn::wrapper::OperandType GetOperandType(
         const QuantInfo &quant_info, const Shape &dims);
 
-
-    const NnApi* nnapi_ = nullptr;
+    const NnApi *nnapi_ = nullptr;
 
    public:
     ModelBuilder();

@@ -9,6 +9,7 @@ set(dnnlibrary_src
     operand_helper.h
     flatbuffers_helper.h
     ModelBuilder.cpp
+    ModelBuilderImpl.cpp
     Model.cpp
     DaqReader.cpp 
     NeuralNetworksWrapper.cpp
