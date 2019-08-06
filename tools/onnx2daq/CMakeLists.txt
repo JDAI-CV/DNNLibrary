@@ -3,6 +3,7 @@
 # message(${CMAKE_CURRENT_BINARY_DIR})
 add_library(onnx2daq
     ${CMAKE_CURRENT_SOURCE_DIR}/OnnxConverter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/OnnxConverterImpl.cpp
     ${PROJECT_SOURCE_DIR}/include/tools/onnx2daq/OnnxConverter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/NodeAttrHelper.h

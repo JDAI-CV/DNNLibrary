@@ -87,8 +87,7 @@ class ModelBuilder {
     android::nn::wrapper::OperandType GetOperandType(
         const QuantInfo &quant_info, const Shape &dims);
 
-
-    const NnApi* nnapi_ = nullptr;
+    const NnApi *nnapi_ = nullptr;
 
    public:
     ModelBuilder();
@@ -214,6 +213,14 @@ class ModelBuilder {
                                float bias, float alpha, float beta,
                                const std::string &output);
 #endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
+    ModelBuilder::Index AddTanh(const std::string &input,
+                                const std::string &output);
+#endif  // __ANDROID_API__ >= 27
+#if __ANDROID_API__ >= 27
+    ModelBuilder::Index AddFloor(const std::string &input,
+                                 const std::string &output);
+#endif  // __ANDROID_API__ >= 27
         // ModelBuilder auto generated methods end
     Index AddDepthWiseConv(
         const std::string &input_name, int32_t strideX, int32_t strideY,
@@ -249,8 +256,6 @@ class ModelBuilder {
         int32_t activation, PoolingType poolingType,
         const std::string &output_name,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    Index AddSoftMax(const std::string &input_name, float beta,
-                     const std::string &output_name);
     Index AddOperationAdd(const std::string &input_name, float scalar,
                           std::string output_name);
     Index AddOperationAdd(

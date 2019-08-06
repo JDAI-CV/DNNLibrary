@@ -304,7 +304,7 @@ def generate_model_builder():
     '''
         )
         cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
-    update_code('dnnlibrary/src/ModelBuilder.cpp', 'ModelBuilder auto generated methods')
+    update_code('dnnlibrary/ModelBuilderImpl.cpp', 'ModelBuilder auto generated methods')
     for i, op in enumerate(cfg):
         if len(op['input']) == 0:
             continue

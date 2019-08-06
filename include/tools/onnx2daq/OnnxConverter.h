@@ -158,6 +158,8 @@ class OnnxConverter {
                             const std::string &output);
     void AddLayerLRN(const std::string &input, int32_t radius, float bias,
                      float alpha, float beta, const std::string &output);
+    void AddLayerTanh(const std::string &input, const std::string &output);
+    void AddLayerFloor(const std::string &input, const std::string &output);
     // OnnxConverter auto generated methods end
 
     /**
