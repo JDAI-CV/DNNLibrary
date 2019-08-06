@@ -256,8 +256,6 @@ class ModelBuilder {
         int32_t activation, PoolingType poolingType,
         const std::string &output_name,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    Index AddSoftMax(const std::string &input_name, float beta,
-                     const std::string &output_name);
     Index AddOperationAdd(const std::string &input_name, float scalar,
                           std::string output_name);
     Index AddOperationAdd(
