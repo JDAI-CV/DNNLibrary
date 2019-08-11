@@ -681,6 +681,29 @@ void OnnxConverter::AddLayerFloor(const std::string &input,
     layers_.push_back(layer);
 }
 
+void OnnxConverter::AddLayerLogistic(const std::string &input,
+                                     const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto param =
+        DNN::CreateLogisticDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Logistic, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
 // OnnxConverter auto generated methods end
 
 }  // namespace dnn

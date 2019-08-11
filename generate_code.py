@@ -9,6 +9,7 @@ str_io = io.StringIO()
 class Target(Enum):
     ModelBuilder = 1
     OnnxConverter = 2
+    DaqReader = 3
 
 
 def clang_format(filename: str):
@@ -98,10 +99,13 @@ def infer_cfg(cfg, target: Target):
             op['input'] = []
         if 'base_input_num' not in op or op['base_input_num'] == 1:
             op['input'].insert(0,
-                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True, 'needed_by_shaper': True})
+                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                                'needed_by_shaper': True})
         elif op['base_input_num'] == 2:
-            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,  'needed_by_shaper': True},
-                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,  'needed_by_shaper': True}] \
+            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                            'needed_by_shaper': True},
+                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                            'needed_by_shaper': True}] \
                           + op['input']
         elif op['base_input_num'] == 'n':
             op['input'].insert(0,
@@ -112,15 +116,15 @@ def infer_cfg(cfg, target: Target):
         else:
             raise Exception()
 
-        if not 'pos' in op:
+        if 'pos' not in op:
             op['pos'] = next_pos
         next_pos = op['pos'] + 1
 
-        if not 'output' in op:
+        if 'output' not in op:
             op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}]
-        if not 'shaper' in op:
+        if 'shaper' not in op:
             op['shaper'] = op['name']
-        if not 'nnapi' in op:
+        if 'nnapi' not in op:
             op['nnapi'] = op['name'].upper()
         if 'dnn' not in op:
             op['dnn'] = op['name']
@@ -248,13 +252,23 @@ def generate_onnx_converter():
         cogoutl('layers_.push_back(layer);')
         cogoutl('}')
         cogoutl('')
-    update_code('tools/onnx2daq/OnnxConverter.cpp', 'OnnxConverter auto generated methods')
+    update_code('tools/onnx2daq/OnnxConverterImpl.cpp', 'OnnxConverter auto generated methods')
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl(f"void AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str});")
     update_code('include/tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
+
+
+def generate_daq_reader():
+    with open('ops.yml') as f:
+        cfg = yaml.load(f)
+    infer_cfg(cfg, Target.DaqReader)
+    for i, op in enumerate(cfg):
+        cogoutl(f'case DNN::LayerType::{op["dnn"]}:')
+        cogoutl(f'return "{op["dnn"]}";')
+    update_code('dnnlibrary/DaqReader.cpp', 'DaqReader auto generated layer_type_to_str')
 
 
 def generate_model_builder():
@@ -264,13 +278,15 @@ def generate_model_builder():
     for i, op in enumerate(cfg):
         if len(op['input']) == 0:
             continue
-        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl("ModelBuilder::Index ModelBuilder::Add{}({}) {{".format(op['name'], params_str))
+        cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
+                f'throw std::runtime_error("{op["name"]} requires API {op["api"]}");'
+                f'}}')
         tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
         scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
 
@@ -303,25 +319,23 @@ def generate_model_builder():
     }
     '''
         )
-        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
     update_code('dnnlibrary/ModelBuilderImpl.cpp', 'ModelBuilder auto generated methods')
     for i, op in enumerate(cfg):
         if len(op['input']) == 0:
             continue
-        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl("ModelBuilder::Index Add{}({});".format(op['name'], params_str))
-        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
 
 def main():
     generate_model_builder()
     generate_onnx_converter()
+    generate_daq_reader()
 
 
 if __name__ == '__main__':

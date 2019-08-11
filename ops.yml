@@ -425,3 +425,7 @@
     name: Floor
     shaper: Identity
     api: 27
+-
+    name: Logistic
+    shaper: Identity
+    api: 27

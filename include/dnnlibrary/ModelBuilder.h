@@ -112,7 +112,6 @@ class ModelBuilder {
     Index AddInput(std::string name,
                    const android::nn::wrapper::OperandType &operand_type);
     // ModelBuilder auto generated methods start
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddConv(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
@@ -120,49 +119,33 @@ class ModelBuilder {
         int32_t stride_x, int32_t stride_y, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddAvePool(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddMaxPool(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddReLU(const std::string &input,
                                 const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddSoftmax(const std::string &input, float beta,
                                    const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddFC(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddAdd(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddConcat(const std::vector<std::string> &inputs,
                                   int32_t axis, const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddDepthwiseConv(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
@@ -170,18 +153,12 @@ class ModelBuilder {
         int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 28
     ModelBuilder::Index AddBatchToSpaceND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
         const std::string &output);
-#endif  // __ANDROID_API__ >= 28
-#if __ANDROID_API__ >= 28
     ModelBuilder::Index AddSpaceToBatchND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
         const std::vector<int32_t> &pads, const std::string &output);
-#endif  // __ANDROID_API__ >= 28
-#if __ANDROID_API__ >= 28
     ModelBuilder::Index AddStridedSlice(const std::string &input,
                                         const std::vector<int32_t> &starts,
                                         const std::vector<int32_t> &ends,
@@ -189,39 +166,26 @@ class ModelBuilder {
                                         int32_t begin_mask, int32_t end_mask,
                                         int32_t shrink_axis_mask,
                                         const std::string &output);
-#endif  // __ANDROID_API__ >= 28
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddMul(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddAdd(const std::string &input, float scalar,
                                int32_t fuse_code, const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddMul(const std::string &input, float scalar,
                                int32_t fuse_code, const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddDequantize(const std::string &input,
                                       const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddLRN(const std::string &input, int32_t radius,
                                float bias, float alpha, float beta,
                                const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddTanh(const std::string &input,
                                 const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-#if __ANDROID_API__ >= 27
     ModelBuilder::Index AddFloor(const std::string &input,
                                  const std::string &output);
-#endif  // __ANDROID_API__ >= 27
-        // ModelBuilder auto generated methods end
+    ModelBuilder::Index AddLogistic(const std::string &input,
+                                    const std::string &output);
+    // ModelBuilder auto generated methods end
     Index AddDepthWiseConv(
         const std::string &input_name, int32_t strideX, int32_t strideY,
         int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
