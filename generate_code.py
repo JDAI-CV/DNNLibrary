@@ -98,10 +98,13 @@ def infer_cfg(cfg, target: Target):
             op['input'] = []
         if 'base_input_num' not in op or op['base_input_num'] == 1:
             op['input'].insert(0,
-                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True, 'needed_by_shaper': True})
+                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                                'needed_by_shaper': True})
         elif op['base_input_num'] == 2:
-            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,  'needed_by_shaper': True},
-                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,  'needed_by_shaper': True}] \
+            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                            'needed_by_shaper': True},
+                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                            'needed_by_shaper': True}] \
                           + op['input']
         elif op['base_input_num'] == 'n':
             op['input'].insert(0,
