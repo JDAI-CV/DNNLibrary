@@ -278,13 +278,15 @@ def generate_model_builder():
     for i, op in enumerate(cfg):
         if len(op['input']) == 0:
             continue
-        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl("ModelBuilder::Index ModelBuilder::Add{}({}) {{".format(op['name'], params_str))
+        cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
+                f'throw std::runtime_error("{op["name"]} requires API {op["api"]}");'
+                f'}}')
         tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
         scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
 
@@ -317,19 +319,16 @@ def generate_model_builder():
     }
     '''
         )
-        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
     update_code('dnnlibrary/ModelBuilderImpl.cpp', 'ModelBuilder auto generated methods')
     for i, op in enumerate(cfg):
         if len(op['input']) == 0:
             continue
-        cogoutl('#if __ANDROID_API__ >= {}'.format(op['api']))
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl("ModelBuilder::Index Add{}({});".format(op['name'], params_str))
-        cogoutl('#endif // __ANDROID_API__ >= {}'.format(op['api']))
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
 

@@ -277,29 +277,19 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
                 break;
             }
             case DNN::LayerType::BatchToSpace: {
-#if __ANDROID_API__ >= __ANDROID_API_P__
                 ADD_LAYER(batch_to_space, BatchToSpaceND, input, block_sizes,
                           output);
                 break;
-#endif
             }
             case DNN::LayerType::SpaceToBatch: {
-#if __ANDROID_API__ >= __ANDROID_API_P__
                 ADD_LAYER(space_to_batch, SpaceToBatchND, input, block_sizes,
                           pads, output);
                 break;
-#endif
             }
             case DNN::LayerType::StridedSlice: {
-#if __ANDROID_API__ >= __ANDROID_API_P__
                 ADD_LAYER(strided_slice, StridedSlice, input, starts, ends,
                           strides, begin_mask, end_mask, shrink_axis_mask,
                           output);
-#else
-                throw std::invalid_argument("Unsupported layer " +
-                                            layer_type_to_str(layer->type()) +
-                                            " in API 28");
-#endif
                 break;
             }
             case DNN::LayerType::LRN: {
