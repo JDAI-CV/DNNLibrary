@@ -251,7 +251,7 @@ def generate_onnx_converter():
         cogoutl('layers_.push_back(layer);')
         cogoutl('}')
         cogoutl('')
-    update_code('tools/onnx2daq/OnnxConverter.cpp', 'OnnxConverter auto generated methods')
+    update_code('tools/onnx2daq/OnnxConverterImpl.cpp', 'OnnxConverter auto generated methods')
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
