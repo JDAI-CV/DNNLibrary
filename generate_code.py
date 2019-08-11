@@ -115,15 +115,15 @@ def infer_cfg(cfg, target: Target):
         else:
             raise Exception()
 
-        if not 'pos' in op:
+        if 'pos' not in op:
             op['pos'] = next_pos
         next_pos = op['pos'] + 1
 
-        if not 'output' in op:
+        if 'output' not in op:
             op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}]
-        if not 'shaper' in op:
+        if 'shaper' not in op:
             op['shaper'] = op['name']
-        if not 'nnapi' in op:
+        if 'nnapi' not in op:
             op['nnapi'] = op['name'].upper()
         if 'dnn' not in op:
             op['dnn'] = op['name']
