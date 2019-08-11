@@ -9,6 +9,7 @@ str_io = io.StringIO()
 class Target(Enum):
     ModelBuilder = 1
     OnnxConverter = 2
+    DaqReader = 3
 
 
 def clang_format(filename: str):
@@ -260,6 +261,16 @@ def generate_onnx_converter():
     update_code('include/tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
 
 
+def generate_daq_reader():
+    with open('ops.yml') as f:
+        cfg = yaml.load(f)
+    infer_cfg(cfg, Target.DaqReader)
+    for i, op in enumerate(cfg):
+        cogoutl(f'case DNN::LayerType::{op["dnn"]}:')
+        cogoutl(f'return "{op["dnn"]}";')
+    update_code('dnnlibrary/DaqReader.cpp', 'DaqReader auto generated layer_type_to_str')
+
+
 def generate_model_builder():
     with open('ops.yml') as f:
         cfg = yaml.load(f)
@@ -325,6 +336,7 @@ def generate_model_builder():
 def main():
     generate_model_builder()
     generate_onnx_converter()
+    generate_daq_reader()
 
 
 if __name__ == '__main__':

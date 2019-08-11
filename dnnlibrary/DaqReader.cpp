@@ -19,44 +19,46 @@ void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder);
 
 std::string layer_type_to_str(DNN::LayerType type) {
     switch (type) {
+            // DaqReader auto generated layer_type_to_str start
+        case DNN::LayerType::Conv2D:
+            return "Conv2D";
+        case DNN::LayerType::AvePool:
+            return "AvePool";
+        case DNN::LayerType::MaxPool:
+            return "MaxPool";
+        case DNN::LayerType::Relu:
+            return "Relu";
+        case DNN::LayerType::Softmax:
+            return "Softmax";
         case DNN::LayerType::FC:
-            return "fc";
+            return "FC";
         case DNN::LayerType::Add:
             return "Add";
-        case DNN::LayerType::Relu:
-            return "relu";
-        case DNN::LayerType::Conv2D:
-            return "conv";
         case DNN::LayerType::Concat:
-            return "concat";
-        case DNN::LayerType::MaxPool:
-            return "maxpool";
-        case DNN::LayerType::AvePool:
-            return "avepool";
-        case DNN::LayerType::Softmax:
-            return "softmax";
+            return "Concat";
         case DNN::LayerType::DepthwiseConv2D:
-            return "depthwsie";
+            return "DepthwiseConv2D";
         case DNN::LayerType::BatchToSpace:
-            return "batch2space";
+            return "BatchToSpace";
         case DNN::LayerType::SpaceToBatch:
-            return "space2batch";
+            return "SpaceToBatch";
         case DNN::LayerType::StridedSlice:
-            return "stridedslice";
+            return "StridedSlice";
         case DNN::LayerType::Mul:
-            return "mul";
-        case DNN::LayerType::MulScalar:
-            return "mulscalar";
+            return "Mul";
         case DNN::LayerType::AddScalar:
-            return "addscalar";
+            return "AddScalar";
+        case DNN::LayerType::MulScalar:
+            return "MulScalar";
         case DNN::LayerType::Dequantize:
-            return "dequantize";
+            return "Dequantize";
         case DNN::LayerType::LRN:
             return "LRN";
         case DNN::LayerType::Tanh:
-            return "tanh";
+            return "Tanh";
         case DNN::LayerType::Floor:
-            return "floor";
+            return "Floor";
+            // DaqReader auto generated layer_type_to_str end
     }
 }
 
