@@ -52,6 +52,8 @@ struct Tanh;
 
 struct Floor;
 
+struct Logistic;
+
 struct Layer;
 
 struct Model;
@@ -148,68 +150,87 @@ inline const char *EnumNameFuseCode(FuseCode e) {
 }
 
 enum class LayerType : int8_t {
-    Conv2D = 0,
-    AvePool = 1,
-    MaxPool = 2,
-    Relu = 3,
-    Softmax = 4,
-    FC = 5,
-    Add = 6,
-    Concat = 7,
-    DepthwiseConv2D = 8,
-    BatchToSpace = 9,
-    SpaceToBatch = 10,
-    StridedSlice = 11,
-    Mul = 12,
-    AddScalar = 13,
-    MulScalar = 14,
-    Dequantize = 15,
-    LRN = 16,
-    Tanh = 17,
-    Floor = 18,
-    MIN = Conv2D,
-    MAX = Floor
+  Conv2D = 0,
+  AvePool = 1,
+  MaxPool = 2,
+  Relu = 3,
+  Softmax = 4,
+  FC = 5,
+  Add = 6,
+  Concat = 7,
+  DepthwiseConv2D = 8,
+  BatchToSpace = 9,
+  SpaceToBatch = 10,
+  StridedSlice = 11,
+  Mul = 12,
+  AddScalar = 13,
+  MulScalar = 14,
+  Dequantize = 15,
+  LRN = 16,
+  Tanh = 17,
+  Floor = 18,
+  Logistic = 19,
+  MIN = Conv2D,
+  MAX = Logistic
 };
 
-inline const LayerType (&EnumValuesLayerType())[19] {
-    static const LayerType values[] = {LayerType::Conv2D,
-                                       LayerType::AvePool,
-                                       LayerType::MaxPool,
-                                       LayerType::Relu,
-                                       LayerType::Softmax,
-                                       LayerType::FC,
-                                       LayerType::Add,
-                                       LayerType::Concat,
-                                       LayerType::DepthwiseConv2D,
-                                       LayerType::BatchToSpace,
-                                       LayerType::SpaceToBatch,
-                                       LayerType::StridedSlice,
-                                       LayerType::Mul,
-                                       LayerType::AddScalar,
-                                       LayerType::MulScalar,
-                                       LayerType::Dequantize,
-                                       LayerType::LRN,
-                                       LayerType::Tanh,
-                                       LayerType::Floor};
-    return values;
+inline const LayerType (&EnumValuesLayerType())[20] {
+  static const LayerType values[] = {
+    LayerType::Conv2D,
+    LayerType::AvePool,
+    LayerType::MaxPool,
+    LayerType::Relu,
+    LayerType::Softmax,
+    LayerType::FC,
+    LayerType::Add,
+    LayerType::Concat,
+    LayerType::DepthwiseConv2D,
+    LayerType::BatchToSpace,
+    LayerType::SpaceToBatch,
+    LayerType::StridedSlice,
+    LayerType::Mul,
+    LayerType::AddScalar,
+    LayerType::MulScalar,
+    LayerType::Dequantize,
+    LayerType::LRN,
+    LayerType::Tanh,
+    LayerType::Floor,
+    LayerType::Logistic
+  };
+  return values;
 }
 
 inline const char * const *EnumNamesLayerType() {
-    static const char *const names[] = {
-        "Conv2D",       "AvePool",      "MaxPool",
-        "Relu",         "Softmax",      "FC",
-        "Add",          "Concat",       "DepthwiseConv2D",
-        "BatchToSpace", "SpaceToBatch", "StridedSlice",
-        "Mul",          "AddScalar",    "MulScalar",
-        "Dequantize",   "LRN",          "Tanh",
-        "Floor",        nullptr};
-    return names;
+  static const char * const names[] = {
+    "Conv2D",
+    "AvePool",
+    "MaxPool",
+    "Relu",
+    "Softmax",
+    "FC",
+    "Add",
+    "Concat",
+    "DepthwiseConv2D",
+    "BatchToSpace",
+    "SpaceToBatch",
+    "StridedSlice",
+    "Mul",
+    "AddScalar",
+    "MulScalar",
+    "Dequantize",
+    "LRN",
+    "Tanh",
+    "Floor",
+    "Logistic",
+    nullptr
+  };
+  return names;
 }
 
 inline const char *EnumNameLayerType(LayerType e) {
-    if (e < LayerType::Conv2D || e > LayerType::Floor) return "";
-    const size_t index = static_cast<size_t>(e);
-    return EnumNamesLayerType()[index];
+  if (e < LayerType::Conv2D || e > LayerType::Logistic) return "";
+  const size_t index = static_cast<size_t>(e);
+  return EnumNamesLayerType()[index];
 }
 
 struct Tensor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -2179,144 +2200,223 @@ inline flatbuffers::Offset<LRN> CreateLRNDirect(
 }
 
 struct Tanh FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-    enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-        VT_INPUT = 4,
-        VT_OUTPUT = 6
-    };
-    const flatbuffers::String *input() const {
-        return GetPointer<const flatbuffers::String *>(VT_INPUT);
-    }
-    const flatbuffers::String *output() const {
-        return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
-    }
-    bool Verify(flatbuffers::Verifier &verifier) const {
-        return VerifyTableStart(verifier) && VerifyOffset(verifier, VT_INPUT) &&
-               verifier.VerifyString(input()) &&
-               VerifyOffset(verifier, VT_OUTPUT) &&
-               verifier.VerifyString(output()) && verifier.EndTable();
-    }
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
 };
 
 struct TanhBuilder {
-    flatbuffers::FlatBufferBuilder &fbb_;
-    flatbuffers::uoffset_t start_;
-    void add_input(flatbuffers::Offset<flatbuffers::String> input) {
-        fbb_.AddOffset(Tanh::VT_INPUT, input);
-    }
-    void add_output(flatbuffers::Offset<flatbuffers::String> output) {
-        fbb_.AddOffset(Tanh::VT_OUTPUT, output);
-    }
-    explicit TanhBuilder(flatbuffers::FlatBufferBuilder &_fbb) : fbb_(_fbb) {
-        start_ = fbb_.StartTable();
-    }
-    TanhBuilder &operator=(const TanhBuilder &);
-    flatbuffers::Offset<Tanh> Finish() {
-        const auto end = fbb_.EndTable(start_);
-        auto o = flatbuffers::Offset<Tanh>(end);
-        return o;
-    }
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(Tanh::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(Tanh::VT_OUTPUT, output);
+  }
+  explicit TanhBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  TanhBuilder &operator=(const TanhBuilder &);
+  flatbuffers::Offset<Tanh> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Tanh>(end);
+    return o;
+  }
 };
 
 inline flatbuffers::Offset<Tanh> CreateTanh(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> input = 0,
     flatbuffers::Offset<flatbuffers::String> output = 0) {
-    TanhBuilder builder_(_fbb);
-    builder_.add_output(output);
-    builder_.add_input(input);
-    return builder_.Finish();
+  TanhBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
 }
 
 inline flatbuffers::Offset<Tanh> CreateTanhDirect(
-    flatbuffers::FlatBufferBuilder &_fbb, const char *input = nullptr,
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
     const char *output = nullptr) {
-    auto input__ = input ? _fbb.CreateString(input) : 0;
-    auto output__ = output ? _fbb.CreateString(output) : 0;
-    return DNN::CreateTanh(_fbb, input__, output__);
+  auto input__ = input ? _fbb.CreateString(input) : 0;
+  auto output__ = output ? _fbb.CreateString(output) : 0;
+  return DNN::CreateTanh(
+      _fbb,
+      input__,
+      output__);
 }
 
 struct Floor FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-    enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-        VT_INPUT = 4,
-        VT_OUTPUT = 6
-    };
-    const flatbuffers::String *input() const {
-        return GetPointer<const flatbuffers::String *>(VT_INPUT);
-    }
-    const flatbuffers::String *output() const {
-        return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
-    }
-    bool Verify(flatbuffers::Verifier &verifier) const {
-        return VerifyTableStart(verifier) && VerifyOffset(verifier, VT_INPUT) &&
-               verifier.VerifyString(input()) &&
-               VerifyOffset(verifier, VT_OUTPUT) &&
-               verifier.VerifyString(output()) && verifier.EndTable();
-    }
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
 };
 
 struct FloorBuilder {
-    flatbuffers::FlatBufferBuilder &fbb_;
-    flatbuffers::uoffset_t start_;
-    void add_input(flatbuffers::Offset<flatbuffers::String> input) {
-        fbb_.AddOffset(Floor::VT_INPUT, input);
-    }
-    void add_output(flatbuffers::Offset<flatbuffers::String> output) {
-        fbb_.AddOffset(Floor::VT_OUTPUT, output);
-    }
-    explicit FloorBuilder(flatbuffers::FlatBufferBuilder &_fbb) : fbb_(_fbb) {
-        start_ = fbb_.StartTable();
-    }
-    FloorBuilder &operator=(const FloorBuilder &);
-    flatbuffers::Offset<Floor> Finish() {
-        const auto end = fbb_.EndTable(start_);
-        auto o = flatbuffers::Offset<Floor>(end);
-        return o;
-    }
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(Floor::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(Floor::VT_OUTPUT, output);
+  }
+  explicit FloorBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  FloorBuilder &operator=(const FloorBuilder &);
+  flatbuffers::Offset<Floor> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Floor>(end);
+    return o;
+  }
 };
 
 inline flatbuffers::Offset<Floor> CreateFloor(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> input = 0,
     flatbuffers::Offset<flatbuffers::String> output = 0) {
-    FloorBuilder builder_(_fbb);
-    builder_.add_output(output);
-    builder_.add_input(input);
-    return builder_.Finish();
+  FloorBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
 }
 
 inline flatbuffers::Offset<Floor> CreateFloorDirect(
-    flatbuffers::FlatBufferBuilder &_fbb, const char *input = nullptr,
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
     const char *output = nullptr) {
-    auto input__ = input ? _fbb.CreateString(input) : 0;
-    auto output__ = output ? _fbb.CreateString(output) : 0;
-    return DNN::CreateFloor(_fbb, input__, output__);
+  auto input__ = input ? _fbb.CreateString(input) : 0;
+  auto output__ = output ? _fbb.CreateString(output) : 0;
+  return DNN::CreateFloor(
+      _fbb,
+      input__,
+      output__);
+}
+
+struct Logistic FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct LogisticBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(Logistic::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(Logistic::VT_OUTPUT, output);
+  }
+  explicit LogisticBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  LogisticBuilder &operator=(const LogisticBuilder &);
+  flatbuffers::Offset<Logistic> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Logistic>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Logistic> CreateLogistic(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  LogisticBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<Logistic> CreateLogisticDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr,
+    const char *output = nullptr) {
+  auto input__ = input ? _fbb.CreateString(input) : 0;
+  auto output__ = output ? _fbb.CreateString(output) : 0;
+  return DNN::CreateLogistic(
+      _fbb,
+      input__,
+      output__);
 }
 
 struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-    enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-        VT_TYPE = 4,
-        VT_CONV2D_PARAM = 6,
-        VT_AVEPOOL_PARAM = 8,
-        VT_MAXPOOL_PARAM = 10,
-        VT_RELU_PARAM = 12,
-        VT_SOFTMAX_PARAM = 14,
-        VT_FC_PARAM = 16,
-        VT_ADD_PARAM = 18,
-        VT_CONCAT_PARAM = 20,
-        VT_DEPTHWISE_CONV2D_PARAM = 22,
-        VT_BATCH_TO_SPACE_PARAM = 24,
-        VT_SPACE_TO_BATCH_PARAM = 26,
-        VT_STRIDED_SLICE_PARAM = 28,
-        VT_MUL_PARAM = 30,
-        VT_ADD_SCALAR_PARAM = 32,
-        VT_MUL_SCALAR_PARAM = 34,
-        VT_DEQUANTIZE_PARAM = 36,
-        VT_LRN_PARAM = 38,
-        VT_TANH_PARAM = 40,
-        VT_FLOOR_PARAM = 42
-    };
-    LayerType type() const {
-        return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_TYPE = 4,
+    VT_CONV2D_PARAM = 6,
+    VT_AVEPOOL_PARAM = 8,
+    VT_MAXPOOL_PARAM = 10,
+    VT_RELU_PARAM = 12,
+    VT_SOFTMAX_PARAM = 14,
+    VT_FC_PARAM = 16,
+    VT_ADD_PARAM = 18,
+    VT_CONCAT_PARAM = 20,
+    VT_DEPTHWISE_CONV2D_PARAM = 22,
+    VT_BATCH_TO_SPACE_PARAM = 24,
+    VT_SPACE_TO_BATCH_PARAM = 26,
+    VT_STRIDED_SLICE_PARAM = 28,
+    VT_MUL_PARAM = 30,
+    VT_ADD_SCALAR_PARAM = 32,
+    VT_MUL_SCALAR_PARAM = 34,
+    VT_DEQUANTIZE_PARAM = 36,
+    VT_LRN_PARAM = 38,
+    VT_TANH_PARAM = 40,
+    VT_FLOOR_PARAM = 42,
+    VT_LOGISTIC_PARAM = 44
+  };
+  LayerType type() const {
+    return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
   }
   const Conv2D *conv2d_param() const {
     return GetPointer<const Conv2D *>(VT_CONV2D_PARAM);
@@ -2370,52 +2470,58 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return GetPointer<const LRN *>(VT_LRN_PARAM);
   }
   const Tanh *tanh_param() const {
-      return GetPointer<const Tanh *>(VT_TANH_PARAM);
+    return GetPointer<const Tanh *>(VT_TANH_PARAM);
   }
   const Floor *floor_param() const {
-      return GetPointer<const Floor *>(VT_FLOOR_PARAM);
+    return GetPointer<const Floor *>(VT_FLOOR_PARAM);
+  }
+  const Logistic *logistic_param() const {
+    return GetPointer<const Logistic *>(VT_LOGISTIC_PARAM);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
-      return VerifyTableStart(verifier) &&
-             VerifyField<int8_t>(verifier, VT_TYPE) &&
-             VerifyOffset(verifier, VT_CONV2D_PARAM) &&
-             verifier.VerifyTable(conv2d_param()) &&
-             VerifyOffset(verifier, VT_AVEPOOL_PARAM) &&
-             verifier.VerifyTable(avepool_param()) &&
-             VerifyOffset(verifier, VT_MAXPOOL_PARAM) &&
-             verifier.VerifyTable(maxpool_param()) &&
-             VerifyOffset(verifier, VT_RELU_PARAM) &&
-             verifier.VerifyTable(relu_param()) &&
-             VerifyOffset(verifier, VT_SOFTMAX_PARAM) &&
-             verifier.VerifyTable(softmax_param()) &&
-             VerifyOffset(verifier, VT_FC_PARAM) &&
-             verifier.VerifyTable(fc_param()) &&
-             VerifyOffset(verifier, VT_ADD_PARAM) &&
-             verifier.VerifyTable(add_param()) &&
-             VerifyOffset(verifier, VT_CONCAT_PARAM) &&
-             verifier.VerifyTable(concat_param()) &&
-             VerifyOffset(verifier, VT_DEPTHWISE_CONV2D_PARAM) &&
-             verifier.VerifyTable(depthwise_conv2d_param()) &&
-             VerifyOffset(verifier, VT_BATCH_TO_SPACE_PARAM) &&
-             verifier.VerifyTable(batch_to_space_param()) &&
-             VerifyOffset(verifier, VT_SPACE_TO_BATCH_PARAM) &&
-             verifier.VerifyTable(space_to_batch_param()) &&
-             VerifyOffset(verifier, VT_STRIDED_SLICE_PARAM) &&
-             verifier.VerifyTable(strided_slice_param()) &&
-             VerifyOffset(verifier, VT_MUL_PARAM) &&
-             verifier.VerifyTable(mul_param()) &&
-             VerifyOffset(verifier, VT_ADD_SCALAR_PARAM) &&
-             verifier.VerifyTable(add_scalar_param()) &&
-             VerifyOffset(verifier, VT_MUL_SCALAR_PARAM) &&
-             verifier.VerifyTable(mul_scalar_param()) &&
-             VerifyOffset(verifier, VT_DEQUANTIZE_PARAM) &&
-             verifier.VerifyTable(dequantize_param()) &&
-             VerifyOffset(verifier, VT_LRN_PARAM) &&
-             verifier.VerifyTable(lrn_param()) &&
-             VerifyOffset(verifier, VT_TANH_PARAM) &&
-             verifier.VerifyTable(tanh_param()) &&
-             VerifyOffset(verifier, VT_FLOOR_PARAM) &&
-             verifier.VerifyTable(floor_param()) && verifier.EndTable();
+    return VerifyTableStart(verifier) &&
+           VerifyField<int8_t>(verifier, VT_TYPE) &&
+           VerifyOffset(verifier, VT_CONV2D_PARAM) &&
+           verifier.VerifyTable(conv2d_param()) &&
+           VerifyOffset(verifier, VT_AVEPOOL_PARAM) &&
+           verifier.VerifyTable(avepool_param()) &&
+           VerifyOffset(verifier, VT_MAXPOOL_PARAM) &&
+           verifier.VerifyTable(maxpool_param()) &&
+           VerifyOffset(verifier, VT_RELU_PARAM) &&
+           verifier.VerifyTable(relu_param()) &&
+           VerifyOffset(verifier, VT_SOFTMAX_PARAM) &&
+           verifier.VerifyTable(softmax_param()) &&
+           VerifyOffset(verifier, VT_FC_PARAM) &&
+           verifier.VerifyTable(fc_param()) &&
+           VerifyOffset(verifier, VT_ADD_PARAM) &&
+           verifier.VerifyTable(add_param()) &&
+           VerifyOffset(verifier, VT_CONCAT_PARAM) &&
+           verifier.VerifyTable(concat_param()) &&
+           VerifyOffset(verifier, VT_DEPTHWISE_CONV2D_PARAM) &&
+           verifier.VerifyTable(depthwise_conv2d_param()) &&
+           VerifyOffset(verifier, VT_BATCH_TO_SPACE_PARAM) &&
+           verifier.VerifyTable(batch_to_space_param()) &&
+           VerifyOffset(verifier, VT_SPACE_TO_BATCH_PARAM) &&
+           verifier.VerifyTable(space_to_batch_param()) &&
+           VerifyOffset(verifier, VT_STRIDED_SLICE_PARAM) &&
+           verifier.VerifyTable(strided_slice_param()) &&
+           VerifyOffset(verifier, VT_MUL_PARAM) &&
+           verifier.VerifyTable(mul_param()) &&
+           VerifyOffset(verifier, VT_ADD_SCALAR_PARAM) &&
+           verifier.VerifyTable(add_scalar_param()) &&
+           VerifyOffset(verifier, VT_MUL_SCALAR_PARAM) &&
+           verifier.VerifyTable(mul_scalar_param()) &&
+           VerifyOffset(verifier, VT_DEQUANTIZE_PARAM) &&
+           verifier.VerifyTable(dequantize_param()) &&
+           VerifyOffset(verifier, VT_LRN_PARAM) &&
+           verifier.VerifyTable(lrn_param()) &&
+           VerifyOffset(verifier, VT_TANH_PARAM) &&
+           verifier.VerifyTable(tanh_param()) &&
+           VerifyOffset(verifier, VT_FLOOR_PARAM) &&
+           verifier.VerifyTable(floor_param()) &&
+           VerifyOffset(verifier, VT_LOGISTIC_PARAM) &&
+           verifier.VerifyTable(logistic_param()) &&
+           verifier.EndTable();
   }
 };
 
@@ -2477,10 +2583,13 @@ struct LayerBuilder {
     fbb_.AddOffset(Layer::VT_LRN_PARAM, lrn_param);
   }
   void add_tanh_param(flatbuffers::Offset<Tanh> tanh_param) {
-      fbb_.AddOffset(Layer::VT_TANH_PARAM, tanh_param);
+    fbb_.AddOffset(Layer::VT_TANH_PARAM, tanh_param);
   }
   void add_floor_param(flatbuffers::Offset<Floor> floor_param) {
-      fbb_.AddOffset(Layer::VT_FLOOR_PARAM, floor_param);
+    fbb_.AddOffset(Layer::VT_FLOOR_PARAM, floor_param);
+  }
+  void add_logistic_param(flatbuffers::Offset<Logistic> logistic_param) {
+    fbb_.AddOffset(Layer::VT_LOGISTIC_PARAM, logistic_param);
   }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -2495,7 +2604,8 @@ struct LayerBuilder {
 };
 
 inline flatbuffers::Offset<Layer> CreateLayer(
-    flatbuffers::FlatBufferBuilder &_fbb, LayerType type = LayerType::Conv2D,
+    flatbuffers::FlatBufferBuilder &_fbb,
+    LayerType type = LayerType::Conv2D,
     flatbuffers::Offset<Conv2D> conv2d_param = 0,
     flatbuffers::Offset<AvePool> avepool_param = 0,
     flatbuffers::Offset<MaxPool> maxpool_param = 0,
@@ -2514,29 +2624,31 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<Dequantize> dequantize_param = 0,
     flatbuffers::Offset<LRN> lrn_param = 0,
     flatbuffers::Offset<Tanh> tanh_param = 0,
-    flatbuffers::Offset<Floor> floor_param = 0) {
-    LayerBuilder builder_(_fbb);
-    builder_.add_floor_param(floor_param);
-    builder_.add_tanh_param(tanh_param);
-    builder_.add_lrn_param(lrn_param);
-    builder_.add_dequantize_param(dequantize_param);
-    builder_.add_mul_scalar_param(mul_scalar_param);
-    builder_.add_add_scalar_param(add_scalar_param);
-    builder_.add_mul_param(mul_param);
-    builder_.add_strided_slice_param(strided_slice_param);
-    builder_.add_space_to_batch_param(space_to_batch_param);
-    builder_.add_batch_to_space_param(batch_to_space_param);
-    builder_.add_depthwise_conv2d_param(depthwise_conv2d_param);
-    builder_.add_concat_param(concat_param);
-    builder_.add_add_param(add_param);
-    builder_.add_fc_param(fc_param);
-    builder_.add_softmax_param(softmax_param);
-    builder_.add_relu_param(relu_param);
-    builder_.add_maxpool_param(maxpool_param);
-    builder_.add_avepool_param(avepool_param);
-    builder_.add_conv2d_param(conv2d_param);
-    builder_.add_type(type);
-    return builder_.Finish();
+    flatbuffers::Offset<Floor> floor_param = 0,
+    flatbuffers::Offset<Logistic> logistic_param = 0) {
+  LayerBuilder builder_(_fbb);
+  builder_.add_logistic_param(logistic_param);
+  builder_.add_floor_param(floor_param);
+  builder_.add_tanh_param(tanh_param);
+  builder_.add_lrn_param(lrn_param);
+  builder_.add_dequantize_param(dequantize_param);
+  builder_.add_mul_scalar_param(mul_scalar_param);
+  builder_.add_add_scalar_param(add_scalar_param);
+  builder_.add_mul_param(mul_param);
+  builder_.add_strided_slice_param(strided_slice_param);
+  builder_.add_space_to_batch_param(space_to_batch_param);
+  builder_.add_batch_to_space_param(batch_to_space_param);
+  builder_.add_depthwise_conv2d_param(depthwise_conv2d_param);
+  builder_.add_concat_param(concat_param);
+  builder_.add_add_param(add_param);
+  builder_.add_fc_param(fc_param);
+  builder_.add_softmax_param(softmax_param);
+  builder_.add_relu_param(relu_param);
+  builder_.add_maxpool_param(maxpool_param);
+  builder_.add_avepool_param(avepool_param);
+  builder_.add_conv2d_param(conv2d_param);
+  builder_.add_type(type);
+  return builder_.Finish();
 }
 
 struct Model FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

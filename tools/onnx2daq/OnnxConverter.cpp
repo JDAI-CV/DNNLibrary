@@ -222,7 +222,6 @@ OnnxConverter::Tensor OnnxConverter::OnnxToNnapiIdentity(const Tensor &src) {
     return src;
 }
 
-
 void OnnxConverter::SetIdentity(css &input_name, css &output_name) {
     // Dropout does nothing, so the output is the same as the input
     shaper_.Eltwise(input_name, output_name);
@@ -452,7 +451,7 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
         "Dropout",       "BatchNormalization",
         "Reshape",       "LRN",
         "Identity",      "Tanh",
-        "Floor"};
+        "Floor",         "Sigmoid"};
     if (std::find(supported_types.begin(), supported_types.end(), op) ==
         supported_types.end()) {
         return {false, "Unsupported operator " + op};
@@ -899,6 +898,12 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto output_name = m(node.output(0));
             AddLayerFloor(input_name, output_name);
             VLOG(5) << "Converting Floor completed";
+        } else if (op == "Sigmoid") {
+            VLOG(5) << "Start converting Sigmoid";
+            const auto input_name = m(node.input(0));
+            const auto output_name = m(node.output(0));
+            AddLayerLogistic(input_name, output_name);
+            VLOG(5) << "Converting Sigmoid completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
         }

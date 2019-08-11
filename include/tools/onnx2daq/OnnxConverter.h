@@ -160,6 +160,7 @@ class OnnxConverter {
                      float alpha, float beta, const std::string &output);
     void AddLayerTanh(const std::string &input, const std::string &output);
     void AddLayerFloor(const std::string &input, const std::string &output);
+    void AddLayerLogistic(const std::string &input, const std::string &output);
     // OnnxConverter auto generated methods end
 
     /**

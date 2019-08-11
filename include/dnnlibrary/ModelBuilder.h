@@ -183,6 +183,8 @@ class ModelBuilder {
                                 const std::string &output);
     ModelBuilder::Index AddFloor(const std::string &input,
                                  const std::string &output);
+    ModelBuilder::Index AddLogistic(const std::string &input,
+                                    const std::string &output);
     // ModelBuilder auto generated methods end
     Index AddDepthWiseConv(
         const std::string &input_name, int32_t strideX, int32_t strideY,

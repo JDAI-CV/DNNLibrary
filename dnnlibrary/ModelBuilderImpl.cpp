@@ -540,6 +540,24 @@ ModelBuilder::Index ModelBuilder::AddFloor(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
+ModelBuilder::Index ModelBuilder::AddLogistic(const std::string &input,
+                                              const std::string &output) {
+    if (nnapi_->android_sdk_version < 27) {
+        throw std::runtime_error("Logistic requires API 27");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_LOGISTIC, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
 // ModelBuilder auto generated methods end
 
 // Methods for backward compatibility

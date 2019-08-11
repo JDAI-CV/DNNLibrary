@@ -58,6 +58,8 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "Tanh";
         case DNN::LayerType::Floor:
             return "Floor";
+        case DNN::LayerType::Logistic:
+            return "Logistic";
             // DaqReader auto generated layer_type_to_str end
     }
 }
@@ -302,6 +304,10 @@ void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
             }
             case DNN::LayerType::Floor: {
                 ADD_LAYER(floor, Floor, input, output);
+                break;
+            }
+            case DNN::LayerType::Logistic: {
+                ADD_LAYER(logistic, Logistic, input, output);
                 break;
             }
         }
