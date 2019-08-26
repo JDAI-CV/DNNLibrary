@@ -2,7 +2,7 @@
 
 [![Build Status](https://dev.azure.com/daquexian/DNNLibrary/_apis/build/status/DNNLibrary%20Build%20and%20Test?branchName=master)](https://dev.azure.com/daquexian/DNNLibrary/_build/latest?definitionId=8&branchName=master)
 [![Download](https://api.bintray.com/packages/daquexian566/maven/dnnlibrary/images/download.svg) ](https://bintray.com/daquexian566/maven/dnnlibrary/_latestVersion)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/JDAI-CV/DNNLibrary/pulls)
 
 *Run ONNX models on your Android phone using the new NNAPI !*
 
