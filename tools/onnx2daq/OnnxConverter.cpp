@@ -11,6 +11,9 @@
 #include <glog/logging.h>
 #include <onnx/optimizer/optimize.h>
 #include <onnx/shape_inference/implementation.h>
+#ifdef __ANDROID__
+#include <dnnlibrary/nnapi_implementation.h>
+#endif
 #include "NodeAttrHelper.h"
 
 using std::string;
@@ -439,6 +442,11 @@ dnn::optional<Shaper::Shape> GetShape(
 std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
     const ONNX_NAMESPACE::ModelProto &model_proto,
     const ONNX_NAMESPACE::NodeProto &node) const {
+#ifdef __ANDROID__
+    if (GetAndroidSdkVersion() < 27) {
+        return {false, "Android API level is lower than 27"};
+    }
+#endif
     NodeAttrHelper helper(node);
     const auto &op = node.op_type();
     const std::vector<std::string> supported_types{
