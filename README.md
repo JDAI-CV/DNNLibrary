@@ -141,13 +141,6 @@ We benchmarked DNNLibrary against two popular frameworks, [NCNN](https://github.
 ![Benchmark on OnePlus 6T](./images/DNNLibrary-oneplus6t.png)
 ![Benchmark on Huawei Honor V10](./images/DNNLibrary-huaweihonorv10.png)
 
-device | model | time
-:---:|:---:|:---:
-Google Pixel, API 28 | MobileNet v2 | 132.95ms
-Google Pixel, API 28 | SqueezeNet v1.1 | 80.80ms
-[RK3399](http://en.t-firefly.com/news/info/index/id/516.html), API 27 | MobileNet v2 | 59.90ms
-RK3399, API 27 | SqueezeNet v1.1 | 51.10ms
-
 More benchmark is welcome!
 
 ## About caffe model support
