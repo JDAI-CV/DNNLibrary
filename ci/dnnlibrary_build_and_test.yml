@@ -29,6 +29,9 @@ steps:
   submodules: true
 - bash: brew install watch gnu-sed
   displayName: Install watch and gnu-sed
+# cmake 3.15 breaks Android NDK https://gitlab.kitware.com/cmake/cmake/issues/19515
+- script: pip install cmake==3.14.4 && alias cmake=/usr/local/bin/cmake && cmake --version
+  displayName: Install cmake 3.14.4
 - bash: ci/download_protoc.sh
   displayName: Download protoc
 - bash: ci/build_dnnlibrary.sh
