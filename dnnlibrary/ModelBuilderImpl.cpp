@@ -6,7 +6,7 @@
 
 #include <common/data_types.h>
 #include <common/helper.h>
-#include <nnapi_helper.h>
+#include <dnnlibrary/nnapi_helper.h>
 
 namespace dnn {
 using namespace android::nn::wrapper;

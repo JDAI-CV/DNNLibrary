@@ -10,8 +10,8 @@
 #include <fstream>
 #include <iostream>
 
-#include <android_log_helper.h>
-#include <flatbuffers_helper.h>
+#include <dnnlibrary/android_log_helper.h>
+#include <dnnlibrary/flatbuffers_helper.h>
 #include <glog/logging.h>
 
 namespace dnn {
