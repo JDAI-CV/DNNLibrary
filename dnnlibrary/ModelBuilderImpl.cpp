@@ -719,6 +719,16 @@ ModelBuilder::Index ModelBuilder::AddDepthWiseConv(
 }
 
 ModelBuilder::Index ModelBuilder::AddConv(
+    const std::string &input_name, const std::string &weight_name,
+    const dnn::optional<std::string> &bias_name, const std::vector<int32_t> paddings, 
+    const std::vector<int32_t> strides, const std::string &output_name,
+    const dnn::optional<QuantInfo> &output_quant_info) {
+    return AddConv(input_name, weight_name, bias_name, paddingLeft,
+                   paddingRight, paddingTop, paddingBottom, strideX, strideY,
+                   activation, output_name, output_quant_info);
+}
+
+ModelBuilder::Index ModelBuilder::AddConv(
     const std::string &input_name, int32_t strideX, int32_t strideY,
     int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
     int32_t paddingBottom, int32_t activation, const std::string &weight_name,

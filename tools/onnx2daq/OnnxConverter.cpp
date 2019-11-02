@@ -682,12 +682,21 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
         }
         if (op == "Conv") {
             VLOG(5) << "Start converting Conv";
-            const auto strides = helper.get("strides", vector<int>{1, 1});
-            const auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
-            const auto dilations = helper.get("dilations", vector<int>{1, 1});
-            CHECK_EQ(pads.size(), 4ul);
-            CHECK_EQ(strides.size(), 2ul);
-            CHECK_EQ(dilations.size(), 2ul);
+            // onnx strides are in the order height, width
+            // while nnapi strides are in the order width, height
+            const auto onnx_strides = helper.get("strides", vector<int>{1, 1});
+            // onnx pads are in the order top, left, bottom, right
+            // while nnapi pads is in the order left, right, top, bottom
+            const auto onnx_pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+            // onnx dilations is in the order height, width
+            // while nnapi dilations are in the order width, height
+            const auto onnx_dilations = helper.get("dilations", vector<int>{1, 1});
+            CHECK_EQ(onnx_pads.size(), 4ul);
+            CHECK_EQ(onnx_strides.size(), 2ul);
+            CHECK_EQ(onnx_dilations.size(), 2ul);
+            const decltype(onnx_strides) nnapi_strides{onnx_strides[1], onnx_strides[0]};
+            const decltype(onnx_pads) nnapi_pads{onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2]};
+            const decltype(onnx_dilations) nnapi_dilations{onnx_dilations[1], onnx_dilations[0]};
             const auto group = helper.get("group", 1);
             dnn::optional<string> bias_name;
             if (node.input_size() >= 3) {
@@ -695,7 +704,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             }
 
             const auto ori_weight_name = m(node.input(1));
-            AddConv(m(node.input(0)), strides, pads, dilations, group,
+            AddConv(m(node.input(0)), nnapi_strides, nnapi_pads, nnapi_dilations, group,
                     ori_weight_name, bias_name, m(node.output(0)));
             VLOG(5) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" ||
@@ -703,13 +712,15 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             VLOG(5) << "Start converting Pool";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            vector<int> strides, pads, kernel_shape;
+            vector<int> nnapi_strides, nnapi_pads, kernel_shape;
             if (op == "AveragePool" || op == "MaxPool") {
-                strides = helper.get("strides", vector<int>{1, 1});
-                pads = helper.get("pads", vector<int>{0, 0, 0, 0});
                 kernel_shape = helper.get("kernel_shape", vector<int>{0, 0});
                 const auto count_include_pad =
                     helper.get("count_include_pad", 0);
+                const auto onnx_strides = helper.get("strides", vector<int>{1, 1});
+                const auto onnx_pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+                nnapi_strides = {onnx_strides[1], onnx_strides[0]};
+                nnapi_pads = {onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2]};
                 if (count_include_pad == 1) {
                     throw std::invalid_argument(
                         "count_include_pad == 1 is not supported");
@@ -723,14 +734,14 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                     throw std::invalid_argument("auto_pad is not supported");
                 }
             } else {
-                strides = {0, 0};
-                pads = {0, 0, 0, 0};
+                nnapi_strides = {0, 0};
+                nnapi_pads = {0, 0, 0, 0};
                 kernel_shape = {-1, -1};  // -1 for global
             }
-            CHECK_EQ(pads.size(), 4ul);
+            CHECK_EQ(nnapi_pads.size(), 4ul);
             CHECK_EQ(kernel_shape.size(), 2ul);
-            CHECK_EQ(strides.size(), 2ul);
-            AddLayerPool(op, input_name, kernel_shape, pads, strides,
+            CHECK_EQ(nnapi_strides.size(), 2ul);
+            AddLayerPool(op, input_name, kernel_shape, nnapi_pads, nnapi_strides,
                          output_name);
             VLOG(5) << "Converting Pool completed";
         } else if (op == "Relu") {

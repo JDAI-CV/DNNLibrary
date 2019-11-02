@@ -9,8 +9,12 @@ using Shape = Shaper::Shape;
 
 namespace dnn {
 void OnnxConverter::AddConv(const string &input_name,
+                            // Strides here are in the order: width, height
                             const std::vector<int> &strides,
+                            // The order of pads here is the same as nnapi:
+                            // left, right, top, bottom
                             const std::vector<int> &pads,
+                            // Dilations here are in the order: width, height
                             const std::vector<int> &dilations, int group,
                             const string &ori_weight_name,
                             const dnn::optional<std::string> &bias_name,
@@ -21,18 +25,22 @@ void OnnxConverter::AddConv(const string &input_name,
             throw std::invalid_argument(
                 "Both dilations and strides > 1 is not supported for now");
         }
+        if (!(pads[0] == pads[1] && pads[1] == pads[2] && pads[2] == pads[3])) {
+            throw std::invalid_argument(
+                "Both dilations and asymmetric pads is not supported for now");
+        }
         VLOG(5) << "Dilations of conv: " << dilations << ", converting..";
         const auto s2b_name = input_name + "_s2b";
         const auto im_name = input_name + "_conv_imm";
         const auto b2s_name = input_name + "_b2s";
         std::vector<int> new_pads = pads;
         const auto input_shape = shaper_[input_name];
-        new_pads[1] = (input_shape[1] + pads[1] + (dilations[0] - 1)) /
+        new_pads[1] = (input_shape[2] + pads[1] + (dilations[0] - 1)) /
                           dilations[0] * dilations[0] -
-                      input_shape[1];
-        new_pads[3] = (input_shape[2] + pads[3] + (dilations[1] - 1)) /
-                          dilations[1] * dilations[1] -
                       input_shape[2];
+        new_pads[3] = (input_shape[1] + pads[3] + (dilations[1] - 1)) /
+                          dilations[1] * dilations[1] -
+                      input_shape[1];
         VLOG(5) << input_shape << ", " << pads << ", " << dilations << ", "
                 << new_pads;
         // Why "AllowShortBlocksOnASingleLine: false" doesn't work on it?
@@ -57,7 +65,7 @@ void OnnxConverter::AddConv(const string &input_name,
             const std::vector<int32_t> starts{0, 0, 0, 0};
             const std::vector<int32_t> ends{
                 static_cast<int32_t>(b2s_shape[0]),
-                static_cast<int32_t>(b2s_shape[1]) - (new_pads[1] - pads[0]),
+                static_cast<int32_t>(b2s_shape[1]) - (new_pads[1] - pads[1]),
                 static_cast<int32_t>(b2s_shape[2]) - (new_pads[3] - pads[3]),
                 static_cast<int32_t>(b2s_shape[3])};
             const std::vector<int32_t> strides_in_ss{1, 1, 1, 1};
@@ -92,7 +100,10 @@ void OnnxConverter::AddConv(const string &input_name,
 
 void OnnxConverter::AddLayerPool(css &op, css &input_name,
                                  const std::vector<int> &kernel_shape,
+                                // The order of pads here is the same as nnapi:
+                                // left, right, top, bottom
                                  const std::vector<int> &pads,
+                                // Strides here are in the order: width, height
                                  const std::vector<int> &strides,
                                  css &output_name) {
     if (op == "AveragePool" || op == "GlobalAveragePool") {
@@ -108,7 +119,10 @@ void OnnxConverter::AddLayerPool(css &op, css &input_name,
 void OnnxConverter::AddLayerConvImpl(const std::string &input,
                                      const std::string &weight,
                                      const dnn::optional<std::string> &bias,
+                                    // The order of pads here is the same as nnapi:
+                                    // left, right, top, bottom
                                      const std::vector<int32_t> &pads,
+                                    // Strides here are in the order: width, height
                                      const std::vector<int32_t> &strides,
                                      const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
@@ -161,6 +175,9 @@ void OnnxConverter::AddLayerConvImpl(const std::string &input,
 
 void OnnxConverter::AddLayerAvePoolImpl(
     const std::string &input, const std::vector<int32_t> &kernel_shape,
+    // The order of pads here is the same as nnapi:
+    // left, right, top, bottom
+    // Strides here are in the order: width, height
     const std::vector<int32_t> &pads, const std::vector<int32_t> &strides,
     const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
@@ -188,6 +205,9 @@ void OnnxConverter::AddLayerAvePoolImpl(
 
 void OnnxConverter::AddLayerMaxPoolImpl(
     const std::string &input, const std::vector<int32_t> &kernel_shape,
+    // The order of pads here is the same as nnapi:
+    // left, right, top, bottom
+    // Strides here are in the order: width, height
     const std::vector<int32_t> &pads, const std::vector<int32_t> &strides,
     const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
@@ -370,7 +390,10 @@ void OnnxConverter::AddLayerConcat(const std::vector<std::string> &inputs,
 
 void OnnxConverter::AddLayerDepthwiseConvImpl(
     const std::string &input, const std::string &weight,
+    // The order of pads here is the same as nnapi:
+    // left, right, top, bottom
     const dnn::optional<std::string> &bias, const std::vector<int32_t> &pads,
+    // Strides here are in the order: width, height
     const std::vector<int32_t> &strides, int32_t depth_multiplier,
     const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
