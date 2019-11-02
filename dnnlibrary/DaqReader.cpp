@@ -60,6 +60,18 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "Floor";
         case DNN::LayerType::Logistic:
             return "Logistic";
+        case DNN::LayerType::PReLU:
+            return "PReLU";
+        case DNN::LayerType::Pow:
+            return "Pow";
+        case DNN::LayerType::Neg:
+            return "Neg";
+        case DNN::LayerType::Minimum:
+            return "Minimum";
+        case DNN::LayerType::Maximum:
+            return "Maximum";
+        case DNN::LayerType::Log:
+            return "Log";
             // DaqReader auto generated layer_type_to_str end
     }
 }

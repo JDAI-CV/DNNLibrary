@@ -2,7 +2,8 @@
     # This appears in function name, like ModelBuilder::AddConv
     name: Conv
     nnapi: CONV_2D
-    # 'dnn' is the name of fbs, it is mostly because of historical reasons
+    # 'dnn' is the name of the op in flatbuffers fbs file.
+    # It is mostly because of historical reasons and should not be used for new ops
     dnn: Conv2D
     input:
         -
@@ -56,7 +57,7 @@
             needed_by_shaper: true
     fused: true
     support_quant_asymm: true
-    converter: false
+    converter_simple: false
     api: 27
 -
     name: AvePool
@@ -117,7 +118,7 @@
     nnapi: AVERAGE_POOL_2D
     shaper: Pool
     fused: true
-    converter: false
+    converter_simple: false
     support_quant_asymm: true
     api: 27
 
@@ -180,7 +181,7 @@
     nnapi: MAX_POOL_2D
     shaper: Pool
     fused: true
-    converter: false
+    converter_simple: false
     support_quant_asymm: true
     api: 27
 -
@@ -295,7 +296,7 @@
             cpp_type: int32_t
     fused: true
     support_quant_asymm: true
-    converter: false
+    converter_simple: false
     api: 27
 -
     name: BatchToSpaceND
@@ -439,7 +440,7 @@
             cpp_type: str
     shaper: Identity
     api: 29
-    converter: false
+    builder_simple: false
 -
     name: Pow
     input:

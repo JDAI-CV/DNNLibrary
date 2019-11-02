@@ -161,6 +161,16 @@ class OnnxConverter {
     void AddLayerTanh(const std::string &input, const std::string &output);
     void AddLayerFloor(const std::string &input, const std::string &output);
     void AddLayerLogistic(const std::string &input, const std::string &output);
+    void AddLayerPReLU(const std::string &input, const std::string &alpha,
+                       const std::string &output);
+    void AddLayerPow(const std::string &input, const std::string &exp,
+                     const std::string &output);
+    void AddLayerNeg(const std::string &input, const std::string &output);
+    void AddLayerMinimum(const std::string &input1, const std::string &input2,
+                         const std::string &output);
+    void AddLayerMaximum(const std::string &input1, const std::string &input2,
+                         const std::string &output);
+    void AddLayerLog(const std::string &input, const std::string &output);
     // OnnxConverter auto generated methods end
 
     /**

@@ -185,6 +185,21 @@ class ModelBuilder {
                                  const std::string &output);
     ModelBuilder::Index AddLogistic(const std::string &input,
                                     const std::string &output);
+    ModelBuilder::Index AddPReLUImpl(const std::string &input,
+                                     const std::string &alpha,
+                                     const std::string &output);
+    ModelBuilder::Index AddPow(const std::string &input, const std::string &exp,
+                               const std::string &output);
+    ModelBuilder::Index AddNeg(const std::string &input,
+                               const std::string &output);
+    ModelBuilder::Index AddMinimum(const std::string &input1,
+                                   const std::string &input2,
+                                   const std::string &output);
+    ModelBuilder::Index AddMaximum(const std::string &input1,
+                                   const std::string &input2,
+                                   const std::string &output);
+    ModelBuilder::Index AddLog(const std::string &input,
+                               const std::string &output);
     // ModelBuilder auto generated methods end
     Index AddDepthWiseConv(
         const std::string &input_name, int32_t strideX, int32_t strideY,

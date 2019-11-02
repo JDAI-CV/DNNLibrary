@@ -704,6 +704,172 @@ void OnnxConverter::AddLayerLogistic(const std::string &input,
     layers_.push_back(layer);
 }
 
+void OnnxConverter::AddLayerPReLU(const std::string &input,
+                                  const std::string &alpha,
+                                  const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto param = DNN::CreatePReLUDirect(builder_, m(input).c_str(),
+                                              m(alpha).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::PReLU, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerPow(const std::string &input,
+                                const std::string &exp,
+                                const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto param = DNN::CreatePowDirect(builder_, m(input).c_str(),
+                                            m(exp).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Pow, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerNeg(const std::string &input,
+                                const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto param =
+        DNN::CreateNegDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Neg, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerMinimum(const std::string &input1,
+                                    const std::string &input2,
+                                    const std::string &output) {
+    {
+        const auto name = input1;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    {
+        const auto name = input2;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input1), m(input2), output);
+    const auto param = DNN::CreateMinimumDirect(
+        builder_, m(input1).c_str(), m(input2).c_str(), output.c_str());
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::Minimum, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerMaximum(const std::string &input1,
+                                    const std::string &input2,
+                                    const std::string &output) {
+    {
+        const auto name = input1;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    {
+        const auto name = input2;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input1), m(input2), output);
+    const auto param = DNN::CreateMaximumDirect(
+        builder_, m(input1).c_str(), m(input2).c_str(), output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Maximum, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::AddLayerLog(const std::string &input,
+                                const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto param =
+        DNN::CreateLogDirect(builder_, m(input).c_str(), output.c_str());
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Log, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
 // OnnxConverter auto generated methods end
 
 }  // namespace dnn

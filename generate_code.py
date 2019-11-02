@@ -138,8 +138,10 @@ def infer_cfg(cfg, target: Target):
             op['input'].append({'name': 'fuse_code', 'nnapi_type': 'scalar', 'cpp_type': 'int32_t'})
         if 'support_quant_asymm' not in op:
             op['support_quant_asymm'] = False
-        if 'converter' not in op:
-            op['converter'] = True
+        if 'converter_simple' not in op:
+            op['converter_simple'] = True
+        if 'builder_simple' not in op:
+            op['builder_simple'] = True
         if 'output_tensor_type' not in op:
             op['output_tensor_type'] = 'auto'
         for ipt in op['input']:
@@ -159,7 +161,7 @@ def infer_cfg(cfg, target: Target):
                 ipt['needed_by_shaper'] = False
 
 
-def update_code(file: str, label: str) -> None:
+def update_code(file: str, label: str, reformat: bool=True) -> None:
     """
     replace the text surrounded by "label start" and "label end" to new_code
     :param file: the .cpp or .h file
@@ -172,11 +174,13 @@ def update_code(file: str, label: str) -> None:
         idx1 = s.find(start) + len(start)
         end = '// {} end'.format(label)
         idx2 = s.find(end)
+        assert start in s and end in s
     with open(file, 'w') as f:
         new_s = s[:idx1] + str_io.getvalue() + s[idx2:]
         f.write(new_s)
     str_io = io.StringIO()
-    clang_format(file)
+    if reformat:
+        clang_format(file)
 
 
 def generate_onnx_converter():
@@ -187,7 +191,7 @@ def generate_onnx_converter():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void OnnxConverter::AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str}) {{")
+        cogoutl(f"void OnnxConverter::AddLayer{op['name']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
         if op['fused']:
             cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
         for x in op['input']:
@@ -257,7 +261,7 @@ def generate_onnx_converter():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str});")
+        cogoutl(f"void AddLayer{op['name']}{'' if op['converter_simple'] else 'Impl'}({params_str});")
     update_code('include/tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
 
 
@@ -269,6 +273,36 @@ def generate_daq_reader():
         cogoutl(f'case DNN::LayerType::{op["dnn"]}:')
         cogoutl(f'return "{op["dnn"]}";')
     update_code('dnnlibrary/DaqReader.cpp', 'DaqReader auto generated layer_type_to_str')
+
+
+def generate_fbs():
+    with open('ops.yml') as f:
+        cfg = yaml.load(f)
+    # The target of fbs is the same as onnx converter
+    infer_cfg(cfg, Target.OnnxConverter)
+    for i, op in enumerate(cfg):
+        cogoutl(f"table {op['dnn']} {{")
+        d = {
+            'int32_list': '[int]',
+            'int32_t': 'int',
+            'str': 'string',
+            'optional_str': 'string',
+            'str_list': '[string]',
+            'float': 'float',
+        }
+        for x in op['input']:
+            cogoutl(f"    {x['name']}:{d[x['cpp_type']]};")
+        if op['fused']:
+            cogoutl('    fuse:FuseCode;')
+        for x in op['output']:
+            cogoutl(f"    {x['name']}:{d[x['cpp_type']]};")
+        cogoutl('}')
+        cogoutl('')
+    update_code('common/daq.fbs', 'Auto generated tables', reformat=False)
+
+    for i, op in enumerate(cfg):
+        cogoutl(f"    {op['dnn']}_param:{op['dnn']};")
+    update_code('common/daq.fbs', 'Auto generated fields', reformat=False)
 
 
 def generate_model_builder():
@@ -283,7 +317,8 @@ def generate_model_builder():
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index ModelBuilder::Add{}({}) {{".format(op['name'], params_str))
+        cogoutl("ModelBuilder::Index ModelBuilder::Add{}{}({}) {{".format(
+            op['name'], '' if op['builder_simple'] else 'Impl', params_str))
         cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
                 f'throw std::runtime_error("{op["name"]} requires API {op["api"]}");'
                 f'}}')
@@ -328,11 +363,13 @@ def generate_model_builder():
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index Add{}({});".format(op['name'], params_str))
+        cogoutl("ModelBuilder::Index Add{}{}({});".format(
+            op['name'], '' if op['builder_simple'] else 'Impl', params_str))
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
 
 def main():
+    generate_fbs()
     generate_model_builder()
     generate_onnx_converter()
     generate_daq_reader()

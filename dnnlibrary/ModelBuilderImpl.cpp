@@ -558,6 +558,130 @@ ModelBuilder::Index ModelBuilder::AddLogistic(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
+ModelBuilder::Index ModelBuilder::AddPReLUImpl(const std::string &input,
+                                               const std::string &alpha,
+                                               const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        throw std::runtime_error("PReLU requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    imm_blob_inputs_.insert(alpha);
+    const auto alpha_idx = operand_indexes_.at(alpha);
+    input_indexes.push_back(alpha_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_PRELU, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
+ModelBuilder::Index ModelBuilder::AddPow(const std::string &input,
+                                         const std::string &exp,
+                                         const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        throw std::runtime_error("Pow requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    imm_blob_inputs_.insert(exp);
+    const auto exp_idx = operand_indexes_.at(exp);
+    input_indexes.push_back(exp_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_POW, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
+ModelBuilder::Index ModelBuilder::AddNeg(const std::string &input,
+                                         const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        throw std::runtime_error("Neg requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_NEG, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
+ModelBuilder::Index ModelBuilder::AddMinimum(const std::string &input1,
+                                             const std::string &input2,
+                                             const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        throw std::runtime_error("Minimum requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input1);
+    const auto input1_idx = operand_indexes_.at(input1);
+    input_indexes.push_back(input1_idx);
+    imm_blob_inputs_.insert(input2);
+    const auto input2_idx = operand_indexes_.at(input2);
+    input_indexes.push_back(input2_idx);
+    shaper_.Identity(input1, input2, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input1).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_MINIMUM, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
+ModelBuilder::Index ModelBuilder::AddMaximum(const std::string &input1,
+                                             const std::string &input2,
+                                             const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        throw std::runtime_error("Maximum requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input1);
+    const auto input1_idx = operand_indexes_.at(input1);
+    input_indexes.push_back(input1_idx);
+    imm_blob_inputs_.insert(input2);
+    const auto input2_idx = operand_indexes_.at(input2);
+    input_indexes.push_back(input2_idx);
+    shaper_.Identity(input1, input2, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input1).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_MAXIMUM, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
+ModelBuilder::Index ModelBuilder::AddLog(const std::string &input,
+                                         const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        throw std::runtime_error("Log requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_LOG, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return output_idx;
+}
 // ModelBuilder auto generated methods end
 
 // Methods for backward compatibility

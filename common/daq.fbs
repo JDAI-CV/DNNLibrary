@@ -35,47 +35,13 @@ table Input {
     name:string;
 }
 
-table StridedSlice {
-    input:string;
-    starts:[int];
-    ends:[int];
-    strides:[int];
-    begin_mask:int;
-    end_mask:int;
-    shrink_axis_mask:int;
-    output:string;
-}
-
-table BatchToSpace {
-    input:string;
-    block_sizes:[int];
-    output:string;
-}
-
-table SpaceToBatch {
-    input:string;
-    block_sizes:[int];
-    pads:[int];
-    output:string;
-}
-
+// Auto generated tables start
 table Conv2D {
     input:string;
     weight:string;
     bias:string;
     pads:[int];
     strides:[int];
-    fuse:FuseCode;
-    output:string;
-}
-
-table DepthwiseConv2D {
-    input:string;
-    weight:string;
-    bias:string;
-    pads:[int];
-    strides:[int];
-    multiplier:int;
     fuse:FuseCode;
     output:string;
 }
@@ -129,6 +95,41 @@ table Concat {
     output:string;
 }
 
+table DepthwiseConv2D {
+    input:string;
+    weight:string;
+    bias:string;
+    pads:[int];
+    strides:[int];
+    depth_multiplier:int;
+    fuse:FuseCode;
+    output:string;
+}
+
+table BatchToSpace {
+    input:string;
+    block_sizes:[int];
+    output:string;
+}
+
+table SpaceToBatch {
+    input:string;
+    block_sizes:[int];
+    pads:[int];
+    output:string;
+}
+
+table StridedSlice {
+    input:string;
+    starts:[int];
+    ends:[int];
+    strides:[int];
+    begin_mask:int;
+    end_mask:int;
+    shrink_axis_mask:int;
+    output:string;
+}
+
 table Mul {
     input1:string;
     input2:string;
@@ -137,15 +138,15 @@ table Mul {
 }
 
 table AddScalar {
-    input1:string;
-    input2:float;
+    input:string;
+    scalar:float;
     fuse:FuseCode;
     output:string;
 }
 
 table MulScalar {
-    input1:string;
-    input2:float;
+    input:string;
+    scalar:float;
     fuse:FuseCode;
     output:string;
 }
@@ -179,28 +180,73 @@ table Logistic {
     output:string;
 }
 
+table PReLU {
+    input:string;
+    alpha:string;
+    output:string;
+}
+
+table Pow {
+    input:string;
+    exp:string;
+    output:string;
+}
+
+table Neg {
+    input:string;
+    output:string;
+}
+
+table Minimum {
+    input1:string;
+    input2:string;
+    output:string;
+}
+
+table Maximum {
+    input1:string;
+    input2:string;
+    output:string;
+}
+
+table Log {
+    input:string;
+    output:string;
+}
+
+// Auto generated tables end
+
+
 table Layer {
     type:LayerType;
-    conv2d_param:Conv2D;
-    avepool_param:AvePool;
-    maxpool_param:MaxPool;
-    relu_param:Relu;
-    softmax_param:Softmax;
-    fc_param:FC;
-    add_param:Add;
-    concat_param:Concat;
-    depthwise_conv2d_param:DepthwiseConv2D;
-    batch_to_space_param:BatchToSpace;
-    space_to_batch_param:SpaceToBatch;
-    strided_slice_param:StridedSlice;
-    mul_param:Mul;
-    add_scalar_param:AddScalar;
-    mul_scalar_param:MulScalar;
-    dequantize_param:Dequantize;
-    lrn_param:LRN;
-    tanh_param:Tanh;
-    floor_param:Floor;
-    logistic_param:Logistic;
+// Auto generated fields start
+    Conv2D_param:Conv2D;
+    AvePool_param:AvePool;
+    MaxPool_param:MaxPool;
+    Relu_param:Relu;
+    Softmax_param:Softmax;
+    FC_param:FC;
+    Add_param:Add;
+    Concat_param:Concat;
+    DepthwiseConv2D_param:DepthwiseConv2D;
+    BatchToSpace_param:BatchToSpace;
+    SpaceToBatch_param:SpaceToBatch;
+    StridedSlice_param:StridedSlice;
+    Mul_param:Mul;
+    AddScalar_param:AddScalar;
+    MulScalar_param:MulScalar;
+    Dequantize_param:Dequantize;
+    LRN_param:LRN;
+    Tanh_param:Tanh;
+    Floor_param:Floor;
+    Logistic_param:Logistic;
+    PReLU_param:PReLU;
+    Pow_param:Pow;
+    Neg_param:Neg;
+    Minimum_param:Minimum;
+    Maximum_param:Maximum;
+    Log_param:Log;
+// Auto generated fields end
 }
 
 table Model {
