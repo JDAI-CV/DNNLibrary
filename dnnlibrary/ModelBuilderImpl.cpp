@@ -633,7 +633,7 @@ ModelBuilder::Index ModelBuilder::AddMinimum(const std::string &input1,
     imm_blob_inputs_.insert(input2);
     const auto input2_idx = operand_indexes_.at(input2);
     input_indexes.push_back(input2_idx);
-    shaper_.Identity(input1, input2, output);
+    shaper_.Eltwise(input1, input2, output);
     const OperandType operand_type =
         GetOperandType(operand_types_.at(input1).type, shaper_[output]);
     const auto output_idx =
@@ -655,7 +655,7 @@ ModelBuilder::Index ModelBuilder::AddMaximum(const std::string &input1,
     imm_blob_inputs_.insert(input2);
     const auto input2_idx = operand_indexes_.at(input2);
     input_indexes.push_back(input2_idx);
-    shaper_.Identity(input1, input2, output);
+    shaper_.Eltwise(input1, input2, output);
     const OperandType operand_type =
         GetOperandType(operand_types_.at(input1).type, shaper_[output]);
     const auto output_idx =

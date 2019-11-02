@@ -1,4 +1,5 @@
 import io
+import subprocess
 import yaml
 from enum import Enum
 from typing import Tuple
@@ -13,8 +14,11 @@ class Target(Enum):
 
 
 def clang_format(filename: str):
-    import subprocess
     subprocess.run(['clang-format', '-i', filename])
+
+
+def compile_fbs():
+    subprocess.run(['flatc', '--cpp', '--scoped-enums', '-o', 'include/common/', 'common/daq.fbs'])
 
 
 def cogout(txt):
@@ -306,6 +310,8 @@ def generate_fbs():
     for i, op in enumerate(cfg):
         cogoutl(f"    {op['dnn']},")
     update_code('common/daq.fbs', 'Auto generated layer types', reformat=False)
+    compile_fbs()
+
 
 
 def generate_model_builder():

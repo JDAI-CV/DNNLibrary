@@ -457,12 +457,12 @@
 -
     name: Minimum
     base_input_num: 2
-    shaper: Identity
+    shaper: Eltwise
     api: 29
 -
     name: Maximum
     base_input_num: 2
-    shaper: Identity
+    shaper: Eltwise
     api: 29
 -
     name: Log

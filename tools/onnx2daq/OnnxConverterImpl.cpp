@@ -802,7 +802,7 @@ void OnnxConverter::AddLayerMinimum(const std::string &input1,
         }
     }
 
-    shaper_.Identity(m(input1), m(input2), output);
+    shaper_.Eltwise(m(input1), m(input2), output);
     const auto param = DNN::CreateMinimumDirect(
         builder_, m(input1).c_str(), m(input2).c_str(), output.c_str());
     const auto layer =
@@ -838,7 +838,7 @@ void OnnxConverter::AddLayerMaximum(const std::string &input1,
         }
     }
 
-    shaper_.Identity(m(input1), m(input2), output);
+    shaper_.Eltwise(m(input1), m(input2), output);
     const auto param = DNN::CreateMaximumDirect(
         builder_, m(input1).c_str(), m(input2).c_str(), output.c_str());
     const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::Maximum, 0, 0,
