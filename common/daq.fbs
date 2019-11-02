@@ -1,10 +1,10 @@
 namespace DNN;
 
 /// Int8 is deprecated, but int8_data in table Tensor is used, since a Tensor just stores value, not care about quantization method
-enum DataType:byte { Float32 = 0, Int8, Int32, Float16, Bool8,
+enum DataType:byte { Float32, Int8, Int32, Float16, Bool8,
     QUANT8_ASYMM, QUANT8_SYMM, QUANT8_SYMM_PER_CHANNEL, 
     QUANT16_ASYMM, QUANT16_SYMM}
-enum FuseCode:byte { None = 0, Relu, Relu1, Relu6 }
+enum FuseCode:byte { None, Relu, Relu1, Relu6 }
 enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat,
     DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar,
     Dequantize, LRN, Tanh, Floor, Logistic}
