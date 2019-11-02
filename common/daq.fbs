@@ -5,9 +5,36 @@ enum DataType:byte { Float32, Int8, Int32, Float16, Bool8,
     QUANT8_ASYMM, QUANT8_SYMM, QUANT8_SYMM_PER_CHANNEL, 
     QUANT16_ASYMM, QUANT16_SYMM}
 enum FuseCode:byte { None, Relu, Relu1, Relu6 }
-enum LayerType:byte { Conv2D = 0, AvePool, MaxPool, Relu, Softmax, FC, Add, Concat,
-    DepthwiseConv2D, BatchToSpace, SpaceToBatch, StridedSlice, Mul, AddScalar, MulScalar,
-    Dequantize, LRN, Tanh, Floor, Logistic}
+enum LayerType:byte {
+// Auto generated layer types start
+    Conv2D,
+    AvePool,
+    MaxPool,
+    Relu,
+    Softmax,
+    FC,
+    Add,
+    Concat,
+    DepthwiseConv2D,
+    BatchToSpace,
+    SpaceToBatch,
+    StridedSlice,
+    Mul,
+    AddScalar,
+    MulScalar,
+    Dequantize,
+    LRN,
+    Tanh,
+    Floor,
+    Logistic,
+    PReLU,
+    Pow,
+    Neg,
+    Minimum,
+    Maximum,
+    Log,
+// Auto generated layer types end
+    }
 
 table Tensor {
     data_type:DataType;

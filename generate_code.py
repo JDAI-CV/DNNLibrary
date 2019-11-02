@@ -303,6 +303,9 @@ def generate_fbs():
     for i, op in enumerate(cfg):
         cogoutl(f"    {op['dnn']}_param:{op['dnn']};")
     update_code('common/daq.fbs', 'Auto generated fields', reformat=False)
+    for i, op in enumerate(cfg):
+        cogoutl(f"    {op['dnn']},")
+    update_code('common/daq.fbs', 'Auto generated layer types', reformat=False)
 
 
 def generate_model_builder():

@@ -182,11 +182,17 @@ enum class LayerType : int8_t {
   Tanh = 17,
   Floor = 18,
   Logistic = 19,
+  PReLU = 20,
+  Pow = 21,
+  Neg = 22,
+  Minimum = 23,
+  Maximum = 24,
+  Log = 25,
   MIN = Conv2D,
-  MAX = Logistic
+  MAX = Log
 };
 
-inline const LayerType (&EnumValuesLayerType())[20] {
+inline const LayerType (&EnumValuesLayerType())[26] {
   static const LayerType values[] = {
     LayerType::Conv2D,
     LayerType::AvePool,
@@ -207,7 +213,13 @@ inline const LayerType (&EnumValuesLayerType())[20] {
     LayerType::LRN,
     LayerType::Tanh,
     LayerType::Floor,
-    LayerType::Logistic
+    LayerType::Logistic,
+    LayerType::PReLU,
+    LayerType::Pow,
+    LayerType::Neg,
+    LayerType::Minimum,
+    LayerType::Maximum,
+    LayerType::Log
   };
   return values;
 }
@@ -234,13 +246,19 @@ inline const char * const *EnumNamesLayerType() {
     "Tanh",
     "Floor",
     "Logistic",
+    "PReLU",
+    "Pow",
+    "Neg",
+    "Minimum",
+    "Maximum",
+    "Log",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameLayerType(LayerType e) {
-  if (e < LayerType::Conv2D || e > LayerType::Logistic) return "";
+  if (e < LayerType::Conv2D || e > LayerType::Log) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesLayerType()[index];
 }
