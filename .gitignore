@@ -17,3 +17,6 @@ dist/
 onnx2daq.egg-info/
 __pycache__/
 .eggs/
+
+.clangd/
+venv/
