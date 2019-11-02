@@ -2,6 +2,7 @@
     # This appears in function name, like ModelBuilder::AddConv
     name: Conv
     nnapi: CONV_2D
+    # 'dnn' is the name of fbs, it is mostly because of historical reasons
     dnn: Conv2D
     input:
         -
