@@ -430,3 +430,53 @@
     name: Logistic
     shaper: Identity
     api: 27
+-
+    name: PReLU
+    input:
+        -
+            name: alpha
+            nnapi_type: tensor
+            cpp_type: str
+    shaper: Identity
+    api: 29
+    converter: false
+-
+    name: Pow
+    input:
+        -
+            name: exp
+            nnapi_type: tensor
+            cpp_type: str
+    shaper: Identity
+    api: 29
+-
+    name: Neg
+    shaper: Identity
+    api: 29
+-
+    name: Minimum
+    base_input_num: 2
+    shaper: Identity
+    api: 29
+-
+    name: Maximum
+    base_input_num: 2
+    shaper: Identity
+    api: 29
+-
+    name: Log
+    shaper: Identity
+    api: 29
+#-
+#    name: Mean
+#    input:
+#        -
+#            name: dims
+#            nnapi_type: tensor
+#            cpp_type: int32_list
+#            needed_by_shaper: true
+#        -
+#            name: keep_dims
+#            nnapi_type: scalar
+#            cpp_type: bool
+#    api: 28
