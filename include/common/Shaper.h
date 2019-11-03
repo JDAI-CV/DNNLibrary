@@ -69,7 +69,7 @@ class Shaper {
               const std::vector<int32_t> strides,
               const std::string &output_name);
     void Softmax(const std::string &input_name, const std::string &output_name);
-    void Relu(const std::string &input_name, const std::string &output_name);
+    void ReLU(const std::string &input_name, const std::string &output_name);
     void Concat(const std::vector<std::string> &input_names, uint32_t axis,
                 const std::string &output_name);
     void LRN(const std::string &input_name, const std::string &output_name);

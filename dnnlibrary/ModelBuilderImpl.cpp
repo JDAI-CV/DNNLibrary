@@ -12,7 +12,7 @@ namespace dnn {
 using namespace android::nn::wrapper;
 
 // ModelBuilder auto generated methods start
-ModelBuilder::Index ModelBuilder::AddConv(
+ModelBuilder::Index ModelBuilder::AddCONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -20,7 +20,7 @@ ModelBuilder::Index ModelBuilder::AddConv(
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Conv requires API 27");
+        throw std::runtime_error("CONV_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -66,14 +66,14 @@ ModelBuilder::Index ModelBuilder::AddConv(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddAvePool(
+ModelBuilder::Index ModelBuilder::AddAVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
     int32_t fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("AvePool requires API 27");
+        throw std::runtime_error("AVERAGE_POOL_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -93,14 +93,14 @@ ModelBuilder::Index ModelBuilder::AddAvePool(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMaxPool(
+ModelBuilder::Index ModelBuilder::AddMAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
     int32_t fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("MaxPool requires API 27");
+        throw std::runtime_error("MAX_POOL_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -120,16 +120,16 @@ ModelBuilder::Index ModelBuilder::AddMaxPool(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddReLU(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddRELU(const std::string &input,
                                           const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("ReLU requires API 27");
+        throw std::runtime_error("RELU requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
-    shaper_.Relu(input, output);
+    shaper_.Identity(input, output);
     const OperandType operand_type =
         GetOperandType(operand_types_.at(input).type, shaper_[output]);
     const auto output_idx =
@@ -138,18 +138,18 @@ ModelBuilder::Index ModelBuilder::AddReLU(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddSoftmax(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddSOFTMAX(const std::string &input,
                                              float beta,
                                              const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Softmax requires API 27");
+        throw std::runtime_error("SOFTMAX requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
     AddScalarOperands(input_indexes, beta);
-    shaper_.Softmax(input, output);
+    shaper_.Identity(input, output);
     const OperandType operand_type =
         GetOperandType(operand_types_.at(input).type, shaper_[output]);
     const auto output_idx =
@@ -158,13 +158,13 @@ ModelBuilder::Index ModelBuilder::AddSoftmax(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddFC(
+ModelBuilder::Index ModelBuilder::AddFULLY_CONNECTED(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("FC requires API 27");
+        throw std::runtime_error("FULLY_CONNECTED requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -208,12 +208,12 @@ ModelBuilder::Index ModelBuilder::AddFC(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddAdd(
+ModelBuilder::Index ModelBuilder::AddADD(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Add requires API 27");
+        throw std::runtime_error("ADD requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -232,11 +232,11 @@ ModelBuilder::Index ModelBuilder::AddAdd(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddConcat(
+ModelBuilder::Index ModelBuilder::AddCONCATENATION(
     const std::vector<std::string> &inputs, int32_t axis,
     const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Concat requires API 27");
+        throw std::runtime_error("CONCATENATION requires API 27");
     }
     IndexSeq input_indexes;
     for (const auto &x : inputs) {
@@ -253,7 +253,7 @@ ModelBuilder::Index ModelBuilder::AddConcat(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddDepthwiseConv(
+ModelBuilder::Index ModelBuilder::AddDEPTHWISE_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -261,7 +261,7 @@ ModelBuilder::Index ModelBuilder::AddDepthwiseConv(
     int32_t fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("DepthwiseConv requires API 27");
+        throw std::runtime_error("DEPTHWISE_CONV_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -309,11 +309,11 @@ ModelBuilder::Index ModelBuilder::AddDepthwiseConv(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddBatchToSpaceND(
+ModelBuilder::Index ModelBuilder::AddBATCH_TO_SPACE_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
-        throw std::runtime_error("BatchToSpaceND requires API 28");
+        throw std::runtime_error("BATCH_TO_SPACE_ND requires API 28");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -332,11 +332,11 @@ ModelBuilder::Index ModelBuilder::AddBatchToSpaceND(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddSpaceToBatchND(
+ModelBuilder::Index ModelBuilder::AddSPACE_TO_BATCH_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::vector<int32_t> &pads, const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
-        throw std::runtime_error("SpaceToBatchND requires API 28");
+        throw std::runtime_error("SPACE_TO_BATCH_ND requires API 28");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -359,13 +359,13 @@ ModelBuilder::Index ModelBuilder::AddSpaceToBatchND(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddStridedSlice(
+ModelBuilder::Index ModelBuilder::AddSTRIDED_SLICE(
     const std::string &input, const std::vector<int32_t> &starts,
     const std::vector<int32_t> &ends, const std::vector<int32_t> &strides,
     int32_t begin_mask, int32_t end_mask, int32_t shrink_axis_mask,
     const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
-        throw std::runtime_error("StridedSlice requires API 28");
+        throw std::runtime_error("STRIDED_SLICE requires API 28");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -394,12 +394,12 @@ ModelBuilder::Index ModelBuilder::AddStridedSlice(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMul(
+ModelBuilder::Index ModelBuilder::AddMUL(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Mul requires API 27");
+        throw std::runtime_error("MUL requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -418,56 +418,10 @@ ModelBuilder::Index ModelBuilder::AddMul(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddAdd(const std::string &input, float scalar,
-                                         int32_t fuse_code,
-                                         const std::string &output) {
-    if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Add requires API 27");
-    }
-    IndexSeq input_indexes;
-    imm_blob_inputs_.insert(input);
-    const auto input_idx = operand_indexes_.at(input);
-    input_indexes.push_back(input_idx);
-    const auto scalar_idx = FillOperand("input_scalar_of_" + output,
-                                        {Type::TENSOR_FLOAT32, {1}}, scalar);
-    input_indexes.push_back(scalar_idx);
-    AddScalarOperands(input_indexes, fuse_code);
-    shaper_.Eltwise(input, output);
-    const OperandType operand_type =
-        GetOperandType(operand_types_.at(input).type, shaper_[output]);
-    const auto output_idx =
-        AddOperation(ANEURALNETWORKS_ADD, input_indexes, operand_type)[0];
-    RegisterOperand(output, output_idx, operand_type);
-    imm_blob_outputs_.insert(output);
-    return output_idx;
-}
-ModelBuilder::Index ModelBuilder::AddMul(const std::string &input, float scalar,
-                                         int32_t fuse_code,
-                                         const std::string &output) {
-    if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Mul requires API 27");
-    }
-    IndexSeq input_indexes;
-    imm_blob_inputs_.insert(input);
-    const auto input_idx = operand_indexes_.at(input);
-    input_indexes.push_back(input_idx);
-    const auto scalar_idx = FillOperand("input_scalar_of_" + output,
-                                        {Type::TENSOR_FLOAT32, {1}}, scalar);
-    input_indexes.push_back(scalar_idx);
-    AddScalarOperands(input_indexes, fuse_code);
-    shaper_.Eltwise(input, output);
-    const OperandType operand_type =
-        GetOperandType(operand_types_.at(input).type, shaper_[output]);
-    const auto output_idx =
-        AddOperation(ANEURALNETWORKS_MUL, input_indexes, operand_type)[0];
-    RegisterOperand(output, output_idx, operand_type);
-    imm_blob_outputs_.insert(output);
-    return output_idx;
-}
-ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddDEQUANTIZE(const std::string &input,
                                                 const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Dequantize requires API 27");
+        throw std::runtime_error("DEQUANTIZE requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -482,12 +436,12 @@ ModelBuilder::Index ModelBuilder::AddDequantize(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
-                                         int32_t radius, float bias,
-                                         float alpha, float beta,
-                                         const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLOCAL_RESPONSE_NORMALIZATION(
+    const std::string &input, int32_t radius, float bias, float alpha,
+    float beta, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("LRN requires API 27");
+        throw std::runtime_error(
+            "LOCAL_RESPONSE_NORMALIZATION requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -504,10 +458,10 @@ ModelBuilder::Index ModelBuilder::AddLRN(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddTanh(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddTANH(const std::string &input,
                                           const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Tanh requires API 27");
+        throw std::runtime_error("TANH requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -522,10 +476,10 @@ ModelBuilder::Index ModelBuilder::AddTanh(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddFloor(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddFLOOR(const std::string &input,
                                            const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Floor requires API 27");
+        throw std::runtime_error("FLOOR requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -540,10 +494,10 @@ ModelBuilder::Index ModelBuilder::AddFloor(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddLogistic(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddLOGISTIC(const std::string &input,
                                               const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("Logistic requires API 27");
+        throw std::runtime_error("LOGISTIC requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -558,11 +512,11 @@ ModelBuilder::Index ModelBuilder::AddLogistic(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddPReLUImpl(const std::string &input,
-                                               const std::string &alpha,
-                                               const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddPRELU(const std::string &input,
+                                           const std::string &alpha,
+                                           const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("PReLU requires API 29");
+        throw std::runtime_error("PRELU requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -580,11 +534,11 @@ ModelBuilder::Index ModelBuilder::AddPReLUImpl(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddPow(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddPOW(const std::string &input,
                                          const std::string &exp,
                                          const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("Pow requires API 29");
+        throw std::runtime_error("POW requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -602,10 +556,10 @@ ModelBuilder::Index ModelBuilder::AddPow(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddNeg(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddNEG(const std::string &input,
                                          const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("Neg requires API 29");
+        throw std::runtime_error("NEG requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -620,11 +574,11 @@ ModelBuilder::Index ModelBuilder::AddNeg(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMinimum(const std::string &input1,
+ModelBuilder::Index ModelBuilder::AddMINIMUM(const std::string &input1,
                                              const std::string &input2,
                                              const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("Minimum requires API 29");
+        throw std::runtime_error("MINIMUM requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -642,11 +596,11 @@ ModelBuilder::Index ModelBuilder::AddMinimum(const std::string &input1,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMaximum(const std::string &input1,
+ModelBuilder::Index ModelBuilder::AddMAXIMUM(const std::string &input1,
                                              const std::string &input2,
                                              const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("Maximum requires API 29");
+        throw std::runtime_error("MAXIMUM requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -664,10 +618,10 @@ ModelBuilder::Index ModelBuilder::AddMaximum(const std::string &input1,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddLog(const std::string &input,
+ModelBuilder::Index ModelBuilder::AddLOG(const std::string &input,
                                          const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("Log requires API 29");
+        throw std::runtime_error("LOG requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -705,105 +659,113 @@ ModelBuilder::Index ModelBuilder::AddInput(std::string name,
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::AddDepthWiseConv(
-    const std::string &input_name, int32_t strideX, int32_t strideY,
-    int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
-    int32_t paddingTop, int32_t activation, int32_t depthMultiplier,
-    const std::string &weight_name, const dnn::optional<std::string> &bias_name,
-    const std::string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
-    return AddDepthwiseConv(input_name, weight_name, bias_name, paddingLeft,
-                            paddingRight, paddingTop, paddingBottom, strideX,
-                            strideY, depthMultiplier, activation, output_name,
-                            output_quant_info);
-}
-
-ModelBuilder::Index ModelBuilder::AddConv(
-    const std::string &input_name, const std::string &weight_name,
-    const dnn::optional<std::string> &bias_name, const std::vector<int32_t> paddings, 
-    const std::vector<int32_t> strides, const std::string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
-    return AddConv(input_name, weight_name, bias_name, paddingLeft,
-                   paddingRight, paddingTop, paddingBottom, strideX, strideY,
-                   activation, output_name, output_quant_info);
-}
-
-ModelBuilder::Index ModelBuilder::AddConv(
-    const std::string &input_name, int32_t strideX, int32_t strideY,
-    int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
-    int32_t paddingBottom, int32_t activation, const std::string &weight_name,
-    const dnn::optional<std::string> &bias_name, const std::string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
-    return AddConv(input_name, weight_name, bias_name, paddingLeft,
-                   paddingRight, paddingTop, paddingBottom, strideX, strideY,
-                   activation, output_name, output_quant_info);
-}
-
-ModelBuilder::Index ModelBuilder::AddPool(
-    const std::string &input_name, int32_t strideX, int32_t strideY,
-    int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
-    int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
-    PoolingType poolingType, const std::string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
-    if (height == -1 && width == -1) {
-        VLOG(5) << "Global pool, input: " << input_name;
-        const auto inputDimen = shaper_[input_name];
-        height = inputDimen[1];
-        width = inputDimen[2];
-        strideX = width;
-        strideY = height;
-    }
-    switch (poolingType) {
-        case PoolingType::AVE_POOL:
-            return AddAvePool(input_name, paddingLeft, paddingRight, paddingTop,
-                              paddingBottom, strideX, strideY, width, height,
-                              activation, output_name, output_quant_info);
-            break;
-        case PoolingType::MAX_POOL:
-            return AddMaxPool(input_name, paddingLeft, paddingRight, paddingTop,
-                              paddingBottom, strideX, strideY, width, height,
-                              activation, output_name, output_quant_info);
-            break;
-    }
-}
-
-ModelBuilder::Index ModelBuilder::AddFC(
-    const std::string &input_name, int32_t activation,
-    const std::string &weight_name, const dnn::optional<std::string> &bias_name,
-    const std::string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
-    return AddFC(input_name, weight_name, bias_name, activation, output_name,
-                 output_quant_info);
-}
-
-ModelBuilder::Index ModelBuilder::AddOperationAdd(const std::string &input_name,
-                                                  float scalar,
-                                                  std::string output_name) {
-    return AddAdd(input_name, scalar, ANEURALNETWORKS_FUSED_NONE, output_name);
-}
-
-ModelBuilder::Index ModelBuilder::AddOperationAdd(
-    const std::string &input1_name, const std::string &input2_name,
-    const std::string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
-    return AddAdd(input1_name, input2_name, ANEURALNETWORKS_FUSED_NONE,
-                  output_name, output_quant_info);
-}
-
-ModelBuilder::Index ModelBuilder::AddMul(const std::string &input_name,
-                                         float scalar,
-                                         const std::string &output_name) {
-    return AddMul(input_name, scalar, ANEURALNETWORKS_FUSED_NONE, output_name);
-}
-
-ModelBuilder::Index ModelBuilder::AddMul(
-    const std::string &input1_name, const std::string &input2_name,
-    const std::string &output_name,
-    const dnn::optional<QuantInfo> &output_quant_info) {
-    return AddMul(input1_name, input2_name, ANEURALNETWORKS_FUSED_NONE,
-                  output_name, output_quant_info);
-}
-
+// ModelBuilder::Index ModelBuilder::AddDepthWiseConv(
+//     const std::string &input_name, int32_t strideX, int32_t strideY,
+//     int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
+//     int32_t paddingTop, int32_t activation, int32_t depthMultiplier,
+//     const std::string &weight_name, const dnn::optional<std::string>
+//     &bias_name, const std::string &output_name, const
+//     dnn::optional<QuantInfo> &output_quant_info) { return
+//     AddDepthwiseConv(input_name, weight_name, bias_name, paddingLeft,
+//                             paddingRight, paddingTop, paddingBottom, strideX,
+//                             strideY, depthMultiplier, activation,
+//                             output_name, output_quant_info);
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddConv(
+//     const std::string &input_name, const std::string &weight_name,
+//     const dnn::optional<std::string> &bias_name,
+//     const std::vector<int32_t> paddings, const std::vector<int32_t> strides,
+//     int32_t fuse_code, const std::string &output_name,
+//     const dnn::optional<QuantInfo> &output_quant_info) {
+//     return AddConv(input_name, weight_name, bias_name, paddings[0],
+//     paddings[0],
+//                    paddings[0], paddings[0], strides[0], strides[1],
+//                    fuse_code, output_name, output_quant_info);
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddConv(
+//     const std::string &input_name, int32_t strideX, int32_t strideY,
+//     int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
+//     int32_t paddingBottom, int32_t activation, const std::string
+//     &weight_name, const dnn::optional<std::string> &bias_name, const
+//     std::string &output_name, const dnn::optional<QuantInfo>
+//     &output_quant_info) { return AddConv(input_name, weight_name, bias_name,
+//     paddingLeft,
+//                    paddingRight, paddingTop, paddingBottom, strideX, strideY,
+//                    activation, output_name, output_quant_info);
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddPool(
+//     const std::string &input_name, int32_t strideX, int32_t strideY,
+//     int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
+//     int32_t paddingBottom, int32_t height, int32_t width, int32_t activation,
+//     PoolingType poolingType, const std::string &output_name,
+//     const dnn::optional<QuantInfo> &output_quant_info) {
+//     if (height == -1 && width == -1) {
+//         VLOG(5) << "Global pool, input: " << input_name;
+//         const auto inputDimen = shaper_[input_name];
+//         height = inputDimen[1];
+//         width = inputDimen[2];
+//         strideX = width;
+//         strideY = height;
+//     }
+//     switch (poolingType) {
+//         case PoolingType::AVE_POOL:
+//             return AddAvePool(input_name, paddingLeft, paddingRight,
+//             paddingTop,
+//                               paddingBottom, strideX, strideY, width, height,
+//                               activation, output_name, output_quant_info);
+//             break;
+//         case PoolingType::MAX_POOL:
+//             return AddMaxPool(input_name, paddingLeft, paddingRight,
+//             paddingTop,
+//                               paddingBottom, strideX, strideY, width, height,
+//                               activation, output_name, output_quant_info);
+//             break;
+//     }
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddFC(
+//     const std::string &input_name, int32_t activation,
+//     const std::string &weight_name, const dnn::optional<std::string>
+//     &bias_name, const std::string &output_name, const
+//     dnn::optional<QuantInfo> &output_quant_info) { return AddFC(input_name,
+//     weight_name, bias_name, activation, output_name,
+//                  output_quant_info);
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddOperationAdd(const std::string
+// &input_name,
+//                                                   float scalar,
+//                                                   std::string output_name) {
+//     return AddAdd(input_name, scalar, ANEURALNETWORKS_FUSED_NONE,
+//     output_name);
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddOperationAdd(
+//     const std::string &input1_name, const std::string &input2_name,
+//     const std::string &output_name,
+//     const dnn::optional<QuantInfo> &output_quant_info) {
+//     return AddAdd(input1_name, input2_name, ANEURALNETWORKS_FUSED_NONE,
+//                   output_name, output_quant_info);
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddMul(const std::string &input_name,
+//                                          float scalar,
+//                                          const std::string &output_name) {
+//     return AddMul(input_name, scalar, ANEURALNETWORKS_FUSED_NONE,
+//     output_name);
+// }
+//
+// ModelBuilder::Index ModelBuilder::AddMul(
+//     const std::string &input1_name, const std::string &input2_name,
+//     const std::string &output_name,
+//     const dnn::optional<QuantInfo> &output_quant_info) {
+//     return AddMul(input1_name, input2_name, ANEURALNETWORKS_FUSED_NONE,
+//                   output_name, output_quant_info);
+// }
+//
 template <typename... OperandTypes>
 ModelBuilder::IndexSeq ModelBuilder::AddOperation(
     int op, IndexSeq input_indexes, OperandTypes... operand_types) {

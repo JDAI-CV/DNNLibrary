@@ -112,140 +112,108 @@ class ModelBuilder {
     Index AddInput(std::string name,
                    const android::nn::wrapper::OperandType &operand_type);
     // ModelBuilder auto generated methods start
-    ModelBuilder::Index AddConv(
+    ModelBuilder::Index AddCONV_2D(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddAvePool(
+    ModelBuilder::Index AddAVERAGE_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddMaxPool(
+    ModelBuilder::Index AddMAX_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddReLU(const std::string &input,
+    ModelBuilder::Index AddRELU(const std::string &input,
                                 const std::string &output);
-    ModelBuilder::Index AddSoftmax(const std::string &input, float beta,
+    ModelBuilder::Index AddSOFTMAX(const std::string &input, float beta,
                                    const std::string &output);
-    ModelBuilder::Index AddFC(
+    ModelBuilder::Index AddFULLY_CONNECTED(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddAdd(
+    ModelBuilder::Index AddADD(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddConcat(const std::vector<std::string> &inputs,
-                                  int32_t axis, const std::string &output);
-    ModelBuilder::Index AddDepthwiseConv(
+    ModelBuilder::Index AddCONCATENATION(const std::vector<std::string> &inputs,
+                                         int32_t axis,
+                                         const std::string &output);
+    ModelBuilder::Index AddDEPTHWISE_CONV_2D(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddBatchToSpaceND(
+    ModelBuilder::Index AddBATCH_TO_SPACE_ND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
         const std::string &output);
-    ModelBuilder::Index AddSpaceToBatchND(
+    ModelBuilder::Index AddSPACE_TO_BATCH_ND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
         const std::vector<int32_t> &pads, const std::string &output);
-    ModelBuilder::Index AddStridedSlice(const std::string &input,
-                                        const std::vector<int32_t> &starts,
-                                        const std::vector<int32_t> &ends,
-                                        const std::vector<int32_t> &strides,
-                                        int32_t begin_mask, int32_t end_mask,
-                                        int32_t shrink_axis_mask,
-                                        const std::string &output);
-    ModelBuilder::Index AddMul(
+    ModelBuilder::Index AddSTRIDED_SLICE(const std::string &input,
+                                         const std::vector<int32_t> &starts,
+                                         const std::vector<int32_t> &ends,
+                                         const std::vector<int32_t> &strides,
+                                         int32_t begin_mask, int32_t end_mask,
+                                         int32_t shrink_axis_mask,
+                                         const std::string &output);
+    ModelBuilder::Index AddMUL(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddAdd(const std::string &input, float scalar,
-                               int32_t fuse_code, const std::string &output);
-    ModelBuilder::Index AddMul(const std::string &input, float scalar,
-                               int32_t fuse_code, const std::string &output);
-    ModelBuilder::Index AddDequantize(const std::string &input,
+    ModelBuilder::Index AddDEQUANTIZE(const std::string &input,
                                       const std::string &output);
-    ModelBuilder::Index AddLRN(const std::string &input, int32_t radius,
-                               float bias, float alpha, float beta,
-                               const std::string &output);
-    ModelBuilder::Index AddTanh(const std::string &input,
+    ModelBuilder::Index AddLOCAL_RESPONSE_NORMALIZATION(
+        const std::string &input, int32_t radius, float bias, float alpha,
+        float beta, const std::string &output);
+    ModelBuilder::Index AddTANH(const std::string &input,
                                 const std::string &output);
-    ModelBuilder::Index AddFloor(const std::string &input,
+    ModelBuilder::Index AddFLOOR(const std::string &input,
                                  const std::string &output);
-    ModelBuilder::Index AddLogistic(const std::string &input,
+    ModelBuilder::Index AddLOGISTIC(const std::string &input,
                                     const std::string &output);
-    ModelBuilder::Index AddPReLUImpl(const std::string &input,
-                                     const std::string &alpha,
-                                     const std::string &output);
-    ModelBuilder::Index AddPow(const std::string &input, const std::string &exp,
+    ModelBuilder::Index AddPRELU(const std::string &input,
+                                 const std::string &alpha,
+                                 const std::string &output);
+    ModelBuilder::Index AddPOW(const std::string &input, const std::string &exp,
                                const std::string &output);
-    ModelBuilder::Index AddNeg(const std::string &input,
+    ModelBuilder::Index AddNEG(const std::string &input,
                                const std::string &output);
-    ModelBuilder::Index AddMinimum(const std::string &input1,
+    ModelBuilder::Index AddMINIMUM(const std::string &input1,
                                    const std::string &input2,
                                    const std::string &output);
-    ModelBuilder::Index AddMaximum(const std::string &input1,
+    ModelBuilder::Index AddMAXIMUM(const std::string &input1,
                                    const std::string &input2,
                                    const std::string &output);
-    ModelBuilder::Index AddLog(const std::string &input,
+    ModelBuilder::Index AddLOG(const std::string &input,
                                const std::string &output);
     // ModelBuilder auto generated methods end
-    Index AddDepthWiseConv(
-        const std::string &input_name, int32_t strideX, int32_t strideY,
-        int32_t paddingLeft, int32_t paddingRight, int32_t paddingBottom,
-        int32_t paddingTop, int32_t activation, int32_t depthMultiplier,
-        const std::string &weight_name,
-        const dnn::optional<std::string> &bias_name,
-        const std::string &output_name,
-        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    Index AddConv(
-        const std::string &input_name, int32_t strideX, int32_t strideY,
-        int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
-        int32_t paddingBottom, int32_t activation,
-        const std::string &weight_name,
-        const dnn::optional<std::string> &bias_name,
-        const std::string &output_name,
-        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     Index AddTensorFromBuffer(
         const std::string &name, const void *buffer,
         const android::nn::wrapper::OperandType &operand_type);
     Index AddTensorFromMemory(const std::string &name, const uint8_t *addr,
                               Shape dimen);
-    Index AddFC(
-        const std::string &input_name, int32_t activation,
-        const std::string &weight_name,
-        const dnn::optional<std::string> &bias_name,
-        const std::string &output_name,
-        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    Index AddPool(
+    Index AddMaxPool(
         const std::string &input_name, int32_t strideX, int32_t strideY,
         int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
         int32_t paddingBottom, int32_t height, int32_t width,
-        int32_t activation, PoolingType poolingType,
-        const std::string &output_name,
+        int32_t activation, const std::string &output_name,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    Index AddOperationAdd(const std::string &input_name, float scalar,
-                          std::string output_name);
-    Index AddOperationAdd(
-        const std::string &input1_name, const std::string &input2_name,
-        const std::string &output_name,
-        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    Index AddMul(const std::string &input_name, float scalar,
-                 const std::string &output_name);
-    Index AddMul(
-        const std::string &input1_name, const std::string &input2_name,
-        const std::string &output_name,
+    Index AddAvePool(
+        const std::string &input_name, int32_t strideX, int32_t strideY,
+        int32_t paddingLeft, int32_t paddingRight, int32_t paddingTop,
+        int32_t paddingBottom, int32_t height, int32_t width,
+        int32_t activation, const std::string &output_name,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     ModelBuilder &AllowFp16(const bool allowed);
     ModelBuilder &AddOutput(const std::string &name);

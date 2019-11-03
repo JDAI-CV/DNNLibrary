@@ -16,6 +16,24 @@ class OnnxConverter {
         std::vector<char> data;
         Shaper::Shape shape;
         DataType data_type;
+        Tensor() = default;
+        Tensor(Tensor &&) = default;
+        Tensor(const Tensor &) = default;
+        Tensor &operator=(const Tensor &) = default;
+        Tensor(const std::string &name, const std::vector<char> &data,
+               const Shaper::Shape &shape, const DataType &data_type)
+            : name(name), data(data), shape(shape), data_type(data_type) {
+        }
+        Tensor(const std::string &name, const std::vector<float> &float_data,
+               const Shaper::Shape &shape) {
+            const char *char_ptr =
+                reinterpret_cast<const char *>(float_data.data());
+            this->name = name;
+            this->data = std::vector<char>(
+                char_ptr, char_ptr + float_data.size() * sizeof(float));
+            this->shape = shape;
+            this->data_type = Tensor::DataType::FLOAT32;
+        }
         const std::vector<float> float_data() const {
             std::vector<float> float_vec(data.size() / 4);
             memcpy(&float_vec[0], &data[0], data.size());
@@ -89,88 +107,81 @@ class OnnxConverter {
         const ONNX_NAMESPACE::ModelProto &model_proto,
         const ONNX_NAMESPACE::NodeProto &node_proto) const;
 
-    void AddConv(const std::string &input_name, const std::vector<int> &strides,
-                 const std::vector<int> &pads,
-                 const std::vector<int> &dilations, int group,
-                 const std::string &ori_weight_name,
-                 const dnn::optional<std::string> &bias_name,
-                 const std::string &output_name);
-    void AddLayerPool(const std::string &op, const std::string &input_name,
-                      const std::vector<int> &kernel_shape,
-                      const std::vector<int> &pads,
-                      const std::vector<int> &strides,
-                      const std::string &output_name);
     void SetIdentity(const std::string &input_name,
                      const std::string &output_name);
     // OnnxConverter auto generated methods start
-    void AddLayerConvImpl(const std::string &input, const std::string &weight,
-                          const dnn::optional<std::string> &bias,
-                          const std::vector<int32_t> &pads,
-                          const std::vector<int32_t> &strides,
-                          const std::string &output);
-    void AddLayerAvePoolImpl(const std::string &input,
-                             const std::vector<int32_t> &kernel_shape,
-                             const std::vector<int32_t> &pads,
-                             const std::vector<int32_t> &strides,
+    void AddLayerCONV_2DImpl(const std::string &input,
+                             const std::string &weight,
+                             const dnn::optional<std::string> &bias,
+                             int32_t padding_left, int32_t padding_right,
+                             int32_t padding_top, int32_t padding_bottom,
+                             int32_t stride_x, int32_t stride_y,
                              const std::string &output);
-    void AddLayerMaxPoolImpl(const std::string &input,
-                             const std::vector<int32_t> &kernel_shape,
-                             const std::vector<int32_t> &pads,
-                             const std::vector<int32_t> &strides,
-                             const std::string &output);
-    void AddLayerReLU(const std::string &input, const std::string &output);
-    void AddLayerSoftmax(const std::string &input, const std::string &output);
-    void AddLayerFC(const std::string &input, const std::string &weight,
-                    const dnn::optional<std::string> &bias,
-                    const std::string &output);
-    void AddLayerAdd(const std::string &input1, const std::string &input2,
+    void AddLayerAVERAGE_POOL_2DImpl(const std::string &input,
+                                     int32_t padding_left,
+                                     int32_t padding_right, int32_t padding_top,
+                                     int32_t padding_bottom, int32_t stride_x,
+                                     int32_t stride_y, int32_t kernel_width,
+                                     int32_t kernel_height,
+                                     const std::string &output);
+    void AddLayerMAX_POOL_2DImpl(const std::string &input, int32_t padding_left,
+                                 int32_t padding_right, int32_t padding_top,
+                                 int32_t padding_bottom, int32_t stride_x,
+                                 int32_t stride_y, int32_t kernel_width,
+                                 int32_t kernel_height,
+                                 const std::string &output);
+    void AddLayerRELU(const std::string &input, const std::string &output);
+    void AddLayerSOFTMAX(const std::string &input, float beta,
+                         const std::string &output);
+    void AddLayerFULLY_CONNECTED(const std::string &input,
+                                 const std::string &weight,
+                                 const dnn::optional<std::string> &bias,
+                                 const std::string &output);
+    void AddLayerADD(const std::string &input1, const std::string &input2,
                      const std::string &output);
-    void AddLayerConcat(const std::vector<std::string> &inputs, int32_t axis,
-                        const std::string &output);
-    void AddLayerDepthwiseConvImpl(const std::string &input,
-                                   const std::string &weight,
-                                   const dnn::optional<std::string> &bias,
-                                   const std::vector<int32_t> &pads,
-                                   const std::vector<int32_t> &strides,
-                                   int32_t depth_multiplier,
+    void AddLayerCONCATENATION(const std::vector<std::string> &inputs,
+                               int32_t axis, const std::string &output);
+    void AddLayerDEPTHWISE_CONV_2DImpl(
+        const std::string &input, const std::string &weight,
+        const dnn::optional<std::string> &bias, int32_t padding_left,
+        int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
+        int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
+        const std::string &output);
+    void AddLayerBATCH_TO_SPACE_ND(const std::string &input,
+                                   const std::vector<int32_t> &block_sizes,
                                    const std::string &output);
-    void AddLayerBatchToSpaceND(const std::string &input,
-                                const std::vector<int32_t> &block_sizes,
-                                const std::string &output);
-    void AddLayerSpaceToBatchND(const std::string &input,
-                                const std::vector<int32_t> &block_sizes,
-                                const std::vector<int32_t> &pads,
-                                const std::string &output);
-    void AddLayerStridedSlice(const std::string &input,
-                              const std::vector<int32_t> &starts,
-                              const std::vector<int32_t> &ends,
-                              const std::vector<int32_t> &strides,
-                              int32_t begin_mask, int32_t end_mask,
-                              int32_t shrink_axis_mask,
-                              const std::string &output);
-    void AddLayerMul(const std::string &input1, const std::string &input2,
+    void AddLayerSPACE_TO_BATCH_ND(const std::string &input,
+                                   const std::vector<int32_t> &block_sizes,
+                                   const std::vector<int32_t> &pads,
+                                   const std::string &output);
+    void AddLayerSTRIDED_SLICE(const std::string &input,
+                               const std::vector<int32_t> &starts,
+                               const std::vector<int32_t> &ends,
+                               const std::vector<int32_t> &strides,
+                               int32_t begin_mask, int32_t end_mask,
+                               int32_t shrink_axis_mask,
+                               const std::string &output);
+    void AddLayerMUL(const std::string &input1, const std::string &input2,
                      const std::string &output);
-    void AddLayerAdd(const std::string &input, float scalar,
-                     const std::string &output);
-    void AddLayerMul(const std::string &input, float scalar,
-                     const std::string &output);
-    void AddLayerDequantize(const std::string &input,
+    void AddLayerDEQUANTIZE(const std::string &input,
                             const std::string &output);
-    void AddLayerLRN(const std::string &input, int32_t radius, float bias,
-                     float alpha, float beta, const std::string &output);
-    void AddLayerTanh(const std::string &input, const std::string &output);
-    void AddLayerFloor(const std::string &input, const std::string &output);
-    void AddLayerLogistic(const std::string &input, const std::string &output);
-    void AddLayerPReLU(const std::string &input, const std::string &alpha,
+    void AddLayerLOCAL_RESPONSE_NORMALIZATION(const std::string &input,
+                                              int32_t radius, float bias,
+                                              float alpha, float beta,
+                                              const std::string &output);
+    void AddLayerTANH(const std::string &input, const std::string &output);
+    void AddLayerFLOOR(const std::string &input, const std::string &output);
+    void AddLayerLOGISTIC(const std::string &input, const std::string &output);
+    void AddLayerPRELU(const std::string &input, const std::string &alpha,
                        const std::string &output);
-    void AddLayerPow(const std::string &input, const std::string &exp,
+    void AddLayerPOW(const std::string &input, const std::string &exp,
                      const std::string &output);
-    void AddLayerNeg(const std::string &input, const std::string &output);
-    void AddLayerMinimum(const std::string &input1, const std::string &input2,
+    void AddLayerNEG(const std::string &input, const std::string &output);
+    void AddLayerMINIMUM(const std::string &input1, const std::string &input2,
                          const std::string &output);
-    void AddLayerMaximum(const std::string &input1, const std::string &input2,
+    void AddLayerMAXIMUM(const std::string &input1, const std::string &input2,
                          const std::string &output);
-    void AddLayerLog(const std::string &input, const std::string &output);
+    void AddLayerLOG(const std::string &input, const std::string &output);
     // OnnxConverter auto generated methods end
 
     /**

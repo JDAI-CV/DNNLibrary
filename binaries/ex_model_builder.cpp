@@ -26,13 +26,13 @@ int main() {
             {Type::TENSOR_QUANT8_ASYMM, {3, 1, 1, 3}, 0.1, 150});
         builder.AddTensorFromBuffer("bias", bias_buf,
                                     {Type::TENSOR_INT32, {3}, 0.1, 0});
-        builder.AddDepthWiseConv("data", 1, 1, 0, 0, 0, 0,
-                                 ModelBuilder::ACTIVATION_NONE, 1, "weight",
-                                 "bias", "conv_fwd",
+        builder.AddDEPTHWISE_CONV_2D("data", "weight", "bias", 1, 1, 0, 0, 0, 0,
+                                 ModelBuilder::ACTIVATION_NONE, 1,
+                                 "conv_fwd",
                                  std::make_optional<ModelBuilder::QuantInfo>(
                                      {Type::TENSOR_QUANT8_ASYMM, {0.5}, 100}));
-        builder.AddReLU("conv_fwd", "relu_fwd");
-        builder.AddOperationAdd("data", "relu_fwd", "output",
+        builder.AddRELU("conv_fwd", "relu_fwd");
+        builder.AddADD("data", "relu_fwd", ModelBuilder::ACTIVATION_NONE, "output",
                                 std::make_optional<ModelBuilder::QuantInfo>(
                                     {Type::TENSOR_QUANT8_ASYMM, {0.05}, 100}));
     } else {
@@ -41,8 +41,8 @@ int main() {
                                     {Type::TENSOR_FLOAT32, {3, 1, 1, 3}});
         builder.AddTensorFromBuffer("bias", bias_buf,
                                     {Type::TENSOR_FLOAT32, {3}});
-        builder.AddConv("data", 1, 1, 0, 0, 0, 0, ModelBuilder::ACTIVATION_NONE,
-                        "weight", "bias", "output");
+        builder.AddCONV_2D("data", "weight", "bias", 1, 1, 0, 0, 0, 0, ModelBuilder::ACTIVATION_NONE,
+                        "output", dnn::nullopt);
     }
     auto model = builder.AddOutput("output").Compile(
         ModelBuilder::PREFERENCE_FAST_SINGLE_ANSWER);

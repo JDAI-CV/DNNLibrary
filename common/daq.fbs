@@ -7,32 +7,30 @@ enum DataType:byte { Float32, Int8, Int32, Float16, Bool8,
 enum FuseCode:byte { None, Relu, Relu1, Relu6 }
 enum LayerType:byte {
 // Auto generated layer types start
-    Conv2D,
-    AvePool,
-    MaxPool,
-    Relu,
-    Softmax,
-    FC,
-    Add,
-    Concat,
-    DepthwiseConv2D,
-    BatchToSpace,
-    SpaceToBatch,
-    StridedSlice,
-    Mul,
-    AddScalar,
-    MulScalar,
-    Dequantize,
-    LRN,
-    Tanh,
-    Floor,
-    Logistic,
-    PReLU,
-    Pow,
-    Neg,
-    Minimum,
-    Maximum,
-    Log,
+    CONV_2D,
+    AVERAGE_POOL_2D,
+    MAX_POOL_2D,
+    RELU,
+    SOFTMAX,
+    FULLY_CONNECTED,
+    ADD,
+    CONCATENATION,
+    DEPTHWISE_CONV_2D,
+    BATCH_TO_SPACE_ND,
+    SPACE_TO_BATCH_ND,
+    STRIDED_SLICE,
+    MUL,
+    DEQUANTIZE,
+    LOCAL_RESPONSE_NORMALIZATION,
+    TANH,
+    FLOOR,
+    LOGISTIC,
+    PRELU,
+    POW,
+    NEG,
+    MINIMUM,
+    MAXIMUM,
+    LOG,
 // Auto generated layer types end
     }
 
@@ -63,45 +61,60 @@ table Input {
 }
 
 // Auto generated tables start
-table Conv2D {
+table CONV_2D {
     input:string;
     weight:string;
     bias:string;
-    pads:[int];
-    strides:[int];
+    padding_left:int;
+    padding_right:int;
+    padding_top:int;
+    padding_bottom:int;
+    stride_x:int;
+    stride_y:int;
     fuse:FuseCode;
     output:string;
 }
 
-table AvePool {
+table AVERAGE_POOL_2D {
     input:string;
-    kernel_shape:[int];
-    pads:[int];
-    strides:[int];
+    padding_left:int;
+    padding_right:int;
+    padding_top:int;
+    padding_bottom:int;
+    stride_x:int;
+    stride_y:int;
+    kernel_width:int;
+    kernel_height:int;
     fuse:FuseCode;
     output:string;
 }
 
-table MaxPool {
+table MAX_POOL_2D {
     input:string;
-    kernel_shape:[int];
-    pads:[int];
-    strides:[int];
+    padding_left:int;
+    padding_right:int;
+    padding_top:int;
+    padding_bottom:int;
+    stride_x:int;
+    stride_y:int;
+    kernel_width:int;
+    kernel_height:int;
     fuse:FuseCode;
     output:string;
 }
 
-table Relu {
+table RELU {
     input:string;
     output:string;
 }
 
-table Softmax {
+table SOFTMAX {
     input:string;
+    beta:float;
     output:string;
 }
 
-table FC {
+table FULLY_CONNECTED {
     input:string;
     weight:string;
     bias:string;
@@ -109,44 +122,48 @@ table FC {
     output:string;
 }
 
-table Add {
+table ADD {
     input1:string;
     input2:string;
     fuse:FuseCode;
     output:string;
 }
 
-table Concat {
+table CONCATENATION {
     inputs:[string];
     axis:int;
     output:string;
 }
 
-table DepthwiseConv2D {
+table DEPTHWISE_CONV_2D {
     input:string;
     weight:string;
     bias:string;
-    pads:[int];
-    strides:[int];
+    padding_left:int;
+    padding_right:int;
+    padding_top:int;
+    padding_bottom:int;
+    stride_x:int;
+    stride_y:int;
     depth_multiplier:int;
     fuse:FuseCode;
     output:string;
 }
 
-table BatchToSpace {
+table BATCH_TO_SPACE_ND {
     input:string;
     block_sizes:[int];
     output:string;
 }
 
-table SpaceToBatch {
+table SPACE_TO_BATCH_ND {
     input:string;
     block_sizes:[int];
     pads:[int];
     output:string;
 }
 
-table StridedSlice {
+table STRIDED_SLICE {
     input:string;
     starts:[int];
     ends:[int];
@@ -157,33 +174,19 @@ table StridedSlice {
     output:string;
 }
 
-table Mul {
+table MUL {
     input1:string;
     input2:string;
     fuse:FuseCode;
     output:string;
 }
 
-table AddScalar {
-    input:string;
-    scalar:float;
-    fuse:FuseCode;
-    output:string;
-}
-
-table MulScalar {
-    input:string;
-    scalar:float;
-    fuse:FuseCode;
-    output:string;
-}
-
-table Dequantize {
+table DEQUANTIZE {
     input:string;
     output:string;
 }
 
-table LRN {
+table LOCAL_RESPONSE_NORMALIZATION {
     input:string;
     radius:int;
     bias:float;
@@ -192,51 +195,51 @@ table LRN {
     output:string;
 }
 
-table Tanh {
+table TANH {
     input:string;
     output:string;
 }
 
-table Floor {
+table FLOOR {
     input:string;
     output:string;
 }
 
-table Logistic {
+table LOGISTIC {
     input:string;
     output:string;
 }
 
-table PReLU {
+table PRELU {
     input:string;
     alpha:string;
     output:string;
 }
 
-table Pow {
+table POW {
     input:string;
     exp:string;
     output:string;
 }
 
-table Neg {
+table NEG {
     input:string;
     output:string;
 }
 
-table Minimum {
+table MINIMUM {
     input1:string;
     input2:string;
     output:string;
 }
 
-table Maximum {
+table MAXIMUM {
     input1:string;
     input2:string;
     output:string;
 }
 
-table Log {
+table LOG {
     input:string;
     output:string;
 }
@@ -247,32 +250,30 @@ table Log {
 table Layer {
     type:LayerType;
 // Auto generated fields start
-    Conv2D_param:Conv2D;
-    AvePool_param:AvePool;
-    MaxPool_param:MaxPool;
-    Relu_param:Relu;
-    Softmax_param:Softmax;
-    FC_param:FC;
-    Add_param:Add;
-    Concat_param:Concat;
-    DepthwiseConv2D_param:DepthwiseConv2D;
-    BatchToSpace_param:BatchToSpace;
-    SpaceToBatch_param:SpaceToBatch;
-    StridedSlice_param:StridedSlice;
-    Mul_param:Mul;
-    AddScalar_param:AddScalar;
-    MulScalar_param:MulScalar;
-    Dequantize_param:Dequantize;
-    LRN_param:LRN;
-    Tanh_param:Tanh;
-    Floor_param:Floor;
-    Logistic_param:Logistic;
-    PReLU_param:PReLU;
-    Pow_param:Pow;
-    Neg_param:Neg;
-    Minimum_param:Minimum;
-    Maximum_param:Maximum;
-    Log_param:Log;
+    CONV_2D_param:CONV_2D;
+    AVERAGE_POOL_2D_param:AVERAGE_POOL_2D;
+    MAX_POOL_2D_param:MAX_POOL_2D;
+    RELU_param:RELU;
+    SOFTMAX_param:SOFTMAX;
+    FULLY_CONNECTED_param:FULLY_CONNECTED;
+    ADD_param:ADD;
+    CONCATENATION_param:CONCATENATION;
+    DEPTHWISE_CONV_2D_param:DEPTHWISE_CONV_2D;
+    BATCH_TO_SPACE_ND_param:BATCH_TO_SPACE_ND;
+    SPACE_TO_BATCH_ND_param:SPACE_TO_BATCH_ND;
+    STRIDED_SLICE_param:STRIDED_SLICE;
+    MUL_param:MUL;
+    DEQUANTIZE_param:DEQUANTIZE;
+    LOCAL_RESPONSE_NORMALIZATION_param:LOCAL_RESPONSE_NORMALIZATION;
+    TANH_param:TANH;
+    FLOOR_param:FLOOR;
+    LOGISTIC_param:LOGISTIC;
+    PRELU_param:PRELU;
+    POW_param:POW;
+    NEG_param:NEG;
+    MINIMUM_param:MINIMUM;
+    MAXIMUM_param:MAXIMUM;
+    LOG_param:LOG;
 // Auto generated fields end
 }
 

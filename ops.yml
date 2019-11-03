@@ -1,10 +1,9 @@
 -
     # This appears in function name, like ModelBuilder::AddConv
-    name: Conv
+    shaper: Conv
     nnapi: CONV_2D
     # 'dnn' is the name of the op in flatbuffers fbs file.
     # It is mostly because of historical reasons and should not be used for new ops
-    dnn: Conv2D
     input:
         -
             name: weight
@@ -15,7 +14,6 @@
             needed_by_shaper: true
         -
             predefined: optional_bias
-    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -46,22 +44,12 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
-    dnn_input:
-        -
-            name: pads
-            cpp_type: int32_list
-            needed_by_shaper: true
-        -
-            name: strides
-            cpp_type: int32_list
-            needed_by_shaper: true
     fused: true
     support_quant_asymm: true
     converter_simple: false
     api: 27
 -
-    name: AvePool
-    nnapi_input:
+    input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -101,30 +89,17 @@
             name: kernel_height
             nnapi_type: scalar
             cpp_type: int32_t
-            needed_by_shaper: true
-    dnn_input:
-        -
-            name: kernel_shape
-            cpp_type: int32_list
-            needed_by_shaper: true
-        -
-            name: pads
-            cpp_type: int32_list
-            needed_by_shaper: true
-        -
-            name: strides
-            cpp_type: int32_list
             needed_by_shaper: true
     nnapi: AVERAGE_POOL_2D
     shaper: Pool
     fused: true
     converter_simple: false
+    # builder_simple: false
     support_quant_asymm: true
     api: 27
 
 -
-    name: MaxPool
-    nnapi_input:
+    input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -165,40 +140,27 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
-    dnn_input:
-        -
-            name: kernel_shape
-            cpp_type: int32_list
-            needed_by_shaper: true
-        -
-            name: pads
-            cpp_type: int32_list
-            needed_by_shaper: true
-        -
-            name: strides
-            cpp_type: int32_list
-            needed_by_shaper: true
     nnapi: MAX_POOL_2D
     shaper: Pool
     fused: true
     converter_simple: false
+    # builder_simple: false
     support_quant_asymm: true
     api: 27
 -
-    name: ReLU
-    shaper: Relu
-    dnn: Relu
+    nnapi: RELU
+    shaper: Identity
     api: 27
 -
-    name: Softmax
-    nnapi_input:
+    nnapi: SOFTMAX
+    input:
         -
             name: beta
             nnapi_type: scalar
             cpp_type: float
+    shaper: Identity
     api: 27
 -
-    name: FC
     input:
         -
             name: weight
@@ -210,19 +172,20 @@
         -
             predefined: optional_bias
     nnapi: FULLY_CONNECTED
+    shaper: FC
     fused: true
     support_quant_asymm: true
     api: 27
 
 -
-    name: Add
+    nnapi: ADD
     base_input_num: 2
     fused: true
     shaper: Eltwise
     support_quant_asymm: true
     api: 27
 -
-    name: Concat
+    shaper: Concat
     base_input_num: n
     input:
         -
@@ -233,9 +196,8 @@
     nnapi: CONCATENATION
     api: 27
 -
-    name: DepthwiseConv
+    shaper: DepthwiseConv
     nnapi: DEPTHWISE_CONV_2D
-    dnn: DepthwiseConv2D
     input:
         -
             name: weight
@@ -246,7 +208,6 @@
             needed_by_shaper: true
         -
             predefined: optional_bias
-    nnapi_input:
         -
             name: padding_left
             nnapi_type: scalar
@@ -281,25 +242,11 @@
             name: depth_multiplier
             nnapi_type: scalar
             cpp_type: int32_t
-    dnn_input:
-        -
-            name: pads
-            cpp_type: int32_list
-            needed_by_shaper: true
-        -
-            name: strides
-            cpp_type: int32_list
-            needed_by_shaper: true
-        -
-            name: depth_multiplier
-            nnapi_type: scalar
-            cpp_type: int32_t
     fused: true
     support_quant_asymm: true
     converter_simple: false
     api: 27
 -
-    name: BatchToSpaceND
     input:
         -
             name: block_sizes
@@ -308,10 +255,8 @@
             needed_by_shaper: true
     shaper: BatchToSpace
     nnapi: BATCH_TO_SPACE_ND
-    dnn: BatchToSpace
     api: 28
 -
-    name: SpaceToBatchND
     input:
         -
             name: block_sizes
@@ -325,10 +270,9 @@
             needed_by_shaper: true
     shaper: SpaceToBatch
     nnapi: SPACE_TO_BATCH_ND
-    dnn: SpaceToBatch
     api: 28
 -
-    name: StridedSlice
+    shaper: StridedSlice
     input:
         -
             name: starts
@@ -363,41 +307,38 @@
     nnapi: STRIDED_SLICE
     api: 28
 -
-    name: Mul
+    nnapi: MUL
     base_input_num: 2
     fused: true
     shaper: Eltwise
     support_quant_asymm: true
     api: 27
+#-
+#    name: Add
+#    input:
+#        -
+#            name: scalar
+#            nnapi_type: tensor
+#            cpp_type: float
+#    fused: true
+#    shaper: Eltwise
+#    api: 27
+#-
+#    name: Mul
+#    input:
+#        -
+#            name: scalar
+#            nnapi_type: tensor
+#            cpp_type: float
+#    fused: true
+#    shaper: Eltwise
+#    api: 27
 -
-    name: Add
-    dnn: AddScalar
-    input:
-        -
-            name: scalar
-            nnapi_type: tensor
-            cpp_type: float
-    fused: true
-    shaper: Eltwise
-    api: 27
--
-    name: Mul
-    dnn: MulScalar
-    input:
-        -
-            name: scalar
-            nnapi_type: tensor
-            cpp_type: float
-    fused: true
-    shaper: Eltwise
-    api: 27
--
-    name: Dequantize
+    nnapi: DEQUANTIZE
     shaper: Identity
     output_tensor_type: FLOAT32
     api: 27
 -
-    name: LRN
     input:
         -
             name: radius
@@ -417,22 +358,22 @@
             cpp_type: float
     nnapi: LOCAL_RESPONSE_NORMALIZATION
     shaper: Identity
-    pos: 16
+    # pos: 16
     api: 27
 -
-    name: Tanh
+    nnapi: TANH
     shaper: Identity
     api: 27
 -
-    name: Floor
+    nnapi: FLOOR
     shaper: Identity
     api: 27
 -
-    name: Logistic
+    nnapi: LOGISTIC
     shaper: Identity
     api: 27
 -
-    name: PReLU
+    nnapi: PRELU
     input:
         -
             name: alpha
@@ -440,9 +381,9 @@
             cpp_type: str
     shaper: Identity
     api: 29
-    builder_simple: false
+    # builder_simple: false
 -
-    name: Pow
+    nnapi: POW
     input:
         -
             name: exp
@@ -451,21 +392,21 @@
     shaper: Identity
     api: 29
 -
-    name: Neg
+    nnapi: NEG
     shaper: Identity
     api: 29
 -
-    name: Minimum
+    nnapi: MINIMUM
     base_input_num: 2
     shaper: Eltwise
     api: 29
 -
-    name: Maximum
+    nnapi: MAXIMUM
     base_input_num: 2
     shaper: Eltwise
     api: 29
 -
-    name: Log
+    nnapi: LOG
     shaper: Identity
     api: 29
 #-

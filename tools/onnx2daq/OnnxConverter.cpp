@@ -702,10 +702,24 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             if (node.input_size() >= 3) {
                 bias_name = m(node.input(2));
             }
+            const auto input_name = m(node.input(0));
+            const auto output_name = m(node.output(0));
 
             const auto ori_weight_name = m(node.input(1));
-            AddConv(m(node.input(0)), nnapi_strides, nnapi_pads, nnapi_dilations, group,
-                    ori_weight_name, bias_name, m(node.output(0)));
+            if (!onnx_tensors_.has(ori_weight_name)) {
+                throw std::invalid_argument("The weight of convolution must be known");
+            }
+            const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
+            if (group == 1) {
+                VLOG(5) << "Vanilla conv";
+                AddLayerCONV_2DImpl(input_name, ori_weight_name, bias_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], output_name);
+            } else if (onnx_weight.shape[1] == 1) {  // depthwise
+                VLOG(5) << "Depthwise conv";
+                AddLayerDEPTHWISE_CONV_2DImpl(input_name, ori_weight_name, bias_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], onnx_weight.shape[0] / group, output_name);
+            } else {
+                // TODO: Support it
+                throw std::invalid_argument("group != 1 is not supported");
+            }
             VLOG(5) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" ||
                    op == "GlobalAveragePool" || op == "GlobalMaxPool") {
@@ -733,22 +747,24 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 if (helper.get("auto_pad", "NOTSET") != "NOTSET") {
                     throw std::invalid_argument("auto_pad is not supported");
                 }
+                if (op == "AveragePool") {
+                    AddLayerAVERAGE_POOL_2DImpl(input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], kernel_shape[1], kernel_shape[0], output_name);
+                } else {
+                    AddLayerMAX_POOL_2DImpl(input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], kernel_shape[1], kernel_shape[0], output_name);
+                }
             } else {
-                nnapi_strides = {0, 0};
-                nnapi_pads = {0, 0, 0, 0};
-                kernel_shape = {-1, -1};  // -1 for global
+                // -1 means global
+                AddLayerAVERAGE_POOL_2DImpl(input_name, 0,0,0,0, 1,1, -1,-1, output_name);
             }
             CHECK_EQ(nnapi_pads.size(), 4ul);
             CHECK_EQ(kernel_shape.size(), 2ul);
             CHECK_EQ(nnapi_strides.size(), 2ul);
-            AddLayerPool(op, input_name, kernel_shape, nnapi_pads, nnapi_strides,
-                         output_name);
             VLOG(5) << "Converting Pool completed";
         } else if (op == "Relu") {
             VLOG(5) << "Start converting Relu";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerReLU(input_name, output_name);
+            AddLayerRELU(input_name, output_name);
             VLOG(5) << "Converting Relu completed";
 
         } else if (op == "PRelu") {
@@ -758,18 +774,20 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto output_name = m(node.output(0));
             const auto imm1_name = output_name + "_imm1";
             const auto imm2_name = output_name + "_imm2";
+            const auto neg1_name = output_name + "_neg1";
             const auto imm3_name = output_name + "_imm3";
             const auto imm4_name = output_name + "_imm4";
             if (onnx_tensors_[slope_name].shape != Shape{1}) {
                 // TODO: support it
                 throw std::invalid_argument("Only support one element slope.");
             }
-            AddLayerReLU(input_name, imm1_name);
-            AddLayerMul(input_name, -onnx_tensors_[slope_name].data[0],
-                        imm2_name);
-            AddLayerReLU(imm2_name, imm3_name);
-            AddLayerMul(imm3_name, -1.f, imm4_name);
-            AddLayerAdd(imm1_name, imm4_name, output_name);
+            AddLayerRELU(input_name, imm1_name);
+            nnapi_tensors_[slope_name] = onnx_tensors_[slope_name];
+            nnapi_tensors_[neg1_name] = {neg1_name, {-1.f}, {1}};
+            AddLayerMUL(input_name, slope_name, imm2_name);
+            AddLayerRELU(imm2_name, imm3_name);
+            AddLayerMUL(imm3_name, neg1_name, imm4_name);
+            AddLayerADD(imm1_name, imm4_name, output_name);
             // TODO:
             VLOG(5) << "Converting PRelu completed";
         } else if (op == "Add") {
@@ -777,14 +795,14 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            AddLayerAdd(input1_name, input2_name, output_name);
+            AddLayerADD(input1_name, input2_name, output_name);
             VLOG(5) << "Converting Add completed";
         } else if (op == "Mul") {
             VLOG(5) << "Start converting Mul";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            AddLayerMul(input1_name, input2_name, output_name);
+            AddLayerMUL(input1_name, input2_name, output_name);
             VLOG(5) << "Converting Mul completed";
         } else if (op == "Gemm") {
             VLOG(5) << "Start converting Gemm";
@@ -800,7 +818,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto alpha = helper.get("alpha", 1.0f);
             const auto beta = helper.get("beta", 1.0f);
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
-                AddLayerFC(input_name, weight_name, bias_name, output_name);
+                AddLayerFULLY_CONNECTED(input_name, weight_name, bias_name, output_name);
             } else {
                 throw std::invalid_argument(
                     "Only transA == 0, transB == 1, alpha == 1.0 and beta == "
@@ -813,7 +831,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             VLOG(5) << "Start converting Softmax";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerSoftmax(input_name, output_name);
+            AddLayerSOFTMAX(input_name, 1.f, output_name);
             VLOG(5) << "Converting Softmax completed";
         } else if (op == "Concat") {
             VLOG(5) << "Start converting Concat";
@@ -824,7 +842,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
             const auto axis = helper.get("axis", 1);
             const auto output_name = m(node.output(0));
-            AddLayerConcat(concat_inputs_str, axis_nchw_to_nhwc[axis],
+            AddLayerCONCATENATION(concat_inputs_str, axis_nchw_to_nhwc[axis],
                            output_name);
             VLOG(5) << "Converting Concat completed";
         } else if (op == "Dropout") {
@@ -876,8 +894,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            AddLayerMul(input_name, tensor_a_name, tensor_imm_product_name);
-            AddLayerAdd(tensor_imm_product_name, tensor_b_name, output_name);
+            AddLayerMUL(input_name, tensor_a_name, tensor_imm_product_name);
+            AddLayerADD(tensor_imm_product_name, tensor_b_name, output_name);
 
             VLOG(5) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
@@ -902,26 +920,26 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto radius = (size - 1) / 2;
             alpha /= size;  // The implementation of ONNX LRN is not the same as
                             // that of NNAPI LRN
-            AddLayerLRN(node.input(0), radius, bias, alpha, beta,
+            AddLayerLOCAL_RESPONSE_NORMALIZATION(node.input(0), radius, bias, alpha, beta,
                         node.output(0));
             VLOG(5) << "Converting LRN completed";
         } else if (op == "Tanh") {
             VLOG(5) << "Start converting Tanh";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerTanh(input_name, output_name);
+            AddLayerTANH(input_name, output_name);
             VLOG(5) << "Converting Tanh completed";
         } else if (op == "Floor") {
             VLOG(5) << "Start converting Floor";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerFloor(input_name, output_name);
+            AddLayerFLOOR(input_name, output_name);
             VLOG(5) << "Converting Floor completed";
         } else if (op == "Sigmoid") {
             VLOG(5) << "Start converting Sigmoid";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerLogistic(input_name, output_name);
+            AddLayerLOGISTIC(input_name, output_name);
             VLOG(5) << "Converting Sigmoid completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
@@ -931,7 +949,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             if (std::find(dequantize_after_.begin(), dequantize_after_.end(),
                           output) != dequantize_after_.end()) {
                 css dequant_output = output + "_dequant";
-                AddLayerDequantize(output, dequant_output);
+                AddLayerDEQUANTIZE(output, dequant_output);
                 name_map_[output] = dequant_output;
             }
         }

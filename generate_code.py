@@ -126,12 +126,15 @@ def infer_cfg(cfg, target: Target):
 
         if 'output' not in op:
             op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}]
-        if 'shaper' not in op:
-            op['shaper'] = op['name']
-        if 'nnapi' not in op:
-            op['nnapi'] = op['name'].upper()
-        if 'dnn' not in op:
-            op['dnn'] = op['name']
+        assert 'shaper' in op
+        assert 'dnn' not in op
+        assert 'name' not in op
+        # if 'shaper' not in op:
+        #     op['shaper'] = op['nnapi']
+        # if 'nnapi' not in op:
+        #     op['nnapi'] = op['name'].upper()
+        # if 'dnn' not in op:
+        #     op['dnn'] = op['name']
         if 'fused' not in op:
             op['fused'] = False
         if target == Target.ModelBuilder and 'nnapi_input' in op:
@@ -195,7 +198,7 @@ def generate_onnx_converter():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void OnnxConverter::AddLayer{op['name']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
+        cogoutl(f"void OnnxConverter::AddLayer{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
         if op['fused']:
             cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
         for x in op['input']:
@@ -247,14 +250,14 @@ def generate_onnx_converter():
             else:
                 return x['name']
 
-        cogout(f"const auto param = DNN::Create{op['dnn']}Direct(builder_, ")
+        cogout(f"const auto param = DNN::Create{op['nnapi']}Direct(builder_, ")
         cogout(', '.join(list(map(get_input_param, op['input']))))
         if op['fused']:
             cogout(', ConvertFuseCodeType(activation.second)')
         cogout(', ')
         cogout(', '.join(list(map(lambda x: f"{x['name']}.c_str()", op['output']))))
         cogoutl(');')
-        cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['dnn']}, ")
+        cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['nnapi']}, ")
         cogout(''.join(['0, '] * (op['pos'])))
         cogoutl('param);')
         cogoutl('layers_.push_back(layer);')
@@ -265,7 +268,7 @@ def generate_onnx_converter():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void AddLayer{op['name']}{'' if op['converter_simple'] else 'Impl'}({params_str});")
+        cogoutl(f"void AddLayer{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str});")
     update_code('include/tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
 
 
@@ -274,9 +277,29 @@ def generate_daq_reader():
         cfg = yaml.load(f)
     infer_cfg(cfg, Target.DaqReader)
     for i, op in enumerate(cfg):
-        cogoutl(f'case DNN::LayerType::{op["dnn"]}:')
-        cogoutl(f'return "{op["dnn"]}";')
+        cogoutl(f'case DNN::LayerType::{op["nnapi"]}:')
+        cogoutl(f'return "{op["nnapi"]}";')
     update_code('dnnlibrary/DaqReader.cpp', 'DaqReader auto generated layer_type_to_str')
+    for i, op in enumerate(cfg):
+        cogoutl(f"case DNN::LayerType::{op['nnapi']}: {{")
+
+        arg_names = [x['name'] for x in op['input']]
+        if op['fused']:
+            arg_names += ['fuse']
+        arg_names += [x['name'] for x in op['output']]
+        cogoutl(f"UNPACK_LAYER_QUANT({op['nnapi']}, {', '.join(arg_names)});")
+        for i, x in enumerate(op['input']):
+            if x['cpp_type'] == 'optional_str':
+                cogoutl(f"const dnn::optional<std::string> {x['name']}_right_type "
+                        f"= ({x['name']} == \"\") ? dnn::nullopt : dnn::make_optional({x['name']});")
+                arg_names[i] = f"{x['name']}_right_type"
+        if op['support_quant_asymm']:
+            arg_names += ['quant_info']
+        cogoutl(f"""
+                builder.Add{op['nnapi']}({', '.join(arg_names)});
+                break;
+            }}""")
+    update_code('dnnlibrary/DaqReader.cpp', 'auto generated layer reader')
 
 
 def generate_fbs():
@@ -285,7 +308,7 @@ def generate_fbs():
     # The target of fbs is the same as onnx converter
     infer_cfg(cfg, Target.OnnxConverter)
     for i, op in enumerate(cfg):
-        cogoutl(f"table {op['dnn']} {{")
+        cogoutl(f"table {op['nnapi']} {{")
         d = {
             'int32_list': '[int]',
             'int32_t': 'int',
@@ -305,13 +328,12 @@ def generate_fbs():
     update_code('common/daq.fbs', 'Auto generated tables', reformat=False)
 
     for i, op in enumerate(cfg):
-        cogoutl(f"    {op['dnn']}_param:{op['dnn']};")
+        cogoutl(f"    {op['nnapi']}_param:{op['nnapi']};")
     update_code('common/daq.fbs', 'Auto generated fields', reformat=False)
     for i, op in enumerate(cfg):
-        cogoutl(f"    {op['dnn']},")
+        cogoutl(f"    {op['nnapi']},")
     update_code('common/daq.fbs', 'Auto generated layer types', reformat=False)
     compile_fbs()
-
 
 
 def generate_model_builder():
@@ -327,9 +349,9 @@ def generate_model_builder():
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl("ModelBuilder::Index ModelBuilder::Add{}{}({}) {{".format(
-            op['name'], '' if op['builder_simple'] else 'Impl', params_str))
+            op['nnapi'], '' if op['builder_simple'] else 'Impl', params_str))
         cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
-                f'throw std::runtime_error("{op["name"]} requires API {op["api"]}");'
+                f'throw std::runtime_error("{op["nnapi"]} requires API {op["api"]}");'
                 f'}}')
         tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
         scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
@@ -373,7 +395,7 @@ def generate_model_builder():
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl("ModelBuilder::Index Add{}{}({});".format(
-            op['name'], '' if op['builder_simple'] else 'Impl', params_str))
+            op['nnapi'], '' if op['builder_simple'] else 'Impl', params_str))
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
 
