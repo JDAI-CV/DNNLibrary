@@ -22,9 +22,11 @@ include(cmake/flatbuffers.cmake)
 configure_flatbuffers()
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Android")
+    if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.15" AND CMAKE_VERSION VERSION_LESS "3.16")
+        message(FATAL_ERROR "Android NDK is not compatible with CMake 3.15 (https://gitlab.kitware.com/cmake/cmake/issues/19515), please install another cmake version.")
+    endif()
     add_compile_options(-Os)
-    # Workaround for cmake 3.15, https://gitlab.kitware.com/cmake/cmake/issues/19515.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+    set (CMAKE_CXX_STANDARD 17)
     if (${DNN_READ_ONNX})
         include(cmake/onnx.cmake)
         configure_onnx()

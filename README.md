@@ -135,12 +135,11 @@ However we are also far from maturity comparing to TF Lite. At least we are an a
 
 ## Benchmark
 
-device | model | time
-:---:|:---:|:---:
-Google Pixel, API 28 | MobileNet v2 | 132.95ms
-Google Pixel, API 28 | SqueezeNet v1.1 | 80.80ms
-[RK3399](http://en.t-firefly.com/news/info/index/id/516.html), API 27 | MobileNet v2 | 59.90ms
-RK3399, API 27 | SqueezeNet v1.1 | 51.10ms
+We benchmarked DNNLibrary against two popular frameworks, [NCNN](https://github.com/Tencent/ncnn) and [MNN](https://github.com/alibaba/MNN). DNNLibrary shows promising results on three devices. (Note: GoogleNet fails to convert on MNN so the corresponding latency is blank.)
+
+![Benchmark on RK3399](./images/DNNLibrary-rk3399.png)
+![Benchmark on OnePlus 6T](./images/DNNLibrary-oneplus6t.png)
+![Benchmark on Huawei Honor V10](./images/DNNLibrary-huaweihonorv10.png)
 
 More benchmark is welcome!
 
