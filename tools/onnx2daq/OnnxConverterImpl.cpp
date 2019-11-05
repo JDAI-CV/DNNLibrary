@@ -106,11 +106,13 @@ namespace dnn {
 // }
 
 // OnnxConverter auto generated methods start
-void OnnxConverter::AddLayerCONV_2DImpl(
-    const std::string &input, const std::string &weight,
-    const dnn::optional<std::string> &bias, int32_t padding_left,
-    int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-    int32_t stride_x, int32_t stride_y, const std::string &output) {
+void OnnxConverter::AddLayerCONV_2D(const std::string &input,
+                                    const std::string &weight,
+                                    const dnn::optional<std::string> &bias,
+                                    int32_t padding_left, int32_t padding_right,
+                                    int32_t padding_top, int32_t padding_bottom,
+                                    int32_t stride_x, int32_t stride_y,
+                                    const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
 
     {
@@ -161,7 +163,7 @@ void OnnxConverter::AddLayerCONV_2DImpl(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerAVERAGE_POOL_2DImpl(
+void OnnxConverter::AddLayerAVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -192,7 +194,7 @@ void OnnxConverter::AddLayerAVERAGE_POOL_2DImpl(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerMAX_POOL_2DImpl(
+void OnnxConverter::AddLayerMAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -378,7 +380,7 @@ void OnnxConverter::AddLayerCONCATENATION(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerDEPTHWISE_CONV_2DImpl(
+void OnnxConverter::AddLayerDEPTHWISE_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,

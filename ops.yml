@@ -46,7 +46,6 @@
             needed_by_shaper: true
     fused: true
     support_quant_asymm: true
-    converter_simple: false
     api: 27
 -
     input:
@@ -93,7 +92,6 @@
     nnapi: AVERAGE_POOL_2D
     shaper: Pool
     fused: true
-    converter_simple: false
     # builder_simple: false
     support_quant_asymm: true
     api: 27
@@ -143,7 +141,6 @@
     nnapi: MAX_POOL_2D
     shaper: Pool
     fused: true
-    converter_simple: false
     # builder_simple: false
     support_quant_asymm: true
     api: 27
@@ -244,7 +241,7 @@
             cpp_type: int32_t
     fused: true
     support_quant_asymm: true
-    converter_simple: false
+    # converter_simple: false
     api: 27
 -
     input:

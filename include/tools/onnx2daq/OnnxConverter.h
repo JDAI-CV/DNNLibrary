@@ -110,26 +110,23 @@ class OnnxConverter {
     void SetIdentity(const std::string &input_name,
                      const std::string &output_name);
     // OnnxConverter auto generated methods start
-    void AddLayerCONV_2DImpl(const std::string &input,
-                             const std::string &weight,
-                             const dnn::optional<std::string> &bias,
-                             int32_t padding_left, int32_t padding_right,
-                             int32_t padding_top, int32_t padding_bottom,
-                             int32_t stride_x, int32_t stride_y,
-                             const std::string &output);
-    void AddLayerAVERAGE_POOL_2DImpl(const std::string &input,
-                                     int32_t padding_left,
-                                     int32_t padding_right, int32_t padding_top,
-                                     int32_t padding_bottom, int32_t stride_x,
-                                     int32_t stride_y, int32_t kernel_width,
-                                     int32_t kernel_height,
-                                     const std::string &output);
-    void AddLayerMAX_POOL_2DImpl(const std::string &input, int32_t padding_left,
+    void AddLayerCONV_2D(const std::string &input, const std::string &weight,
+                         const dnn::optional<std::string> &bias,
+                         int32_t padding_left, int32_t padding_right,
+                         int32_t padding_top, int32_t padding_bottom,
+                         int32_t stride_x, int32_t stride_y,
+                         const std::string &output);
+    void AddLayerAVERAGE_POOL_2D(const std::string &input, int32_t padding_left,
                                  int32_t padding_right, int32_t padding_top,
                                  int32_t padding_bottom, int32_t stride_x,
                                  int32_t stride_y, int32_t kernel_width,
                                  int32_t kernel_height,
                                  const std::string &output);
+    void AddLayerMAX_POOL_2D(const std::string &input, int32_t padding_left,
+                             int32_t padding_right, int32_t padding_top,
+                             int32_t padding_bottom, int32_t stride_x,
+                             int32_t stride_y, int32_t kernel_width,
+                             int32_t kernel_height, const std::string &output);
     void AddLayerRELU(const std::string &input, const std::string &output);
     void AddLayerSOFTMAX(const std::string &input, float beta,
                          const std::string &output);
@@ -141,12 +138,14 @@ class OnnxConverter {
                      const std::string &output);
     void AddLayerCONCATENATION(const std::vector<std::string> &inputs,
                                int32_t axis, const std::string &output);
-    void AddLayerDEPTHWISE_CONV_2DImpl(
-        const std::string &input, const std::string &weight,
-        const dnn::optional<std::string> &bias, int32_t padding_left,
-        int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-        int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
-        const std::string &output);
+    void AddLayerDEPTHWISE_CONV_2D(const std::string &input,
+                                   const std::string &weight,
+                                   const dnn::optional<std::string> &bias,
+                                   int32_t padding_left, int32_t padding_right,
+                                   int32_t padding_top, int32_t padding_bottom,
+                                   int32_t stride_x, int32_t stride_y,
+                                   int32_t depth_multiplier,
+                                   const std::string &output);
     void AddLayerBATCH_TO_SPACE_ND(const std::string &input,
                                    const std::vector<int32_t> &block_sizes,
                                    const std::string &output);
