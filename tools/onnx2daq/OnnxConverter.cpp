@@ -690,13 +690,17 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto onnx_pads = helper.get("pads", vector<int>{0, 0, 0, 0});
             // onnx dilations is in the order height, width
             // while nnapi dilations are in the order width, height
-            const auto onnx_dilations = helper.get("dilations", vector<int>{1, 1});
+            const auto onnx_dilations =
+                helper.get("dilations", vector<int>{1, 1});
             CHECK_EQ(onnx_pads.size(), 4ul);
             CHECK_EQ(onnx_strides.size(), 2ul);
             CHECK_EQ(onnx_dilations.size(), 2ul);
-            const decltype(onnx_strides) nnapi_strides{onnx_strides[1], onnx_strides[0]};
-            const decltype(onnx_pads) nnapi_pads{onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2]};
-            const decltype(onnx_dilations) nnapi_dilations{onnx_dilations[1], onnx_dilations[0]};
+            const decltype(onnx_strides) nnapi_strides{onnx_strides[1],
+                                                       onnx_strides[0]};
+            const decltype(onnx_pads) nnapi_pads{onnx_pads[1], onnx_pads[3],
+                                                 onnx_pads[0], onnx_pads[2]};
+            const decltype(onnx_dilations) nnapi_dilations{onnx_dilations[1],
+                                                           onnx_dilations[0]};
             const auto group = helper.get("group", 1);
             dnn::optional<string> bias_name;
             if (node.input_size() >= 3) {
@@ -707,15 +711,22 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
 
             const auto ori_weight_name = m(node.input(1));
             if (!onnx_tensors_.has(ori_weight_name)) {
-                throw std::invalid_argument("The weight of convolution must be known");
+                throw std::invalid_argument(
+                    "The weight of convolution must be known");
             }
             const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
             if (group == 1) {
                 VLOG(5) << "Vanilla conv";
-                AddLayerCONV_2DImpl(input_name, ori_weight_name, bias_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], output_name);
+                AddLayerCONV_2DImpl(input_name, ori_weight_name, bias_name,
+                                    onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                                    onnx_pads[2], onnx_strides[1],
+                                    onnx_strides[0], output_name);
             } else if (onnx_weight.shape[1] == 1) {  // depthwise
                 VLOG(5) << "Depthwise conv";
-                AddLayerDEPTHWISE_CONV_2DImpl(input_name, ori_weight_name, bias_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], onnx_weight.shape[0] / group, output_name);
+                AddLayerDEPTHWISE_CONV_2DImpl(
+                    input_name, ori_weight_name, bias_name, onnx_pads[1],
+                    onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1],
+                    onnx_strides[0], onnx_weight.shape[0] / group, output_name);
             } else {
                 // TODO: Support it
                 throw std::invalid_argument("group != 1 is not supported");
@@ -731,10 +742,13 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 kernel_shape = helper.get("kernel_shape", vector<int>{0, 0});
                 const auto count_include_pad =
                     helper.get("count_include_pad", 0);
-                const auto onnx_strides = helper.get("strides", vector<int>{1, 1});
-                const auto onnx_pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+                const auto onnx_strides =
+                    helper.get("strides", vector<int>{1, 1});
+                const auto onnx_pads =
+                    helper.get("pads", vector<int>{0, 0, 0, 0});
                 nnapi_strides = {onnx_strides[1], onnx_strides[0]};
-                nnapi_pads = {onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2]};
+                nnapi_pads = {onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                              onnx_pads[2]};
                 if (count_include_pad == 1) {
                     throw std::invalid_argument(
                         "count_include_pad == 1 is not supported");
@@ -747,18 +761,25 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 if (helper.get("auto_pad", "NOTSET") != "NOTSET") {
                     throw std::invalid_argument("auto_pad is not supported");
                 }
+                CHECK_EQ(nnapi_pads.size(), 4ul);
+                CHECK_EQ(kernel_shape.size(), 2ul);
+                CHECK_EQ(nnapi_strides.size(), 2ul);
                 if (op == "AveragePool") {
-                    AddLayerAVERAGE_POOL_2DImpl(input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], kernel_shape[1], kernel_shape[0], output_name);
+                    AddLayerAVERAGE_POOL_2DImpl(
+                        input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                        onnx_pads[2], onnx_strides[1], onnx_strides[0],
+                        kernel_shape[1], kernel_shape[0], output_name);
                 } else {
-                    AddLayerMAX_POOL_2DImpl(input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1], onnx_strides[0], kernel_shape[1], kernel_shape[0], output_name);
+                    AddLayerMAX_POOL_2DImpl(
+                        input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                        onnx_pads[2], onnx_strides[1], onnx_strides[0],
+                        kernel_shape[1], kernel_shape[0], output_name);
                 }
             } else {
                 // -1 means global
-                AddLayerAVERAGE_POOL_2DImpl(input_name, 0,0,0,0, 1,1, -1,-1, output_name);
+                AddLayerAVERAGE_POOL_2DImpl(input_name, 0, 0, 0, 0, 1, 1, -1,
+                                            -1, output_name);
             }
-            CHECK_EQ(nnapi_pads.size(), 4ul);
-            CHECK_EQ(kernel_shape.size(), 2ul);
-            CHECK_EQ(nnapi_strides.size(), 2ul);
             VLOG(5) << "Converting Pool completed";
         } else if (op == "Relu") {
             VLOG(5) << "Start converting Relu";
@@ -818,7 +839,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto alpha = helper.get("alpha", 1.0f);
             const auto beta = helper.get("beta", 1.0f);
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
-                AddLayerFULLY_CONNECTED(input_name, weight_name, bias_name, output_name);
+                AddLayerFULLY_CONNECTED(input_name, weight_name, bias_name,
+                                        output_name);
             } else {
                 throw std::invalid_argument(
                     "Only transA == 0, transB == 1, alpha == 1.0 and beta == "
@@ -843,7 +865,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto axis = helper.get("axis", 1);
             const auto output_name = m(node.output(0));
             AddLayerCONCATENATION(concat_inputs_str, axis_nchw_to_nhwc[axis],
-                           output_name);
+                                  output_name);
             VLOG(5) << "Converting Concat completed";
         } else if (op == "Dropout") {
             VLOG(5) << "Start converting Dropout";
@@ -920,8 +942,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto radius = (size - 1) / 2;
             alpha /= size;  // The implementation of ONNX LRN is not the same as
                             // that of NNAPI LRN
-            AddLayerLOCAL_RESPONSE_NORMALIZATION(node.input(0), radius, bias, alpha, beta,
-                        node.output(0));
+            AddLayerLOCAL_RESPONSE_NORMALIZATION(node.input(0), radius, bias,
+                                                 alpha, beta, node.output(0));
             VLOG(5) << "Converting LRN completed";
         } else if (op == "Tanh") {
             VLOG(5) << "Start converting Tanh";
