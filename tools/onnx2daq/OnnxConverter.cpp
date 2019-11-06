@@ -8,6 +8,7 @@
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/helper.h>
+#include <common/internal_vars.h>
 #include <glog/logging.h>
 #include <onnx/optimizer/optimize.h>
 #include <onnx/shape_inference/implementation.h>
@@ -780,9 +781,9 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 const auto input_height = shaper_[input_name][1];
                 const auto input_width = shaper_[input_name][2];
                 if (op == "GlobalAveragePool") {
-                    AddLayerAVERAGE_POOL_2D(
-                        input_name, 0, 0, 0, 0, 1, 1, input_width,
-                        input_height, output_name);
+                    AddLayerAVERAGE_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
+                                            input_width, input_height,
+                                            output_name);
                 } else {
                     AddLayerMAX_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
                                         input_width, input_height, output_name);
@@ -992,9 +993,9 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     const auto flat_quant_infos =
         builder_.CreateVector(ConvertQuantInfosToFbs());
     const auto flat_outputs = builder_.CreateVector(outputs);
-    const auto flat_model =
-        DNN::CreateModel(builder_, flat_layers, flat_tensors, flat_inputs,
-                         flat_quant_infos, flat_outputs);
+    const auto flat_model = DNN::CreateModel(
+        builder_, flat_layers, flat_tensors, flat_inputs, flat_quant_infos,
+        flat_outputs, dnn::CURRENT_MODEL_VERSION);
 
     builder_.Finish(flat_model);
 

@@ -3193,7 +3193,8 @@ struct Model FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_INITIALIZERS = 6,
     VT_INPUTS = 8,
     VT_QUANT_INFOS = 10,
-    VT_OUTPUTS = 12
+    VT_OUTPUTS = 12,
+    VT_VERSION = 14
   };
   const flatbuffers::Vector<flatbuffers::Offset<Layer>> *layers() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<Layer>> *>(VT_LAYERS);
@@ -3209,6 +3210,9 @@ struct Model FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *outputs() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_OUTPUTS);
+  }
+  uint32_t version() const {
+    return GetField<uint32_t>(VT_VERSION, 0);
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -3227,6 +3231,7 @@ struct Model FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_OUTPUTS) &&
            verifier.VerifyVector(outputs()) &&
            verifier.VerifyVectorOfStrings(outputs()) &&
+           VerifyField<uint32_t>(verifier, VT_VERSION) &&
            verifier.EndTable();
   }
 };
@@ -3249,6 +3254,9 @@ struct ModelBuilder {
   void add_outputs(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputs) {
     fbb_.AddOffset(Model::VT_OUTPUTS, outputs);
   }
+  void add_version(uint32_t version) {
+    fbb_.AddElement<uint32_t>(Model::VT_VERSION, version, 0);
+  }
   explicit ModelBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -3267,8 +3275,10 @@ inline flatbuffers::Offset<Model> CreateModel(
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Tensor>>> initializers = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<Input>>> inputs = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<QuantInfo>>> quant_infos = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputs = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputs = 0,
+    uint32_t version = 0) {
   ModelBuilder builder_(_fbb);
+  builder_.add_version(version);
   builder_.add_outputs(outputs);
   builder_.add_quant_infos(quant_infos);
   builder_.add_inputs(inputs);
@@ -3283,7 +3293,8 @@ inline flatbuffers::Offset<Model> CreateModelDirect(
     const std::vector<flatbuffers::Offset<Tensor>> *initializers = nullptr,
     const std::vector<flatbuffers::Offset<Input>> *inputs = nullptr,
     const std::vector<flatbuffers::Offset<QuantInfo>> *quant_infos = nullptr,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputs = nullptr) {
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputs = nullptr,
+    uint32_t version = 0) {
   auto layers__ = layers ? _fbb.CreateVector<flatbuffers::Offset<Layer>>(*layers) : 0;
   auto initializers__ = initializers ? _fbb.CreateVector<flatbuffers::Offset<Tensor>>(*initializers) : 0;
   auto inputs__ = inputs ? _fbb.CreateVector<flatbuffers::Offset<Input>>(*inputs) : 0;
@@ -3295,7 +3306,8 @@ inline flatbuffers::Offset<Model> CreateModelDirect(
       initializers__,
       inputs__,
       quant_infos__,
-      outputs__);
+      outputs__,
+      version);
 }
 
 inline const DNN::Model *GetModel(const void *buf) {

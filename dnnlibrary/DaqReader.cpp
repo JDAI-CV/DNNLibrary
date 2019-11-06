@@ -10,6 +10,7 @@
 #include <fstream>
 #include <iostream>
 
+#include <common/internal_vars.h>
 #include <dnnlibrary/android_log_helper.h>
 #include <dnnlibrary/flatbuffers_helper.h>
 #include <glog/logging.h>
@@ -118,6 +119,10 @@ dnn::optional<ModelBuilder::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(
     quant_info.zero_point_ = daq_quant_info->zero_point();
 
     return quant_info;
+}
+
+bool CheckVersion(const DNN::Model *model) {
+    return model->version() == dnn::CURRENT_MODEL_VERSION;
 }
 
 void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
@@ -579,6 +584,10 @@ void DaqReader::ReadDaq(const uint8_t *buf, ModelBuilder &builder) {
 void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder) {
     builder.Prepare();  // a daq file should be a full model, so prepare here
     auto model = DNN::GetModel(buf);
+    if (!CheckVersion(model)) {
+        throw std::invalid_argument(
+            "The model is out-dated. Please re-generated your model");
+    }
     AddInitializersFromBuffer(*model, builder);
     AddInputs(*model, builder);
     AddLayers(*model, builder);

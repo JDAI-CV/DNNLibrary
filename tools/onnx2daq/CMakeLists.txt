@@ -10,6 +10,8 @@ add_library(onnx2daq
     ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h
     ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
+    ${PROJECT_SOURCE_DIR}/common/internal_vars.cpp
+    ${PROJECT_SOURCE_DIR}/common/internal_vars.h
     )
 target_link_libraries(onnx2daq
     flatbuffers

@@ -17,6 +17,8 @@ set(dnnlibrary_src
     ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h 
+    ${PROJECT_SOURCE_DIR}/common/internal_vars.cpp
+    ${PROJECT_SOURCE_DIR}/common/internal_vars.h
     )
 if (DNN_READ_ONNX)
     list(APPEND dnnlibrary_src 

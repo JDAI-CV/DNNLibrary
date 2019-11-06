@@ -283,6 +283,7 @@ table Model {
     inputs:[Input];
     quant_infos:[QuantInfo];
     outputs:[string];
+    version:uint32;
 }
 
 root_type Model;
