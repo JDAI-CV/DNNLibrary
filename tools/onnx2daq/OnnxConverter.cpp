@@ -764,6 +764,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 CHECK_EQ(nnapi_pads.size(), 4ul);
                 CHECK_EQ(kernel_shape.size(), 2ul);
                 CHECK_EQ(nnapi_strides.size(), 2ul);
+                // kernel_shape of onnx model is [height, width]
                 if (op == "AveragePool") {
                     AddLayerAVERAGE_POOL_2D(
                         input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
@@ -776,14 +777,15 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                         kernel_shape[1], kernel_shape[0], output_name);
                 }
             } else {
+                const auto input_height = shaper_[input_name][1];
+                const auto input_width = shaper_[input_name][2];
                 if (op == "GlobalAveragePool") {
                     AddLayerAVERAGE_POOL_2D(
-                        input_name, 0, 0, 0, 0, 1, 1, shaper_[input_name][1],
-                        shaper_[input_name][0], output_name);
+                        input_name, 0, 0, 0, 0, 1, 1, input_width,
+                        input_height, output_name);
                 } else {
                     AddLayerMAX_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
-                                        shaper_[input_name][1],
-                                        shaper_[input_name][0], output_name);
+                                        input_width, input_height, output_name);
                 }
             }
             VLOG(5) << "Converting Pool completed";
