@@ -638,6 +638,37 @@ ModelBuilder::Index ModelBuilder::AddLayerLOG(const std::string &input,
 }
 // ModelBuilder auto generated methods end
 
+ModelBuilder::Index ModelBuilder::AddLayerPRELU(const std::string &input,
+                                           const std::string &alpha,
+                                           const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        const auto neg1_name = output + "_neg1";
+        const auto imm1_name = output + "_imm1";
+        const auto imm2_name = output + "_imm2";
+        const auto imm3_name = output + "_imm3";
+        const auto imm4_name = output + "_imm4";
+        const auto imm5_name = output + "_imm5";
+        // It is supposed to be in onnx converter
+        // if (onnx_tensors_[alpha].shape != Shape{1}) {
+        //     // TODO: support it
+        //     throw std::invalid_argument("Only support one element slope.");
+        // }
+        // positive branch
+        AddLayerRELU(input, imm1_name);
+        // negative branch
+        float neg1_buf[1]{-1.f};
+        AddTensorFromBuffer(neg1_name, neg1_buf, {Type::TENSOR_FLOAT32, {1}});
+        AddLayerMUL(input, neg1_name, ModelBuilder::ACTIVATION_NONE, imm2_name, dnn::nullopt);
+        AddLayerRELU(imm2_name, imm3_name);
+        AddLayerMUL(imm3_name, alpha, ModelBuilder::ACTIVATION_NONE, imm4_name, dnn::nullopt);
+        AddLayerMUL(imm4_name, neg1_name, ModelBuilder::ACTIVATION_NONE, imm5_name, dnn::nullopt);
+        // add two branches
+        AddLayerADD(imm1_name, imm5_name, ModelBuilder::ACTIVATION_NONE, output, dnn::nullopt);
+    } else {
+        return AddLayerPRELUImpl(input, alpha, output);
+    }
+}
+
 // Methods for backward compatibility
 ModelBuilder::Index ModelBuilder::AddInput(const std::string name,
                                            const uint32_t batch,

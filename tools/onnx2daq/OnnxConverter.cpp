@@ -802,23 +802,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto input_name = m(node.input(0));
             const auto slope_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            const auto imm1_name = output_name + "_imm1";
-            const auto imm2_name = output_name + "_imm2";
-            const auto neg1_name = output_name + "_neg1";
-            const auto imm3_name = output_name + "_imm3";
-            const auto imm4_name = output_name + "_imm4";
-            if (onnx_tensors_[slope_name].shape != Shape{1}) {
-                // TODO: support it
-                throw std::invalid_argument("Only support one element slope.");
-            }
-            AddLayerRELU(input_name, imm1_name);
-            nnapi_tensors_[slope_name] = onnx_tensors_[slope_name];
-            nnapi_tensors_[neg1_name] = {neg1_name, {-1.f}, {1}};
-            AddLayerMUL(input_name, slope_name, imm2_name);
-            AddLayerRELU(imm2_name, imm3_name);
-            AddLayerMUL(imm3_name, neg1_name, imm4_name);
-            AddLayerADD(imm1_name, imm4_name, output_name);
-            // TODO:
+            AddLayerPRELU(input_name, slope_name, output_name);
             VLOG(5) << "Converting PRelu completed";
         } else if (op == "Add") {
             VLOG(5) << "Start converting Add";

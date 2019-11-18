@@ -378,7 +378,7 @@
             cpp_type: str
     shaper: Identity
     api: 29
-    # builder_simple: false
+    builder_simple: false
 -
     nnapi: POW
     input:
