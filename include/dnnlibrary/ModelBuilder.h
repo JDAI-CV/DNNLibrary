@@ -112,92 +112,97 @@ class ModelBuilder {
     Index AddInput(std::string name,
                    const android::nn::wrapper::OperandType &operand_type);
     // ModelBuilder auto generated methods start
-    ModelBuilder::Index AddCONV_2D(
+    ModelBuilder::Index AddLayerCONV_2D(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddAVERAGE_POOL_2D(
+    ModelBuilder::Index AddLayerAVERAGE_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddMAX_POOL_2D(
+    ModelBuilder::Index AddLayerMAX_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddRELU(const std::string &input,
-                                const std::string &output);
-    ModelBuilder::Index AddSOFTMAX(const std::string &input, float beta,
-                                   const std::string &output);
-    ModelBuilder::Index AddFULLY_CONNECTED(
+    ModelBuilder::Index AddLayerRELU(const std::string &input,
+                                     const std::string &output);
+    ModelBuilder::Index AddLayerSOFTMAX(const std::string &input, float beta,
+                                        const std::string &output);
+    ModelBuilder::Index AddLayerFULLY_CONNECTED(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddADD(
+    ModelBuilder::Index AddLayerADD(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddCONCATENATION(const std::vector<std::string> &inputs,
-                                         int32_t axis,
-                                         const std::string &output);
-    ModelBuilder::Index AddDEPTHWISE_CONV_2D(
+    ModelBuilder::Index AddLayerCONCATENATION(
+        const std::vector<std::string> &inputs, int32_t axis,
+        const std::string &output);
+    ModelBuilder::Index AddLayerDEPTHWISE_CONV_2D(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddBATCH_TO_SPACE_ND(
+    ModelBuilder::Index AddLayerBATCH_TO_SPACE_ND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
         const std::string &output);
-    ModelBuilder::Index AddSPACE_TO_BATCH_ND(
+    ModelBuilder::Index AddLayerSPACE_TO_BATCH_ND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
         const std::vector<int32_t> &pads, const std::string &output);
-    ModelBuilder::Index AddSTRIDED_SLICE(const std::string &input,
-                                         const std::vector<int32_t> &starts,
-                                         const std::vector<int32_t> &ends,
-                                         const std::vector<int32_t> &strides,
-                                         int32_t begin_mask, int32_t end_mask,
-                                         int32_t shrink_axis_mask,
-                                         const std::string &output);
-    ModelBuilder::Index AddMUL(
+    ModelBuilder::Index AddLayerSTRIDED_SLICE(
+        const std::string &input, const std::vector<int32_t> &starts,
+        const std::vector<int32_t> &ends, const std::vector<int32_t> &strides,
+        int32_t begin_mask, int32_t end_mask, int32_t shrink_axis_mask,
+        const std::string &output);
+    ModelBuilder::Index AddLayerMUL(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info);
-    ModelBuilder::Index AddDEQUANTIZE(const std::string &input,
-                                      const std::string &output);
-    ModelBuilder::Index AddLOCAL_RESPONSE_NORMALIZATION(
+    ModelBuilder::Index AddLayerDEQUANTIZE(const std::string &input,
+                                           const std::string &output);
+    ModelBuilder::Index AddLayerLOCAL_RESPONSE_NORMALIZATION(
         const std::string &input, int32_t radius, float bias, float alpha,
         float beta, const std::string &output);
-    ModelBuilder::Index AddTANH(const std::string &input,
-                                const std::string &output);
-    ModelBuilder::Index AddFLOOR(const std::string &input,
-                                 const std::string &output);
-    ModelBuilder::Index AddLOGISTIC(const std::string &input,
+    ModelBuilder::Index AddLayerTANH(const std::string &input,
+                                     const std::string &output);
+    ModelBuilder::Index AddLayerFLOOR(const std::string &input,
+                                      const std::string &output);
+    ModelBuilder::Index AddLayerLOGISTIC(const std::string &input,
+                                         const std::string &output);
+    ModelBuilder::Index AddLayerPRELUImpl(const std::string &input,
+                                          const std::string &alpha,
+                                          const std::string &output);
+    ModelBuilder::Index AddLayerPOW(const std::string &input,
+                                    const std::string &exp,
                                     const std::string &output);
-    ModelBuilder::Index AddPRELU(const std::string &input,
+    ModelBuilder::Index AddLayerNEG(const std::string &input,
+                                    const std::string &output);
+    ModelBuilder::Index AddLayerMINIMUM(const std::string &input1,
+                                        const std::string &input2,
+                                        const std::string &output);
+    ModelBuilder::Index AddLayerMAXIMUM(const std::string &input1,
+                                        const std::string &input2,
+                                        const std::string &output);
+    ModelBuilder::Index AddLayerLOG(const std::string &input,
+                                    const std::string &output);
+    // ModelBuilder auto generated methods end
+    ModelBuilder::Index AddLayerPRELU(const std::string &input,
                                  const std::string &alpha,
                                  const std::string &output);
-    ModelBuilder::Index AddPOW(const std::string &input, const std::string &exp,
-                               const std::string &output);
-    ModelBuilder::Index AddNEG(const std::string &input,
-                               const std::string &output);
-    ModelBuilder::Index AddMINIMUM(const std::string &input1,
-                                   const std::string &input2,
-                                   const std::string &output);
-    ModelBuilder::Index AddMAXIMUM(const std::string &input1,
-                                   const std::string &input2,
-                                   const std::string &output);
-    ModelBuilder::Index AddLOG(const std::string &input,
-                               const std::string &output);
-    // ModelBuilder auto generated methods end
+    Index AddTensorFromPersistentBuffer(
+        const std::string &name, const void *buffer,
+        const android::nn::wrapper::OperandType &operand_type);
     Index AddTensorFromBuffer(
         const std::string &name, const void *buffer,
         const android::nn::wrapper::OperandType &operand_type);

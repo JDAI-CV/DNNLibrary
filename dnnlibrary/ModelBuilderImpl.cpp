@@ -12,7 +12,7 @@ namespace dnn {
 using namespace android::nn::wrapper;
 
 // ModelBuilder auto generated methods start
-ModelBuilder::Index ModelBuilder::AddCONV_2D(
+ModelBuilder::Index ModelBuilder::AddLayerCONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -66,7 +66,7 @@ ModelBuilder::Index ModelBuilder::AddCONV_2D(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddAVERAGE_POOL_2D(
+ModelBuilder::Index ModelBuilder::AddLayerAVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -93,7 +93,7 @@ ModelBuilder::Index ModelBuilder::AddAVERAGE_POOL_2D(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMAX_POOL_2D(
+ModelBuilder::Index ModelBuilder::AddLayerMAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -120,8 +120,8 @@ ModelBuilder::Index ModelBuilder::AddMAX_POOL_2D(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddRELU(const std::string &input,
-                                          const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerRELU(const std::string &input,
+                                               const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
         throw std::runtime_error("RELU requires API 27");
     }
@@ -138,9 +138,9 @@ ModelBuilder::Index ModelBuilder::AddRELU(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddSOFTMAX(const std::string &input,
-                                             float beta,
-                                             const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerSOFTMAX(const std::string &input,
+                                                  float beta,
+                                                  const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
         throw std::runtime_error("SOFTMAX requires API 27");
     }
@@ -158,7 +158,7 @@ ModelBuilder::Index ModelBuilder::AddSOFTMAX(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddFULLY_CONNECTED(
+ModelBuilder::Index ModelBuilder::AddLayerFULLY_CONNECTED(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t fuse_code,
     const std::string &output,
@@ -208,7 +208,7 @@ ModelBuilder::Index ModelBuilder::AddFULLY_CONNECTED(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddADD(
+ModelBuilder::Index ModelBuilder::AddLayerADD(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
@@ -232,7 +232,7 @@ ModelBuilder::Index ModelBuilder::AddADD(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddCONCATENATION(
+ModelBuilder::Index ModelBuilder::AddLayerCONCATENATION(
     const std::vector<std::string> &inputs, int32_t axis,
     const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -253,7 +253,7 @@ ModelBuilder::Index ModelBuilder::AddCONCATENATION(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddDEPTHWISE_CONV_2D(
+ModelBuilder::Index ModelBuilder::AddLayerDEPTHWISE_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -309,7 +309,7 @@ ModelBuilder::Index ModelBuilder::AddDEPTHWISE_CONV_2D(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddBATCH_TO_SPACE_ND(
+ModelBuilder::Index ModelBuilder::AddLayerBATCH_TO_SPACE_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
@@ -332,7 +332,7 @@ ModelBuilder::Index ModelBuilder::AddBATCH_TO_SPACE_ND(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddSPACE_TO_BATCH_ND(
+ModelBuilder::Index ModelBuilder::AddLayerSPACE_TO_BATCH_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::vector<int32_t> &pads, const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
@@ -359,7 +359,7 @@ ModelBuilder::Index ModelBuilder::AddSPACE_TO_BATCH_ND(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddSTRIDED_SLICE(
+ModelBuilder::Index ModelBuilder::AddLayerSTRIDED_SLICE(
     const std::string &input, const std::vector<int32_t> &starts,
     const std::vector<int32_t> &ends, const std::vector<int32_t> &strides,
     int32_t begin_mask, int32_t end_mask, int32_t shrink_axis_mask,
@@ -394,7 +394,7 @@ ModelBuilder::Index ModelBuilder::AddSTRIDED_SLICE(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMUL(
+ModelBuilder::Index ModelBuilder::AddLayerMUL(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
@@ -418,8 +418,8 @@ ModelBuilder::Index ModelBuilder::AddMUL(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddDEQUANTIZE(const std::string &input,
-                                                const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerDEQUANTIZE(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
         throw std::runtime_error("DEQUANTIZE requires API 27");
     }
@@ -436,7 +436,7 @@ ModelBuilder::Index ModelBuilder::AddDEQUANTIZE(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddLOCAL_RESPONSE_NORMALIZATION(
+ModelBuilder::Index ModelBuilder::AddLayerLOCAL_RESPONSE_NORMALIZATION(
     const std::string &input, int32_t radius, float bias, float alpha,
     float beta, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -458,8 +458,8 @@ ModelBuilder::Index ModelBuilder::AddLOCAL_RESPONSE_NORMALIZATION(
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddTANH(const std::string &input,
-                                          const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerTANH(const std::string &input,
+                                               const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
         throw std::runtime_error("TANH requires API 27");
     }
@@ -476,8 +476,8 @@ ModelBuilder::Index ModelBuilder::AddTANH(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddFLOOR(const std::string &input,
-                                           const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerFLOOR(const std::string &input,
+                                                const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
         throw std::runtime_error("FLOOR requires API 27");
     }
@@ -494,8 +494,8 @@ ModelBuilder::Index ModelBuilder::AddFLOOR(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddLOGISTIC(const std::string &input,
-                                              const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerLOGISTIC(const std::string &input,
+                                                   const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
         throw std::runtime_error("LOGISTIC requires API 27");
     }
@@ -512,9 +512,9 @@ ModelBuilder::Index ModelBuilder::AddLOGISTIC(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddPRELU(const std::string &input,
-                                           const std::string &alpha,
-                                           const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerPRELUImpl(const std::string &input,
+                                                    const std::string &alpha,
+                                                    const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
         throw std::runtime_error("PRELU requires API 29");
     }
@@ -534,9 +534,9 @@ ModelBuilder::Index ModelBuilder::AddPRELU(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddPOW(const std::string &input,
-                                         const std::string &exp,
-                                         const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerPOW(const std::string &input,
+                                              const std::string &exp,
+                                              const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
         throw std::runtime_error("POW requires API 29");
     }
@@ -556,8 +556,8 @@ ModelBuilder::Index ModelBuilder::AddPOW(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddNEG(const std::string &input,
-                                         const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerNEG(const std::string &input,
+                                              const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
         throw std::runtime_error("NEG requires API 29");
     }
@@ -574,9 +574,9 @@ ModelBuilder::Index ModelBuilder::AddNEG(const std::string &input,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMINIMUM(const std::string &input1,
-                                             const std::string &input2,
-                                             const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerMINIMUM(const std::string &input1,
+                                                  const std::string &input2,
+                                                  const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
         throw std::runtime_error("MINIMUM requires API 29");
     }
@@ -596,9 +596,9 @@ ModelBuilder::Index ModelBuilder::AddMINIMUM(const std::string &input1,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddMAXIMUM(const std::string &input1,
-                                             const std::string &input2,
-                                             const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerMAXIMUM(const std::string &input1,
+                                                  const std::string &input2,
+                                                  const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
         throw std::runtime_error("MAXIMUM requires API 29");
     }
@@ -618,8 +618,8 @@ ModelBuilder::Index ModelBuilder::AddMAXIMUM(const std::string &input1,
     imm_blob_outputs_.insert(output);
     return output_idx;
 }
-ModelBuilder::Index ModelBuilder::AddLOG(const std::string &input,
-                                         const std::string &output) {
+ModelBuilder::Index ModelBuilder::AddLayerLOG(const std::string &input,
+                                              const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
         throw std::runtime_error("LOG requires API 29");
     }

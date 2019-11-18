@@ -296,7 +296,7 @@ def generate_daq_reader():
         if op['support_quant_asymm']:
             arg_names += ['quant_info']
         cogoutl(f"""
-                builder.Add{op['nnapi']}({', '.join(arg_names)});
+                builder.AddLayer{op['nnapi']}({', '.join(arg_names)});
                 break;
             }}""")
     update_code('dnnlibrary/DaqReader.cpp', 'auto generated layer reader')
@@ -348,7 +348,7 @@ def generate_model_builder():
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index ModelBuilder::Add{}{}({}) {{".format(
+        cogoutl("void ModelBuilder::AddLayer{}{}({}) {{".format(
             op['nnapi'], '' if op['builder_simple'] else 'Impl', params_str))
         cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
                 f'throw std::runtime_error("{op["nnapi"]} requires API {op["api"]}");'
@@ -394,7 +394,7 @@ def generate_model_builder():
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index Add{}{}({});".format(
+        cogoutl("ModelBuilder::Index AddLayer{}{}({});".format(
             op['nnapi'], '' if op['builder_simple'] else 'Impl', params_str))
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
