@@ -114,7 +114,18 @@ ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name,
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
+/**
+ * @brief Add NNAPI operand from `buffer`, the memory pointed
+ * by `buffer` should be persistent until the execution finished.
+ * No copying.
+ *
+ * @param name The name of operand
+ * @param buffer The address of the buffer
+ * @param operand_type The OperandType of the operand
+ *
+ * @return The index of the added operand
+ */
+ModelBuilder::Index ModelBuilder::AddTensorFromPersistentBuffer(
     const string &name, const void *buffer, const OperandType &operand_type) {
     DNN_ASSERT(!operand_type.dimensions.empty(), "");
     DNN_ASSERT(!isScalarType(operand_type.type), "");
@@ -155,6 +166,29 @@ ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
     shaper_.AddShape(name, operand_type.dimensions);
     RegisterOperand(name, index, operand_type);
     return index;
+}
+
+/**
+ * @brief It is the same as `AddTensorFromPersistentBuffer` except
+ * the memory pointed by `buffer` will be copied so that `buffer`
+ * does not need to be persistent
+ *
+ * @param name
+ * @param buffer
+ * @param operand_type
+ *
+ * @return
+ */
+ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
+    const string &name, const void *buffer, const OperandType &operand_type) {
+    auto persistent_buf = std::unique_ptr<uint8_t[]>(
+        new uint8_t[Product(operand_type.dimensions)]);
+
+    auto idx =
+        AddTensorFromPersistentBuffer(name, persistent_buf.get(), operand_type);
+    RegisterBufferPointer(std::move(persistent_buf));
+
+    return idx;
 }
 
 std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
@@ -242,7 +276,8 @@ ModelBuilder::Index ModelBuilder::GetBlobIndex(const string &blobName) {
         for (size_t i = 0; i < Product(operand_type.dimensions); i++) {   \
             buf[i] = val;                                                 \
         }                                                                 \
-        auto idx = AddTensorFromBuffer(name, buf.get(), operand_type);    \
+        auto idx =                                                        \
+            AddTensorFromPersistentBuffer(name, buf.get(), operand_type); \
         RegisterBufferPointer(std::move(buf));                            \
         return idx;                                                       \
     }
