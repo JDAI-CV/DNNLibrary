@@ -381,7 +381,6 @@ def generate_model_builder():
         cogout(
             '''RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
-    return output_idx;
     }
     '''
         )
@@ -392,9 +391,10 @@ def generate_model_builder():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
-            params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
+            # A hack
+            params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info=dnn::nullopt'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index AddLayer{}{}({});".format(
+        cogoutl("void AddLayer{}{}({});".format(
             op['nnapi'], '' if op['builder_simple'] else 'Impl', params_str))
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
