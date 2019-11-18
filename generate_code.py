@@ -394,8 +394,14 @@ def generate_model_builder():
             # A hack
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info=dnn::nullopt'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("void AddLayer{}{}({});".format(
-            op['nnapi'], '' if op['builder_simple'] else 'Impl', params_str))
+        if op['builder_simple']:
+            cogoutl("void AddLayer{}({});".format(
+                op['nnapi'], params_str))
+        else:
+            cogoutl('private:')
+            cogoutl("void AddLayer{}Impl({});".format(
+                op['nnapi'], params_str))
+            cogoutl('public:')
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
 

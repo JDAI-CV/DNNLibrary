@@ -179,8 +179,12 @@ class ModelBuilder {
     void AddLayerTANH(const std::string &input, const std::string &output);
     void AddLayerFLOOR(const std::string &input, const std::string &output);
     void AddLayerLOGISTIC(const std::string &input, const std::string &output);
+
+   private:
     void AddLayerPRELUImpl(const std::string &input, const std::string &alpha,
                            const std::string &output);
+
+   public:
     void AddLayerPOW(const std::string &input, const std::string &exp,
                      const std::string &output);
     void AddLayerNEG(const std::string &input, const std::string &output);
@@ -190,9 +194,8 @@ class ModelBuilder {
                          const std::string &output);
     void AddLayerLOG(const std::string &input, const std::string &output);
     // ModelBuilder auto generated methods end
-    void AddLayerPRELU(const std::string &input,
-                                      const std::string &alpha,
-                                      const std::string &output);
+    void AddLayerPRELU(const std::string &input, const std::string &alpha,
+                       const std::string &output);
     Index AddTensorFromPersistentBuffer(
         const std::string &name, const void *buffer,
         const android::nn::wrapper::OperandType &operand_type);
