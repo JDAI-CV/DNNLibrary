@@ -114,21 +114,7 @@ ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name,
     return index;
 }
 
-/**
- * @brief Add NNAPI operand from `buffer`, the memory pointed
- * by `buffer` should be persistent until the execution finished.
- * No copying.
- *
- * @param name The name of operand
- * @param buffer The address of the buffer
- * @param operand_type The OperandType of the operand
- *
- * @return The index of the added operand
- */
-ModelBuilder::Index ModelBuilder::AddTensorFromPersistentBuffer(
-    const string &name, const void *buffer, const OperandType &operand_type) {
-    DNN_ASSERT(!operand_type.dimensions.empty(), "");
-    DNN_ASSERT(!isScalarType(operand_type.type), "");
+size_t GetBytesNumFromOperandType(const OperandType &operand_type) {
     size_t element_size;
     switch (operand_type.type) {
         case Type::TENSOR_BOOL8:
@@ -159,10 +145,28 @@ ModelBuilder::Index ModelBuilder::AddTensorFromPersistentBuffer(
             throw std::invalid_argument("Wrong type: " +
                                         typeToStr(operand_type.type));
     }
+    return Product(operand_type.dimensions) * element_size;
+}
+
+/**
+ * @brief Add NNAPI operand from `buffer`, the memory pointed
+ * by `buffer` should be persistent until the execution finished.
+ * No copying.
+ *
+ * @param name The name of operand
+ * @param buffer The address of the buffer
+ * @param operand_type The OperandType of the operand
+ *
+ * @return The index of the added operand
+ */
+ModelBuilder::Index ModelBuilder::AddTensorFromPersistentBuffer(
+    const string &name, const void *buffer, const OperandType &operand_type) {
+    DNN_ASSERT(!operand_type.dimensions.empty(), "");
+    DNN_ASSERT(!isScalarType(operand_type.type), "");
     uint32_t index = AddNewOperand(operand_type);
     THROW_ON_ERROR(nnapi_->ANeuralNetworksModel_setOperandValue(
-        dnn_model_->model_, index, buffer,
-        Product(operand_type.dimensions) * element_size));
+        dnn_model_->model_, index, buffer, GetBytesNumFromOperandType(operand_type)
+        ));
     shaper_.AddShape(name, operand_type.dimensions);
     RegisterOperand(name, index, operand_type);
     return index;
@@ -181,8 +185,10 @@ ModelBuilder::Index ModelBuilder::AddTensorFromPersistentBuffer(
  */
 ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
     const string &name, const void *buffer, const OperandType &operand_type) {
+    const auto bytes = GetBytesNumFromOperandType(operand_type);
     auto persistent_buf = std::unique_ptr<uint8_t[]>(
-        new uint8_t[Product(operand_type.dimensions)]);
+        new uint8_t[bytes]);
+    memmove(persistent_buf.get(), buffer, bytes);
 
     auto idx =
         AddTensorFromPersistentBuffer(name, persistent_buf.get(), operand_type);
