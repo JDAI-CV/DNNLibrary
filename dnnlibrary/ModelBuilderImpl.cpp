@@ -46,8 +46,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D(
                 {Type::TENSOR_INT32, bias_dimen, input_scale * weight_scale},
                 0);
         } else {
-            throw std::invalid_argument("Unknown type " +
-                                        typeToStr(weight_type));
+            return make_unexpected("Unknown type " + typeToStr(weight_type));
         }
     } else {
         bias_idx_val = operand_indexes_.at(bias.value());
@@ -194,8 +193,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_FULLY_CONNECTED(
                 {Type::TENSOR_INT32, bias_dimen, input_scale * weight_scale},
                 0);
         } else {
-            throw std::invalid_argument("Unknown type " +
-                                        typeToStr(weight_type));
+            return make_unexpected("Unknown type " + typeToStr(weight_type));
         }
     } else {
         bias_idx_val = operand_indexes_.at(bias.value());
@@ -294,8 +292,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
                 {Type::TENSOR_INT32, bias_dimen, input_scale * weight_scale},
                 0);
         } else {
-            throw std::invalid_argument("Unknown type " +
-                                        typeToStr(weight_type));
+            return make_unexpected("Unknown type " + typeToStr(weight_type));
         }
     } else {
         bias_idx_val = operand_indexes_.at(bias.value());
