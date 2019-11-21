@@ -1,13 +1,13 @@
 /**
  * It is an example showing how to use the ModelBuilder API to build an model
  */
-#include <chrono>
-#include <iostream>
-#include <vector>
-
 #include <common/helper.h>
 #include <dnnlibrary/ModelBuilder.h>
 #include <glog/logging.h>
+
+#include <chrono>
+#include <iostream>
+#include <vector>
 
 using namespace android::nn::wrapper;
 using dnn::ModelBuilder;
@@ -26,23 +26,25 @@ int main() {
             {Type::TENSOR_QUANT8_ASYMM, {3, 1, 1, 3}, 0.1, 150});
         builder.AddTensorFromBuffer("bias", bias_buf,
                                     {Type::TENSOR_INT32, {3}, 0.1, 0});
-        builder.AddLayer_DEPTHWISE_CONV_2D("data", "weight", "bias", 1, 1, 0, 0, 0, 0,
-                                 ModelBuilder::ACTIVATION_NONE, 1,
-                                 "conv_fwd",
-                                 std::make_optional<ModelBuilder::QuantInfo>(
-                                     {Type::TENSOR_QUANT8_ASYMM, {0.5}, 100}));
+        builder.AddLayer_DEPTHWISE_CONV_2D(
+            "data", "weight", "bias", 1, 1, 0, 0, 0, 0,
+            ModelBuilder::ACTIVATION_NONE, 1, "conv_fwd",
+            std::make_optional<ModelBuilder::QuantInfo>(
+                {Type::TENSOR_QUANT8_ASYMM, {0.5}, 100}));
         builder.AddLayer_RELU("conv_fwd", "relu_fwd");
-        builder.AddLayer_ADD("data", "relu_fwd", ModelBuilder::ACTIVATION_NONE, "output",
-                                std::make_optional<ModelBuilder::QuantInfo>(
-                                    {Type::TENSOR_QUANT8_ASYMM, {0.05}, 100}));
+        builder.AddLayer_ADD("data", "relu_fwd", ModelBuilder::ACTIVATION_NONE,
+                             "output",
+                             std::make_optional<ModelBuilder::QuantInfo>(
+                                 {Type::TENSOR_QUANT8_ASYMM, {0.05}, 100}));
     } else {
         builder.AddInput("data", {Type::TENSOR_FLOAT32, {1, 224, 224, 3}});
         builder.AddTensorFromBuffer("weight", weight_buf,
                                     {Type::TENSOR_FLOAT32, {3, 1, 1, 3}});
         builder.AddTensorFromBuffer("bias", bias_buf,
                                     {Type::TENSOR_FLOAT32, {3}});
-        builder.AddLayer_CONV_2D("data", "weight", "bias", 1, 1, 0, 0, 0, 0, ModelBuilder::ACTIVATION_NONE,
-                        "output", dnn::nullopt);
+        builder.AddLayer_CONV_2D("data", "weight", "bias", 1, 1, 0, 0, 0, 0,
+                                 ModelBuilder::ACTIVATION_NONE, "output",
+                                 dnn::nullopt);
     }
     auto model = builder.AddOutput("output").Compile(
         ModelBuilder::PREFERENCE_FAST_SINGLE_ANSWER);
