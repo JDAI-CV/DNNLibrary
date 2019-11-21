@@ -103,17 +103,17 @@ def infer_cfg(cfg, target: Target):
             op['input'] = []
         if 'base_input_num' not in op or op['base_input_num'] == 1:
             op['input'].insert(0,
-                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'is_onnx_attr': False,
                                 'needed_by_shaper': True})
         elif op['base_input_num'] == 2:
-            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'is_onnx_attr': False,
                             'needed_by_shaper': True},
-                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'is_onnx_attr': False,
                             'needed_by_shaper': True}] \
                           + op['input']
         elif op['base_input_num'] == 'n':
             op['input'].insert(0,
-                               {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'input': True,
+                               {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'is_onnx_attr': False,
                                 'needed_by_shaper': True})
         elif op['base_input_num'] == 0:
             pass
@@ -158,10 +158,10 @@ def infer_cfg(cfg, target: Target):
                 ipt['name'] = 'bias'
                 ipt['nnapi_type'] = 'tensor'
                 ipt['cpp_type'] = 'optional_str'
-                ipt['input'] = True
+                ipt['is_onnx_attr'] = False
                 ipt['convert_func'] = 'OnnxToNnapiIdentity'
-            if 'input' not in ipt:
-                ipt['input'] = False
+            if 'is_onnx_attr' not in ipt:
+                ipt['is_onnx_attr'] = True
             if 'convert_func' not in ipt:
                 ipt['convert_func'] = 'OnnxToNnapiAxes0231'
             if 'needed_by_shaper' not in ipt:
@@ -202,7 +202,7 @@ def generate_onnx_converter():
         if op['fused']:
             cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
         for x in op['input']:
-            if x['input']:
+            if not x['is_onnx_attr']:
                 if x['cpp_type'] == 'str':
                     cogoutl(f"""
                     {{

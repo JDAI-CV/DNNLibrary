@@ -2,14 +2,11 @@
     # This appears in function name, like ModelBuilder::AddConv
     shaper: Conv
     nnapi: CONV_2D
-    # 'dnn' is the name of the op in flatbuffers fbs file.
-    # It is mostly because of historical reasons and should not be used for new ops
     input:
         -
             name: weight
             nnapi_type: tensor
-            # "input" stands for onnx input instead of attribute (TODO: a new name)
-            input: true
+            is_onnx_attr: false
             cpp_type: str
             needed_by_shaper: true
         -
@@ -162,7 +159,7 @@
         -
             name: weight
             nnapi_type: tensor
-            input: true
+            is_onnx_attr: false
             cpp_type: str
             needed_by_shaper: true
             convert_func: OnnxToNnapiIdentity
@@ -199,7 +196,7 @@
         -
             name: weight
             nnapi_type: tensor
-            input: true
+            is_onnx_attr: false
             convert_func: OnnxToNnapiAxes1230
             cpp_type: str
             needed_by_shaper: true
