@@ -64,6 +64,7 @@ void ModelBuilder::AddLayer_CONV_2D(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_AVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
@@ -90,6 +91,7 @@ void ModelBuilder::AddLayer_AVERAGE_POOL_2D(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_MAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
@@ -116,6 +118,7 @@ void ModelBuilder::AddLayer_MAX_POOL_2D(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_RELU(const std::string &input,
                                  const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -133,6 +136,7 @@ void ModelBuilder::AddLayer_RELU(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_SOFTMAX(const std::string &input, float beta,
                                     const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -151,6 +155,7 @@ void ModelBuilder::AddLayer_SOFTMAX(const std::string &input, float beta,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_FULLY_CONNECTED(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t fuse_code,
@@ -200,6 +205,7 @@ void ModelBuilder::AddLayer_FULLY_CONNECTED(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_ADD(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
@@ -223,6 +229,7 @@ void ModelBuilder::AddLayer_ADD(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_CONCATENATION(
     const std::vector<std::string> &inputs, int32_t axis,
     const std::string &output) {
@@ -243,6 +250,7 @@ void ModelBuilder::AddLayer_CONCATENATION(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
@@ -298,6 +306,7 @@ void ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_BATCH_TO_SPACE_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::string &output) {
@@ -320,6 +329,7 @@ void ModelBuilder::AddLayer_BATCH_TO_SPACE_ND(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_SPACE_TO_BATCH_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::vector<int32_t> &pads, const std::string &output) {
@@ -346,6 +356,7 @@ void ModelBuilder::AddLayer_SPACE_TO_BATCH_ND(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_STRIDED_SLICE(const std::string &input,
                                           const std::vector<int32_t> &starts,
                                           const std::vector<int32_t> &ends,
@@ -382,6 +393,7 @@ void ModelBuilder::AddLayer_STRIDED_SLICE(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_MUL(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
@@ -405,6 +417,7 @@ void ModelBuilder::AddLayer_MUL(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_DEQUANTIZE(const std::string &input,
                                        const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -422,6 +435,7 @@ void ModelBuilder::AddLayer_DEQUANTIZE(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_LOCAL_RESPONSE_NORMALIZATION(
     const std::string &input, int32_t radius, float bias, float alpha,
     float beta, const std::string &output) {
@@ -443,6 +457,7 @@ void ModelBuilder::AddLayer_LOCAL_RESPONSE_NORMALIZATION(
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_TANH(const std::string &input,
                                  const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -460,6 +475,7 @@ void ModelBuilder::AddLayer_TANH(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_FLOOR(const std::string &input,
                                   const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -477,6 +493,7 @@ void ModelBuilder::AddLayer_FLOOR(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_LOGISTIC(const std::string &input,
                                      const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
@@ -494,6 +511,7 @@ void ModelBuilder::AddLayer_LOGISTIC(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_PRELU_Impl(const std::string &input,
                                        const std::string &alpha,
                                        const std::string &output) {
@@ -515,6 +533,7 @@ void ModelBuilder::AddLayer_PRELU_Impl(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_POW(const std::string &input,
                                 const std::string &exp,
                                 const std::string &output) {
@@ -536,6 +555,7 @@ void ModelBuilder::AddLayer_POW(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_NEG(const std::string &input,
                                 const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
@@ -553,6 +573,7 @@ void ModelBuilder::AddLayer_NEG(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_MINIMUM(const std::string &input1,
                                     const std::string &input2,
                                     const std::string &output) {
@@ -574,6 +595,7 @@ void ModelBuilder::AddLayer_MINIMUM(const std::string &input1,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_MAXIMUM(const std::string &input1,
                                     const std::string &input2,
                                     const std::string &output) {
@@ -595,6 +617,7 @@ void ModelBuilder::AddLayer_MAXIMUM(const std::string &input1,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 void ModelBuilder::AddLayer_LOG(const std::string &input,
                                 const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
@@ -612,6 +635,7 @@ void ModelBuilder::AddLayer_LOG(const std::string &input,
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
 }
+
 // ModelBuilder auto generated methods end
 
 void ModelBuilder::AddLayer_PRELU(const std::string &input,

@@ -382,6 +382,7 @@ def generate_model_builder():
             '''RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
     }
+    
     '''
         )
     update_code('dnnlibrary/ModelBuilderImpl.cpp', 'ModelBuilder auto generated methods')
