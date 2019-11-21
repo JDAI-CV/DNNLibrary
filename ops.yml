@@ -41,7 +41,8 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
-    fused: true
+        -
+            predefined: fuse_code
     support_quant_asymm: true
     api: 27
 -
@@ -86,9 +87,10 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
+        -
+            predefined: fuse_code
     nnapi: AVERAGE_POOL_2D
     shaper: Pool
-    fused: true
     # builder_simple: false
     support_quant_asymm: true
     api: 27
@@ -135,9 +137,10 @@
             nnapi_type: scalar
             cpp_type: int32_t
             needed_by_shaper: true
+        -
+            predefined: fuse_code
     nnapi: MAX_POOL_2D
     shaper: Pool
-    fused: true
     # builder_simple: false
     support_quant_asymm: true
     api: 27
@@ -165,16 +168,19 @@
             convert_func: OnnxToNnapiIdentity
         -
             predefined: optional_bias
+        -
+            predefined: fuse_code
     nnapi: FULLY_CONNECTED
     shaper: FC
-    fused: true
     support_quant_asymm: true
     api: 27
 
 -
     nnapi: ADD
     base_input_num: 2
-    fused: true
+    input:
+        -
+            predefined: fuse_code
     shaper: Eltwise
     support_quant_asymm: true
     api: 27
@@ -236,7 +242,8 @@
             name: depth_multiplier
             nnapi_type: scalar
             cpp_type: int32_t
-    fused: true
+        -
+            predefined: fuse_code
     support_quant_asymm: true
     # converter_simple: false
     api: 27
@@ -303,7 +310,9 @@
 -
     nnapi: MUL
     base_input_num: 2
-    fused: true
+    input:
+        -
+            predefined: fuse_code
     shaper: Eltwise
     support_quant_asymm: true
     api: 27

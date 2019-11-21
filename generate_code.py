@@ -96,6 +96,10 @@ input_indexes.push_back(operand_indexes_.at(x));
         raise Exception('Unknown cpp_type {}'.format(operand['cpp_type']))
 
 
+def has_fuse_code_attr(op: dict):
+    return any([x['predefined'] == 'fuse_code' for x in op['input']])
+
+
 def infer_cfg(cfg, target: Target):
     next_pos = 0
     for i, op in enumerate(cfg):
@@ -135,14 +139,10 @@ def infer_cfg(cfg, target: Target):
         #     op['nnapi'] = op['name'].upper()
         # if 'dnn' not in op:
         #     op['dnn'] = op['name']
-        if 'fused' not in op:
-            op['fused'] = False
         if target == Target.ModelBuilder and 'nnapi_input' in op:
             op['input'].extend(op['nnapi_input'])
         elif target == Target.OnnxConverter and 'dnn_input' in op:
             op['input'].extend(op['dnn_input'])
-        if op['fused'] and target == Target.ModelBuilder:
-            op['input'].append({'name': 'fuse_code', 'nnapi_type': 'scalar', 'cpp_type': 'int32_t'})
         if 'support_quant_asymm' not in op:
             op['support_quant_asymm'] = False
         if 'converter_simple' not in op:
@@ -160,6 +160,10 @@ def infer_cfg(cfg, target: Target):
                 ipt['cpp_type'] = 'optional_str'
                 ipt['is_onnx_attr'] = False
                 ipt['convert_func'] = 'OnnxToNnapiIdentity'
+            elif ipt['predefined'] == 'fuse_code':
+                ipt['name'] = 'fuse_code'
+                ipt['nnapi_type'] = 'scalar'
+                ipt['cpp_type'] = 'FuseCode'
             if 'is_onnx_attr' not in ipt:
                 ipt['is_onnx_attr'] = True
             if 'convert_func' not in ipt:
@@ -199,8 +203,8 @@ def generate_onnx_converter():
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
         cogoutl(f"void OnnxConverter::WriteDaqLayer_{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
-        if op['fused']:
-            cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
+        # if has_fuse_code_attr(op):
+            # cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
         for x in op['input']:
             if not x['is_onnx_attr']:
                 if x['cpp_type'] == 'str':
@@ -247,13 +251,13 @@ def generate_onnx_converter():
                 return f"&{x['name']}_fb"
             elif x['cpp_type'] == 'int32_list':
                 return f"&{x['name']}"
+            elif x['predefined'] == 'fuse_code':
+                return f"ConvertFuseCodeType({x['name']})"
             else:
                 return x['name']
 
         cogout(f"const auto input_param = DNN::Create{op['nnapi']}_InputDirect(builder_, ")
         cogout(', '.join(list(map(get_input_param, op['input']))))
-        if op['fused']:
-            cogout(', ConvertFuseCodeType(activation.second)')
         cogoutl(');')
         # cogout(', ')
         cogout(f"const auto output_param = DNN::Create{op['nnapi']}_OutputDirect(builder_, ")
@@ -287,8 +291,6 @@ def generate_daq_reader():
         cogoutl(f"case DNN::LayerType::{op['nnapi']}: {{")
 
         arg_names = [x['name'] for x in op['input']]
-        if op['fused']:
-            arg_names += ['fuse']
         cogoutl(f"UNPACK_LAYER_QUANT({op['nnapi']}, {', '.join(arg_names)});")
         arg_names += [x['name'] for x in op['output']]
         for i, x in enumerate(op['input']):
@@ -318,13 +320,12 @@ def generate_fbs():
         'optional_str': 'string',
         'str_list': '[string]',
         'float': 'float',
+        'FuseCode': 'FuseCode'
     }
     for i, op in enumerate(cfg):
         cogoutl(f"table {op['nnapi']}_Input {{")
         for x in op['input']:
             cogoutl(f"    {x['name']}: {d[x['cpp_type']]};")
-        if op['fused']:
-            cogoutl('    fuse:FuseCode;')
         cogoutl('}')
         cogoutl('')
 

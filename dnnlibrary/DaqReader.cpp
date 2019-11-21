@@ -218,13 +218,13 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
             case DNN::LayerType::CONV_2D: {
                 UNPACK_LAYER_QUANT(CONV_2D, input, weight, bias, padding_left,
                                    padding_right, padding_top, padding_bottom,
-                                   stride_x, stride_y, fuse);
+                                   stride_x, stride_y, fuse_code);
                 const dnn::optional<std::string> bias_right_type =
                     (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
 
                 TRY(builder.AddLayer_CONV_2D(
                     input, weight, bias_right_type, padding_left, padding_right,
-                    padding_top, padding_bottom, stride_x, stride_y, fuse,
+                    padding_top, padding_bottom, stride_x, stride_y, fuse_code,
                     output, quant_info));
                 break;
             }
@@ -232,24 +232,24 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 UNPACK_LAYER_QUANT(AVERAGE_POOL_2D, input, padding_left,
                                    padding_right, padding_top, padding_bottom,
                                    stride_x, stride_y, kernel_width,
-                                   kernel_height, fuse);
+                                   kernel_height, fuse_code);
 
                 TRY(builder.AddLayer_AVERAGE_POOL_2D(
                     input, padding_left, padding_right, padding_top,
                     padding_bottom, stride_x, stride_y, kernel_width,
-                    kernel_height, fuse, output, quant_info));
+                    kernel_height, fuse_code, output, quant_info));
                 break;
             }
             case DNN::LayerType::MAX_POOL_2D: {
                 UNPACK_LAYER_QUANT(MAX_POOL_2D, input, padding_left,
                                    padding_right, padding_top, padding_bottom,
                                    stride_x, stride_y, kernel_width,
-                                   kernel_height, fuse);
+                                   kernel_height, fuse_code);
 
                 TRY(builder.AddLayer_MAX_POOL_2D(
                     input, padding_left, padding_right, padding_top,
                     padding_bottom, stride_x, stride_y, kernel_width,
-                    kernel_height, fuse, output, quant_info));
+                    kernel_height, fuse_code, output, quant_info));
                 break;
             }
             case DNN::LayerType::RELU: {
@@ -265,18 +265,20 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 break;
             }
             case DNN::LayerType::FULLY_CONNECTED: {
-                UNPACK_LAYER_QUANT(FULLY_CONNECTED, input, weight, bias, fuse);
+                UNPACK_LAYER_QUANT(FULLY_CONNECTED, input, weight, bias,
+                                   fuse_code);
                 const dnn::optional<std::string> bias_right_type =
                     (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
 
-                TRY(builder.AddLayer_FULLY_CONNECTED(
-                    input, weight, bias_right_type, fuse, output, quant_info));
+                TRY(builder.AddLayer_FULLY_CONNECTED(input, weight,
+                                                     bias_right_type, fuse_code,
+                                                     output, quant_info));
                 break;
             }
             case DNN::LayerType::ADD: {
-                UNPACK_LAYER_QUANT(ADD, input1, input2, fuse);
+                UNPACK_LAYER_QUANT(ADD, input1, input2, fuse_code);
 
-                TRY(builder.AddLayer_ADD(input1, input2, fuse, output,
+                TRY(builder.AddLayer_ADD(input1, input2, fuse_code, output,
                                          quant_info));
                 break;
             }
@@ -290,14 +292,14 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 UNPACK_LAYER_QUANT(DEPTHWISE_CONV_2D, input, weight, bias,
                                    padding_left, padding_right, padding_top,
                                    padding_bottom, stride_x, stride_y,
-                                   depth_multiplier, fuse);
+                                   depth_multiplier, fuse_code);
                 const dnn::optional<std::string> bias_right_type =
                     (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
 
                 TRY(builder.AddLayer_DEPTHWISE_CONV_2D(
                     input, weight, bias_right_type, padding_left, padding_right,
                     padding_top, padding_bottom, stride_x, stride_y,
-                    depth_multiplier, fuse, output, quant_info));
+                    depth_multiplier, fuse_code, output, quant_info));
                 break;
             }
             case DNN::LayerType::BATCH_TO_SPACE_ND: {
@@ -324,9 +326,9 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 break;
             }
             case DNN::LayerType::MUL: {
-                UNPACK_LAYER_QUANT(MUL, input1, input2, fuse);
+                UNPACK_LAYER_QUANT(MUL, input1, input2, fuse_code);
 
-                TRY(builder.AddLayer_MUL(input1, input2, fuse, output,
+                TRY(builder.AddLayer_MUL(input1, input2, fuse_code, output,
                                          quant_info));
                 break;
             }

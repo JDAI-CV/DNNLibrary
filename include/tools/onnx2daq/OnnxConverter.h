@@ -116,17 +116,18 @@ class OnnxConverter {
                                int32_t padding_left, int32_t padding_right,
                                int32_t padding_top, int32_t padding_bottom,
                                int32_t stride_x, int32_t stride_y,
-                               const std::string &output);
+                               FuseCode fuse_code, const std::string &output);
     void WriteDaqLayer_AVERAGE_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-        const std::string &output);
+        FuseCode fuse_code, const std::string &output);
     void WriteDaqLayer_MAX_POOL_2D(const std::string &input,
                                    int32_t padding_left, int32_t padding_right,
                                    int32_t padding_top, int32_t padding_bottom,
                                    int32_t stride_x, int32_t stride_y,
                                    int32_t kernel_width, int32_t kernel_height,
+                                   FuseCode fuse_code,
                                    const std::string &output);
     void WriteDaqLayer_RELU(const std::string &input,
                             const std::string &output);
@@ -135,9 +136,10 @@ class OnnxConverter {
     void WriteDaqLayer_FULLY_CONNECTED(const std::string &input,
                                        const std::string &weight,
                                        const dnn::optional<std::string> &bias,
+                                       FuseCode fuse_code,
                                        const std::string &output);
     void WriteDaqLayer_ADD(const std::string &input1, const std::string &input2,
-                           const std::string &output);
+                           FuseCode fuse_code, const std::string &output);
     void WriteDaqLayer_CONCATENATION(const std::vector<std::string> &inputs,
                                      int32_t axis, const std::string &output);
     void WriteDaqLayer_DEPTHWISE_CONV_2D(
@@ -145,7 +147,7 @@ class OnnxConverter {
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
-        const std::string &output);
+        FuseCode fuse_code, const std::string &output);
     void WriteDaqLayer_BATCH_TO_SPACE_ND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
         const std::string &output);
@@ -160,7 +162,7 @@ class OnnxConverter {
                                      int32_t shrink_axis_mask,
                                      const std::string &output);
     void WriteDaqLayer_MUL(const std::string &input1, const std::string &input2,
-                           const std::string &output);
+                           FuseCode fuse_code, const std::string &output);
     void WriteDaqLayer_DEQUANTIZE(const std::string &input,
                                   const std::string &output);
     void WriteDaqLayer_LOCAL_RESPONSE_NORMALIZATION(const std::string &input,

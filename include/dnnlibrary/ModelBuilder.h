@@ -116,20 +116,20 @@ class ModelBuilder {
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-        int32_t stride_x, int32_t stride_y, int32_t fuse_code,
+        int32_t stride_x, int32_t stride_y, FuseCode fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     expected<Unit, std::string> AddLayer_AVERAGE_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-        int32_t fuse_code, const std::string &output,
+        FuseCode fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     expected<Unit, std::string> AddLayer_MAX_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-        int32_t fuse_code, const std::string &output,
+        FuseCode fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     expected<Unit, std::string> AddLayer_RELU(const std::string &input,
                                               const std::string &output);
@@ -138,12 +138,12 @@ class ModelBuilder {
                                                  const std::string &output);
     expected<Unit, std::string> AddLayer_FULLY_CONNECTED(
         const std::string &input, const std::string &weight,
-        const dnn::optional<std::string> &bias, int32_t fuse_code,
+        const dnn::optional<std::string> &bias, FuseCode fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     expected<Unit, std::string> AddLayer_ADD(
-        const std::string &input1, const std::string &input2, int32_t fuse_code,
-        const std::string &output,
+        const std::string &input1, const std::string &input2,
+        FuseCode fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     expected<Unit, std::string> AddLayer_CONCATENATION(
         const std::vector<std::string> &inputs, int32_t axis,
@@ -153,7 +153,7 @@ class ModelBuilder {
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
-        int32_t fuse_code, const std::string &output,
+        FuseCode fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     expected<Unit, std::string> AddLayer_BATCH_TO_SPACE_ND(
         const std::string &input, const std::vector<int32_t> &block_sizes,
@@ -167,8 +167,8 @@ class ModelBuilder {
         int32_t begin_mask, int32_t end_mask, int32_t shrink_axis_mask,
         const std::string &output);
     expected<Unit, std::string> AddLayer_MUL(
-        const std::string &input1, const std::string &input2, int32_t fuse_code,
-        const std::string &output,
+        const std::string &input1, const std::string &input2,
+        FuseCode fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
     expected<Unit, std::string> AddLayer_DEQUANTIZE(const std::string &input,
                                                     const std::string &output);

@@ -110,9 +110,8 @@ void OnnxConverter::WriteDaqLayer_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-    int32_t stride_x, int32_t stride_y, const std::string &output) {
-    const auto activation = FindActivation(model_proto_, output);
-
+    int32_t stride_x, int32_t stride_y, FuseCode fuse_code,
+    const std::string &output) {
     {
         const auto name = input;
 
@@ -155,7 +154,7 @@ void OnnxConverter::WriteDaqLayer_CONV_2D(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr, padding_left,
         padding_right, padding_top, padding_bottom, stride_x, stride_y,
-        ConvertFuseCodeType(activation.second));
+        ConvertFuseCodeType(fuse_code));
     const auto output_param =
         DNN::CreateCONV_2D_OutputDirect(builder_, output.c_str());
     const auto param = DNN::CreateCONV_2D(builder_, input_param, output_param);
@@ -168,9 +167,7 @@ void OnnxConverter::WriteDaqLayer_AVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-    const std::string &output) {
-    const auto activation = FindActivation(model_proto_, output);
-
+    FuseCode fuse_code, const std::string &output) {
     {
         const auto name = input;
 
@@ -189,7 +186,7 @@ void OnnxConverter::WriteDaqLayer_AVERAGE_POOL_2D(
     const auto input_param = DNN::CreateAVERAGE_POOL_2D_InputDirect(
         builder_, m(input).c_str(), padding_left, padding_right, padding_top,
         padding_bottom, stride_x, stride_y, kernel_width, kernel_height,
-        ConvertFuseCodeType(activation.second));
+        ConvertFuseCodeType(fuse_code));
     const auto output_param =
         DNN::CreateAVERAGE_POOL_2D_OutputDirect(builder_, output.c_str());
     const auto param =
@@ -203,9 +200,7 @@ void OnnxConverter::WriteDaqLayer_MAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-    const std::string &output) {
-    const auto activation = FindActivation(model_proto_, output);
-
+    FuseCode fuse_code, const std::string &output) {
     {
         const auto name = input;
 
@@ -224,7 +219,7 @@ void OnnxConverter::WriteDaqLayer_MAX_POOL_2D(
     const auto input_param = DNN::CreateMAX_POOL_2D_InputDirect(
         builder_, m(input).c_str(), padding_left, padding_right, padding_top,
         padding_bottom, stride_x, stride_y, kernel_width, kernel_height,
-        ConvertFuseCodeType(activation.second));
+        ConvertFuseCodeType(fuse_code));
     const auto output_param =
         DNN::CreateMAX_POOL_2D_OutputDirect(builder_, output.c_str());
     const auto param =
@@ -286,9 +281,8 @@ void OnnxConverter::WriteDaqLayer_SOFTMAX(const std::string &input, float beta,
 
 void OnnxConverter::WriteDaqLayer_FULLY_CONNECTED(
     const std::string &input, const std::string &weight,
-    const dnn::optional<std::string> &bias, const std::string &output) {
-    const auto activation = FindActivation(model_proto_, output);
-
+    const dnn::optional<std::string> &bias, FuseCode fuse_code,
+    const std::string &output) {
     {
         const auto name = input;
 
@@ -329,7 +323,7 @@ void OnnxConverter::WriteDaqLayer_FULLY_CONNECTED(
     const auto input_param = DNN::CreateFULLY_CONNECTED_InputDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr,
-        ConvertFuseCodeType(activation.second));
+        ConvertFuseCodeType(fuse_code));
     const auto output_param =
         DNN::CreateFULLY_CONNECTED_OutputDirect(builder_, output.c_str());
     const auto param =
@@ -341,9 +335,8 @@ void OnnxConverter::WriteDaqLayer_FULLY_CONNECTED(
 
 void OnnxConverter::WriteDaqLayer_ADD(const std::string &input1,
                                       const std::string &input2,
+                                      FuseCode fuse_code,
                                       const std::string &output) {
-    const auto activation = FindActivation(model_proto_, output);
-
     {
         const auto name = input1;
 
@@ -371,7 +364,7 @@ void OnnxConverter::WriteDaqLayer_ADD(const std::string &input1,
     shaper_.Eltwise(m(input1), m(input2), output);
     const auto input_param = DNN::CreateADD_InputDirect(
         builder_, m(input1).c_str(), m(input2).c_str(),
-        ConvertFuseCodeType(activation.second));
+        ConvertFuseCodeType(fuse_code));
     const auto output_param =
         DNN::CreateADD_OutputDirect(builder_, output.c_str());
     const auto param = DNN::CreateADD(builder_, input_param, output_param);
@@ -411,9 +404,7 @@ void OnnxConverter::WriteDaqLayer_DEPTHWISE_CONV_2D(
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
     int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
-    const std::string &output) {
-    const auto activation = FindActivation(model_proto_, output);
-
+    FuseCode fuse_code, const std::string &output) {
     {
         const auto name = input;
 
@@ -457,7 +448,7 @@ void OnnxConverter::WriteDaqLayer_DEPTHWISE_CONV_2D(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr, padding_left,
         padding_right, padding_top, padding_bottom, stride_x, stride_y,
-        depth_multiplier, ConvertFuseCodeType(activation.second));
+        depth_multiplier, ConvertFuseCodeType(fuse_code));
     const auto output_param =
         DNN::CreateDEPTHWISE_CONV_2D_OutputDirect(builder_, output.c_str());
     const auto param =
@@ -557,9 +548,8 @@ void OnnxConverter::WriteDaqLayer_STRIDED_SLICE(
 
 void OnnxConverter::WriteDaqLayer_MUL(const std::string &input1,
                                       const std::string &input2,
+                                      FuseCode fuse_code,
                                       const std::string &output) {
-    const auto activation = FindActivation(model_proto_, output);
-
     {
         const auto name = input1;
 
@@ -587,7 +577,7 @@ void OnnxConverter::WriteDaqLayer_MUL(const std::string &input1,
     shaper_.Eltwise(m(input1), m(input2), output);
     const auto input_param = DNN::CreateMUL_InputDirect(
         builder_, m(input1).c_str(), m(input2).c_str(),
-        ConvertFuseCodeType(activation.second));
+        ConvertFuseCodeType(fuse_code));
     const auto output_param =
         DNN::CreateMUL_OutputDirect(builder_, output.c_str());
     const auto param = DNN::CreateMUL(builder_, input_param, output_param);

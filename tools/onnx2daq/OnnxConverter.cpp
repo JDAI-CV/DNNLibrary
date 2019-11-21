@@ -1,10 +1,3 @@
-#include <tools/onnx2daq/OnnxConverter.h>
-
-#include <fstream>
-#include <map>
-#include <numeric>
-#include <string>
-
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/helper.h>
@@ -12,6 +5,12 @@
 #include <glog/logging.h>
 #include <onnx/optimizer/optimize.h>
 #include <onnx/shape_inference/implementation.h>
+#include <tools/onnx2daq/OnnxConverter.h>
+
+#include <fstream>
+#include <map>
+#include <numeric>
+#include <string>
 #ifdef __ANDROID__
 #include <dnnlibrary/nnapi_implementation.h>
 #endif
@@ -716,18 +715,20 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                     "The weight of convolution must be known");
             }
             const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
+            const auto act = FindActivation(model_proto_, output_name);
             if (group == 1) {
                 VLOG(5) << "Vanilla conv";
                 WriteDaqLayer_CONV_2D(input_name, ori_weight_name, bias_name,
-                                onnx_pads[1], onnx_pads[3], onnx_pads[0],
-                                onnx_pads[2], onnx_strides[1], onnx_strides[0],
-                                output_name);
+                                      onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                                      onnx_pads[2], onnx_strides[1],
+                                      onnx_strides[0], act.second, output_name);
             } else if (onnx_weight.shape[1] == 1) {  // depthwise
                 VLOG(5) << "Depthwise conv";
                 WriteDaqLayer_DEPTHWISE_CONV_2D(
                     input_name, ori_weight_name, bias_name, onnx_pads[1],
                     onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1],
-                    onnx_strides[0], onnx_weight.shape[0] / group, output_name);
+                    onnx_strides[0], onnx_weight.shape[0] / group, act.second,
+                    output_name);
             } else {
                 // TODO: Support it
                 throw std::invalid_argument("group != 1 is not supported");
@@ -738,6 +739,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             VLOG(5) << "Start converting Pool";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
+            const auto act = FindActivation(model_proto_, output_name).second;
             if (op == "AveragePool" || op == "MaxPool") {
                 vector<int> nnapi_strides, nnapi_pads, kernel_shape;
                 kernel_shape = helper.get("kernel_shape", vector<int>{0, 0});
@@ -770,23 +772,24 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                     WriteDaqLayer_AVERAGE_POOL_2D(
                         input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
                         onnx_pads[2], onnx_strides[1], onnx_strides[0],
-                        kernel_shape[1], kernel_shape[0], output_name);
+                        kernel_shape[1], kernel_shape[0], act, output_name);
                 } else {
                     WriteDaqLayer_MAX_POOL_2D(
                         input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
                         onnx_pads[2], onnx_strides[1], onnx_strides[0],
-                        kernel_shape[1], kernel_shape[0], output_name);
+                        kernel_shape[1], kernel_shape[0], act, output_name);
                 }
             } else {
                 const auto input_height = shaper_[input_name][1];
                 const auto input_width = shaper_[input_name][2];
                 if (op == "GlobalAveragePool") {
                     WriteDaqLayer_AVERAGE_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
-                                            input_width, input_height,
-                                            output_name);
+                                                  input_width, input_height,
+                                                  act, output_name);
                 } else {
                     WriteDaqLayer_MAX_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
-                                        input_width, input_height, output_name);
+                                              input_width, input_height, act,
+                                              output_name);
                 }
             }
             VLOG(5) << "Converting Pool completed";
@@ -809,20 +812,23 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            WriteDaqLayer_ADD(input1_name, input2_name, output_name);
+            const auto act = FindActivation(model_proto_, output_name).second;
+            WriteDaqLayer_ADD(input1_name, input2_name, act, output_name);
             VLOG(5) << "Converting Add completed";
         } else if (op == "Mul") {
             VLOG(5) << "Start converting Mul";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            WriteDaqLayer_MUL(input1_name, input2_name, output_name);
+            const auto act = FindActivation(model_proto_, output_name).second;
+            WriteDaqLayer_MUL(input1_name, input2_name, act, output_name);
             VLOG(5) << "Converting Mul completed";
         } else if (op == "Gemm") {
             VLOG(5) << "Start converting Gemm";
             const auto input_name = m(node.input(0));
             const auto weight_name = m(node.input(1));
             const auto output_name = m(node.output(0));
+            const auto act = FindActivation(model_proto_, output_name).second;
             dnn::optional<string> bias_name;
             if (node.input_size() >= 3) {
                 bias_name = m(node.input(2));
@@ -832,8 +838,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto alpha = helper.get("alpha", 1.0f);
             const auto beta = helper.get("beta", 1.0f);
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
-                WriteDaqLayer_FULLY_CONNECTED(input_name, weight_name, bias_name,
-                                        output_name);
+                WriteDaqLayer_FULLY_CONNECTED(input_name, weight_name,
+                                              bias_name, act, output_name);
             } else {
                 throw std::invalid_argument(
                     "Only transA == 0, transB == 1, alpha == 1.0 and beta == "
@@ -857,8 +863,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
             const auto axis = helper.get("axis", 1);
             const auto output_name = m(node.output(0));
-            WriteDaqLayer_CONCATENATION(concat_inputs_str, axis_nchw_to_nhwc[axis],
-                                  output_name);
+            WriteDaqLayer_CONCATENATION(concat_inputs_str,
+                                        axis_nchw_to_nhwc[axis], output_name);
             VLOG(5) << "Converting Concat completed";
         } else if (op == "Dropout") {
             VLOG(5) << "Start converting Dropout";
@@ -885,6 +891,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto eps = helper.get("epsilon", 1e-5f);
 
             const auto output_name = m(node.output(0));
+            const auto act = FindActivation(model_proto_, output_name).second;
 
             vector<float> a, b;
             FORZ(i, scale_tensor.shape[0]) {
@@ -909,8 +916,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            WriteDaqLayer_MUL(input_name, tensor_a_name, tensor_imm_product_name);
-            WriteDaqLayer_ADD(tensor_imm_product_name, tensor_b_name, output_name);
+            WriteDaqLayer_MUL(input_name, tensor_a_name, FuseCode::FUSED_NONE,
+                              tensor_imm_product_name);
+            WriteDaqLayer_ADD(tensor_imm_product_name, tensor_b_name, act,
+                              output_name);
 
             VLOG(5) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
@@ -935,8 +944,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto radius = (size - 1) / 2;
             alpha /= size;  // The implementation of ONNX LRN is not the same as
                             // that of NNAPI LRN
-            WriteDaqLayer_LOCAL_RESPONSE_NORMALIZATION(node.input(0), radius, bias,
-                                                 alpha, beta, node.output(0));
+            WriteDaqLayer_LOCAL_RESPONSE_NORMALIZATION(
+                node.input(0), radius, bias, alpha, beta, node.output(0));
             VLOG(5) << "Converting LRN completed";
         } else if (op == "Tanh") {
             VLOG(5) << "Start converting Tanh";

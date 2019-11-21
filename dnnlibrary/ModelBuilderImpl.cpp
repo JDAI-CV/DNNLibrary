@@ -15,7 +15,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-    int32_t stride_x, int32_t stride_y, int32_t fuse_code,
+    int32_t stride_x, int32_t stride_y, FuseCode fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
@@ -69,7 +69,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_AVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-    int32_t fuse_code, const std::string &output,
+    FuseCode fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
         return make_unexpected("AVERAGE_POOL_2D requires API 27");
@@ -97,7 +97,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_MAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
-    int32_t fuse_code, const std::string &output,
+    FuseCode fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
         return make_unexpected("MAX_POOL_2D requires API 27");
@@ -162,7 +162,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_SOFTMAX(
 
 expected<Unit, std::string> ModelBuilder::AddLayer_FULLY_CONNECTED(
     const std::string &input, const std::string &weight,
-    const dnn::optional<std::string> &bias, int32_t fuse_code,
+    const dnn::optional<std::string> &bias, FuseCode fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
@@ -211,7 +211,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_FULLY_CONNECTED(
 }
 
 expected<Unit, std::string> ModelBuilder::AddLayer_ADD(
-    const std::string &input1, const std::string &input2, int32_t fuse_code,
+    const std::string &input1, const std::string &input2, FuseCode fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
@@ -262,7 +262,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
     int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
-    int32_t fuse_code, const std::string &output,
+    FuseCode fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
         return make_unexpected("DEPTHWISE_CONV_2D requires API 27");
@@ -402,7 +402,7 @@ expected<Unit, std::string> ModelBuilder::AddLayer_STRIDED_SLICE(
 }
 
 expected<Unit, std::string> ModelBuilder::AddLayer_MUL(
-    const std::string &input1, const std::string &input2, int32_t fuse_code,
+    const std::string &input1, const std::string &input2, FuseCode fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {

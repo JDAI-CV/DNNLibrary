@@ -71,7 +71,7 @@ table CONV_2D_Input {
     padding_bottom: int;
     stride_x: int;
     stride_y: int;
-    fuse:FuseCode;
+    fuse_code: FuseCode;
 }
 
 table CONV_2D_Output {
@@ -93,7 +93,7 @@ table AVERAGE_POOL_2D_Input {
     stride_y: int;
     kernel_width: int;
     kernel_height: int;
-    fuse:FuseCode;
+    fuse_code: FuseCode;
 }
 
 table AVERAGE_POOL_2D_Output {
@@ -115,7 +115,7 @@ table MAX_POOL_2D_Input {
     stride_y: int;
     kernel_width: int;
     kernel_height: int;
-    fuse:FuseCode;
+    fuse_code: FuseCode;
 }
 
 table MAX_POOL_2D_Output {
@@ -158,7 +158,7 @@ table FULLY_CONNECTED_Input {
     input: string;
     weight: string;
     bias: string;
-    fuse:FuseCode;
+    fuse_code: FuseCode;
 }
 
 table FULLY_CONNECTED_Output {
@@ -173,7 +173,7 @@ table FULLY_CONNECTED {
 table ADD_Input {
     input1: string;
     input2: string;
-    fuse:FuseCode;
+    fuse_code: FuseCode;
 }
 
 table ADD_Output {
@@ -210,7 +210,7 @@ table DEPTHWISE_CONV_2D_Input {
     stride_x: int;
     stride_y: int;
     depth_multiplier: int;
-    fuse:FuseCode;
+    fuse_code: FuseCode;
 }
 
 table DEPTHWISE_CONV_2D_Output {
@@ -273,7 +273,7 @@ table STRIDED_SLICE {
 table MUL_Input {
     input1: string;
     input2: string;
-    fuse:FuseCode;
+    fuse_code: FuseCode;
 }
 
 table MUL_Output {

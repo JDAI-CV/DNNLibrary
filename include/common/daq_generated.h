@@ -661,7 +661,7 @@ struct CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_PADDING_BOTTOM = 16,
     VT_STRIDE_X = 18,
     VT_STRIDE_Y = 20,
-    VT_FUSE = 22
+    VT_FUSE_CODE = 22
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
@@ -690,8 +690,8 @@ struct CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t stride_y() const {
     return GetField<int32_t>(VT_STRIDE_Y, 0);
   }
-  FuseCode fuse() const {
-    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -707,7 +707,7 @@ struct CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_PADDING_BOTTOM) &&
            VerifyField<int32_t>(verifier, VT_STRIDE_X) &&
            VerifyField<int32_t>(verifier, VT_STRIDE_Y) &&
-           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
            verifier.EndTable();
   }
 };
@@ -742,8 +742,8 @@ struct CONV_2D_InputBuilder {
   void add_stride_y(int32_t stride_y) {
     fbb_.AddElement<int32_t>(CONV_2D_Input::VT_STRIDE_Y, stride_y, 0);
   }
-  void add_fuse(FuseCode fuse) {
-    fbb_.AddElement<int8_t>(CONV_2D_Input::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(CONV_2D_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
   explicit CONV_2D_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -768,7 +768,7 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_Input(
     int32_t padding_bottom = 0,
     int32_t stride_x = 0,
     int32_t stride_y = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   CONV_2D_InputBuilder builder_(_fbb);
   builder_.add_stride_y(stride_y);
   builder_.add_stride_x(stride_x);
@@ -779,7 +779,7 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_Input(
   builder_.add_bias(bias);
   builder_.add_weight(weight);
   builder_.add_input(input);
-  builder_.add_fuse(fuse);
+  builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
 
@@ -794,7 +794,7 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_InputDirect(
     int32_t padding_bottom = 0,
     int32_t stride_x = 0,
     int32_t stride_y = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   auto input__ = input ? _fbb.CreateString(input) : 0;
   auto weight__ = weight ? _fbb.CreateString(weight) : 0;
   auto bias__ = bias ? _fbb.CreateString(bias) : 0;
@@ -809,7 +809,7 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_InputDirect(
       padding_bottom,
       stride_x,
       stride_y,
-      fuse);
+      fuse_code);
 }
 
 struct CONV_2D_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -925,7 +925,7 @@ struct AVERAGE_POOL_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
     VT_STRIDE_Y = 16,
     VT_KERNEL_WIDTH = 18,
     VT_KERNEL_HEIGHT = 20,
-    VT_FUSE = 22
+    VT_FUSE_CODE = 22
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
@@ -954,8 +954,8 @@ struct AVERAGE_POOL_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   int32_t kernel_height() const {
     return GetField<int32_t>(VT_KERNEL_HEIGHT, 0);
   }
-  FuseCode fuse() const {
-    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -969,7 +969,7 @@ struct AVERAGE_POOL_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
            VerifyField<int32_t>(verifier, VT_STRIDE_Y) &&
            VerifyField<int32_t>(verifier, VT_KERNEL_WIDTH) &&
            VerifyField<int32_t>(verifier, VT_KERNEL_HEIGHT) &&
-           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
            verifier.EndTable();
   }
 };
@@ -1004,8 +1004,8 @@ struct AVERAGE_POOL_2D_InputBuilder {
   void add_kernel_height(int32_t kernel_height) {
     fbb_.AddElement<int32_t>(AVERAGE_POOL_2D_Input::VT_KERNEL_HEIGHT, kernel_height, 0);
   }
-  void add_fuse(FuseCode fuse) {
-    fbb_.AddElement<int8_t>(AVERAGE_POOL_2D_Input::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(AVERAGE_POOL_2D_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
   explicit AVERAGE_POOL_2D_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1030,7 +1030,7 @@ inline flatbuffers::Offset<AVERAGE_POOL_2D_Input> CreateAVERAGE_POOL_2D_Input(
     int32_t stride_y = 0,
     int32_t kernel_width = 0,
     int32_t kernel_height = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   AVERAGE_POOL_2D_InputBuilder builder_(_fbb);
   builder_.add_kernel_height(kernel_height);
   builder_.add_kernel_width(kernel_width);
@@ -1041,7 +1041,7 @@ inline flatbuffers::Offset<AVERAGE_POOL_2D_Input> CreateAVERAGE_POOL_2D_Input(
   builder_.add_padding_right(padding_right);
   builder_.add_padding_left(padding_left);
   builder_.add_input(input);
-  builder_.add_fuse(fuse);
+  builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
 
@@ -1056,7 +1056,7 @@ inline flatbuffers::Offset<AVERAGE_POOL_2D_Input> CreateAVERAGE_POOL_2D_InputDir
     int32_t stride_y = 0,
     int32_t kernel_width = 0,
     int32_t kernel_height = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   auto input__ = input ? _fbb.CreateString(input) : 0;
   return DNN::CreateAVERAGE_POOL_2D_Input(
       _fbb,
@@ -1069,7 +1069,7 @@ inline flatbuffers::Offset<AVERAGE_POOL_2D_Input> CreateAVERAGE_POOL_2D_InputDir
       stride_y,
       kernel_width,
       kernel_height,
-      fuse);
+      fuse_code);
 }
 
 struct AVERAGE_POOL_2D_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1185,7 +1185,7 @@ struct MAX_POOL_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_STRIDE_Y = 16,
     VT_KERNEL_WIDTH = 18,
     VT_KERNEL_HEIGHT = 20,
-    VT_FUSE = 22
+    VT_FUSE_CODE = 22
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
@@ -1214,8 +1214,8 @@ struct MAX_POOL_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int32_t kernel_height() const {
     return GetField<int32_t>(VT_KERNEL_HEIGHT, 0);
   }
-  FuseCode fuse() const {
-    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1229,7 +1229,7 @@ struct MAX_POOL_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_STRIDE_Y) &&
            VerifyField<int32_t>(verifier, VT_KERNEL_WIDTH) &&
            VerifyField<int32_t>(verifier, VT_KERNEL_HEIGHT) &&
-           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
            verifier.EndTable();
   }
 };
@@ -1264,8 +1264,8 @@ struct MAX_POOL_2D_InputBuilder {
   void add_kernel_height(int32_t kernel_height) {
     fbb_.AddElement<int32_t>(MAX_POOL_2D_Input::VT_KERNEL_HEIGHT, kernel_height, 0);
   }
-  void add_fuse(FuseCode fuse) {
-    fbb_.AddElement<int8_t>(MAX_POOL_2D_Input::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(MAX_POOL_2D_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
   explicit MAX_POOL_2D_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1290,7 +1290,7 @@ inline flatbuffers::Offset<MAX_POOL_2D_Input> CreateMAX_POOL_2D_Input(
     int32_t stride_y = 0,
     int32_t kernel_width = 0,
     int32_t kernel_height = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   MAX_POOL_2D_InputBuilder builder_(_fbb);
   builder_.add_kernel_height(kernel_height);
   builder_.add_kernel_width(kernel_width);
@@ -1301,7 +1301,7 @@ inline flatbuffers::Offset<MAX_POOL_2D_Input> CreateMAX_POOL_2D_Input(
   builder_.add_padding_right(padding_right);
   builder_.add_padding_left(padding_left);
   builder_.add_input(input);
-  builder_.add_fuse(fuse);
+  builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
 
@@ -1316,7 +1316,7 @@ inline flatbuffers::Offset<MAX_POOL_2D_Input> CreateMAX_POOL_2D_InputDirect(
     int32_t stride_y = 0,
     int32_t kernel_width = 0,
     int32_t kernel_height = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   auto input__ = input ? _fbb.CreateString(input) : 0;
   return DNN::CreateMAX_POOL_2D_Input(
       _fbb,
@@ -1329,7 +1329,7 @@ inline flatbuffers::Offset<MAX_POOL_2D_Input> CreateMAX_POOL_2D_InputDirect(
       stride_y,
       kernel_width,
       kernel_height,
-      fuse);
+      fuse_code);
 }
 
 struct MAX_POOL_2D_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1755,7 +1755,7 @@ struct FULLY_CONNECTED_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
     VT_INPUT = 4,
     VT_WEIGHT = 6,
     VT_BIAS = 8,
-    VT_FUSE = 10
+    VT_FUSE_CODE = 10
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
@@ -1766,8 +1766,8 @@ struct FULLY_CONNECTED_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
   const flatbuffers::String *bias() const {
     return GetPointer<const flatbuffers::String *>(VT_BIAS);
   }
-  FuseCode fuse() const {
-    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1777,7 +1777,7 @@ struct FULLY_CONNECTED_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Tabl
            verifier.VerifyString(weight()) &&
            VerifyOffset(verifier, VT_BIAS) &&
            verifier.VerifyString(bias()) &&
-           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
            verifier.EndTable();
   }
 };
@@ -1794,8 +1794,8 @@ struct FULLY_CONNECTED_InputBuilder {
   void add_bias(flatbuffers::Offset<flatbuffers::String> bias) {
     fbb_.AddOffset(FULLY_CONNECTED_Input::VT_BIAS, bias);
   }
-  void add_fuse(FuseCode fuse) {
-    fbb_.AddElement<int8_t>(FULLY_CONNECTED_Input::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(FULLY_CONNECTED_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
   explicit FULLY_CONNECTED_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1814,12 +1814,12 @@ inline flatbuffers::Offset<FULLY_CONNECTED_Input> CreateFULLY_CONNECTED_Input(
     flatbuffers::Offset<flatbuffers::String> input = 0,
     flatbuffers::Offset<flatbuffers::String> weight = 0,
     flatbuffers::Offset<flatbuffers::String> bias = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   FULLY_CONNECTED_InputBuilder builder_(_fbb);
   builder_.add_bias(bias);
   builder_.add_weight(weight);
   builder_.add_input(input);
-  builder_.add_fuse(fuse);
+  builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
 
@@ -1828,7 +1828,7 @@ inline flatbuffers::Offset<FULLY_CONNECTED_Input> CreateFULLY_CONNECTED_InputDir
     const char *input = nullptr,
     const char *weight = nullptr,
     const char *bias = nullptr,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   auto input__ = input ? _fbb.CreateString(input) : 0;
   auto weight__ = weight ? _fbb.CreateString(weight) : 0;
   auto bias__ = bias ? _fbb.CreateString(bias) : 0;
@@ -1837,7 +1837,7 @@ inline flatbuffers::Offset<FULLY_CONNECTED_Input> CreateFULLY_CONNECTED_InputDir
       input__,
       weight__,
       bias__,
-      fuse);
+      fuse_code);
 }
 
 struct FULLY_CONNECTED_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -1946,7 +1946,7 @@ struct ADD_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_INPUT1 = 4,
     VT_INPUT2 = 6,
-    VT_FUSE = 8
+    VT_FUSE_CODE = 8
   };
   const flatbuffers::String *input1() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT1);
@@ -1954,8 +1954,8 @@ struct ADD_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *input2() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT2);
   }
-  FuseCode fuse() const {
-    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -1963,7 +1963,7 @@ struct ADD_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(input1()) &&
            VerifyOffset(verifier, VT_INPUT2) &&
            verifier.VerifyString(input2()) &&
-           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
            verifier.EndTable();
   }
 };
@@ -1977,8 +1977,8 @@ struct ADD_InputBuilder {
   void add_input2(flatbuffers::Offset<flatbuffers::String> input2) {
     fbb_.AddOffset(ADD_Input::VT_INPUT2, input2);
   }
-  void add_fuse(FuseCode fuse) {
-    fbb_.AddElement<int8_t>(ADD_Input::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(ADD_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
   explicit ADD_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -1996,11 +1996,11 @@ inline flatbuffers::Offset<ADD_Input> CreateADD_Input(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> input1 = 0,
     flatbuffers::Offset<flatbuffers::String> input2 = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   ADD_InputBuilder builder_(_fbb);
   builder_.add_input2(input2);
   builder_.add_input1(input1);
-  builder_.add_fuse(fuse);
+  builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
 
@@ -2008,14 +2008,14 @@ inline flatbuffers::Offset<ADD_Input> CreateADD_InputDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *input1 = nullptr,
     const char *input2 = nullptr,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   auto input1__ = input1 ? _fbb.CreateString(input1) : 0;
   auto input2__ = input2 ? _fbb.CreateString(input2) : 0;
   return DNN::CreateADD_Input(
       _fbb,
       input1__,
       input2__,
-      fuse);
+      fuse_code);
 }
 
 struct ADD_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -2297,7 +2297,7 @@ struct DEPTHWISE_CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Ta
     VT_STRIDE_X = 18,
     VT_STRIDE_Y = 20,
     VT_DEPTH_MULTIPLIER = 22,
-    VT_FUSE = 24
+    VT_FUSE_CODE = 24
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
@@ -2329,8 +2329,8 @@ struct DEPTHWISE_CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Ta
   int32_t depth_multiplier() const {
     return GetField<int32_t>(VT_DEPTH_MULTIPLIER, 0);
   }
-  FuseCode fuse() const {
-    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -2347,7 +2347,7 @@ struct DEPTHWISE_CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Ta
            VerifyField<int32_t>(verifier, VT_STRIDE_X) &&
            VerifyField<int32_t>(verifier, VT_STRIDE_Y) &&
            VerifyField<int32_t>(verifier, VT_DEPTH_MULTIPLIER) &&
-           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
            verifier.EndTable();
   }
 };
@@ -2385,8 +2385,8 @@ struct DEPTHWISE_CONV_2D_InputBuilder {
   void add_depth_multiplier(int32_t depth_multiplier) {
     fbb_.AddElement<int32_t>(DEPTHWISE_CONV_2D_Input::VT_DEPTH_MULTIPLIER, depth_multiplier, 0);
   }
-  void add_fuse(FuseCode fuse) {
-    fbb_.AddElement<int8_t>(DEPTHWISE_CONV_2D_Input::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(DEPTHWISE_CONV_2D_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
   explicit DEPTHWISE_CONV_2D_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -2412,7 +2412,7 @@ inline flatbuffers::Offset<DEPTHWISE_CONV_2D_Input> CreateDEPTHWISE_CONV_2D_Inpu
     int32_t stride_x = 0,
     int32_t stride_y = 0,
     int32_t depth_multiplier = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   DEPTHWISE_CONV_2D_InputBuilder builder_(_fbb);
   builder_.add_depth_multiplier(depth_multiplier);
   builder_.add_stride_y(stride_y);
@@ -2424,7 +2424,7 @@ inline flatbuffers::Offset<DEPTHWISE_CONV_2D_Input> CreateDEPTHWISE_CONV_2D_Inpu
   builder_.add_bias(bias);
   builder_.add_weight(weight);
   builder_.add_input(input);
-  builder_.add_fuse(fuse);
+  builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
 
@@ -2440,7 +2440,7 @@ inline flatbuffers::Offset<DEPTHWISE_CONV_2D_Input> CreateDEPTHWISE_CONV_2D_Inpu
     int32_t stride_x = 0,
     int32_t stride_y = 0,
     int32_t depth_multiplier = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   auto input__ = input ? _fbb.CreateString(input) : 0;
   auto weight__ = weight ? _fbb.CreateString(weight) : 0;
   auto bias__ = bias ? _fbb.CreateString(bias) : 0;
@@ -2456,7 +2456,7 @@ inline flatbuffers::Offset<DEPTHWISE_CONV_2D_Input> CreateDEPTHWISE_CONV_2D_Inpu
       stride_x,
       stride_y,
       depth_multiplier,
-      fuse);
+      fuse_code);
 }
 
 struct DEPTHWISE_CONV_2D_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -3141,7 +3141,7 @@ struct MUL_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_INPUT1 = 4,
     VT_INPUT2 = 6,
-    VT_FUSE = 8
+    VT_FUSE_CODE = 8
   };
   const flatbuffers::String *input1() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT1);
@@ -3149,8 +3149,8 @@ struct MUL_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *input2() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT2);
   }
-  FuseCode fuse() const {
-    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE, 0));
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
@@ -3158,7 +3158,7 @@ struct MUL_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(input1()) &&
            VerifyOffset(verifier, VT_INPUT2) &&
            verifier.VerifyString(input2()) &&
-           VerifyField<int8_t>(verifier, VT_FUSE) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
            verifier.EndTable();
   }
 };
@@ -3172,8 +3172,8 @@ struct MUL_InputBuilder {
   void add_input2(flatbuffers::Offset<flatbuffers::String> input2) {
     fbb_.AddOffset(MUL_Input::VT_INPUT2, input2);
   }
-  void add_fuse(FuseCode fuse) {
-    fbb_.AddElement<int8_t>(MUL_Input::VT_FUSE, static_cast<int8_t>(fuse), 0);
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(MUL_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
   explicit MUL_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -3191,11 +3191,11 @@ inline flatbuffers::Offset<MUL_Input> CreateMUL_Input(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> input1 = 0,
     flatbuffers::Offset<flatbuffers::String> input2 = 0,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   MUL_InputBuilder builder_(_fbb);
   builder_.add_input2(input2);
   builder_.add_input1(input1);
-  builder_.add_fuse(fuse);
+  builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
 
@@ -3203,14 +3203,14 @@ inline flatbuffers::Offset<MUL_Input> CreateMUL_InputDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *input1 = nullptr,
     const char *input2 = nullptr,
-    FuseCode fuse = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None) {
   auto input1__ = input1 ? _fbb.CreateString(input1) : 0;
   auto input2__ = input2 ? _fbb.CreateString(input2) : 0;
   return DNN::CreateMUL_Input(
       _fbb,
       input1__,
       input2__,
-      fuse);
+      fuse_code);
 }
 
 struct MUL_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
