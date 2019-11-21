@@ -61,187 +61,379 @@ table Input {
 }
 
 // Auto generated tables start
-table CONV_2D {
-    input:string;
-    weight:string;
-    bias:string;
-    padding_left:int;
-    padding_right:int;
-    padding_top:int;
-    padding_bottom:int;
-    stride_x:int;
-    stride_y:int;
+table CONV_2D_Input {
+    input: string;
+    weight: string;
+    bias: string;
+    padding_left: int;
+    padding_right: int;
+    padding_top: int;
+    padding_bottom: int;
+    stride_x: int;
+    stride_y: int;
     fuse:FuseCode;
-    output:string;
+}
+
+table CONV_2D_Output {
+    output: string;
+}
+
+table CONV_2D {
+    input: CONV_2D_Input;
+    output: CONV_2D_Output;
+}
+
+table AVERAGE_POOL_2D_Input {
+    input: string;
+    padding_left: int;
+    padding_right: int;
+    padding_top: int;
+    padding_bottom: int;
+    stride_x: int;
+    stride_y: int;
+    kernel_width: int;
+    kernel_height: int;
+    fuse:FuseCode;
+}
+
+table AVERAGE_POOL_2D_Output {
+    output: string;
 }
 
 table AVERAGE_POOL_2D {
-    input:string;
-    padding_left:int;
-    padding_right:int;
-    padding_top:int;
-    padding_bottom:int;
-    stride_x:int;
-    stride_y:int;
-    kernel_width:int;
-    kernel_height:int;
+    input: AVERAGE_POOL_2D_Input;
+    output: AVERAGE_POOL_2D_Output;
+}
+
+table MAX_POOL_2D_Input {
+    input: string;
+    padding_left: int;
+    padding_right: int;
+    padding_top: int;
+    padding_bottom: int;
+    stride_x: int;
+    stride_y: int;
+    kernel_width: int;
+    kernel_height: int;
     fuse:FuseCode;
-    output:string;
+}
+
+table MAX_POOL_2D_Output {
+    output: string;
 }
 
 table MAX_POOL_2D {
-    input:string;
-    padding_left:int;
-    padding_right:int;
-    padding_top:int;
-    padding_bottom:int;
-    stride_x:int;
-    stride_y:int;
-    kernel_width:int;
-    kernel_height:int;
-    fuse:FuseCode;
-    output:string;
+    input: MAX_POOL_2D_Input;
+    output: MAX_POOL_2D_Output;
+}
+
+table RELU_Input {
+    input: string;
+}
+
+table RELU_Output {
+    output: string;
 }
 
 table RELU {
-    input:string;
-    output:string;
+    input: RELU_Input;
+    output: RELU_Output;
+}
+
+table SOFTMAX_Input {
+    input: string;
+    beta: float;
+}
+
+table SOFTMAX_Output {
+    output: string;
 }
 
 table SOFTMAX {
-    input:string;
-    beta:float;
-    output:string;
+    input: SOFTMAX_Input;
+    output: SOFTMAX_Output;
+}
+
+table FULLY_CONNECTED_Input {
+    input: string;
+    weight: string;
+    bias: string;
+    fuse:FuseCode;
+}
+
+table FULLY_CONNECTED_Output {
+    output: string;
 }
 
 table FULLY_CONNECTED {
-    input:string;
-    weight:string;
-    bias:string;
+    input: FULLY_CONNECTED_Input;
+    output: FULLY_CONNECTED_Output;
+}
+
+table ADD_Input {
+    input1: string;
+    input2: string;
     fuse:FuseCode;
-    output:string;
+}
+
+table ADD_Output {
+    output: string;
 }
 
 table ADD {
-    input1:string;
-    input2:string;
-    fuse:FuseCode;
-    output:string;
+    input: ADD_Input;
+    output: ADD_Output;
+}
+
+table CONCATENATION_Input {
+    inputs: [string];
+    axis: int;
+}
+
+table CONCATENATION_Output {
+    output: string;
 }
 
 table CONCATENATION {
-    inputs:[string];
-    axis:int;
-    output:string;
+    input: CONCATENATION_Input;
+    output: CONCATENATION_Output;
+}
+
+table DEPTHWISE_CONV_2D_Input {
+    input: string;
+    weight: string;
+    bias: string;
+    padding_left: int;
+    padding_right: int;
+    padding_top: int;
+    padding_bottom: int;
+    stride_x: int;
+    stride_y: int;
+    depth_multiplier: int;
+    fuse:FuseCode;
+}
+
+table DEPTHWISE_CONV_2D_Output {
+    output: string;
 }
 
 table DEPTHWISE_CONV_2D {
-    input:string;
-    weight:string;
-    bias:string;
-    padding_left:int;
-    padding_right:int;
-    padding_top:int;
-    padding_bottom:int;
-    stride_x:int;
-    stride_y:int;
-    depth_multiplier:int;
-    fuse:FuseCode;
-    output:string;
+    input: DEPTHWISE_CONV_2D_Input;
+    output: DEPTHWISE_CONV_2D_Output;
+}
+
+table BATCH_TO_SPACE_ND_Input {
+    input: string;
+    block_sizes: [int];
+}
+
+table BATCH_TO_SPACE_ND_Output {
+    output: string;
 }
 
 table BATCH_TO_SPACE_ND {
-    input:string;
-    block_sizes:[int];
-    output:string;
+    input: BATCH_TO_SPACE_ND_Input;
+    output: BATCH_TO_SPACE_ND_Output;
+}
+
+table SPACE_TO_BATCH_ND_Input {
+    input: string;
+    block_sizes: [int];
+    pads: [int];
+}
+
+table SPACE_TO_BATCH_ND_Output {
+    output: string;
 }
 
 table SPACE_TO_BATCH_ND {
-    input:string;
-    block_sizes:[int];
-    pads:[int];
-    output:string;
+    input: SPACE_TO_BATCH_ND_Input;
+    output: SPACE_TO_BATCH_ND_Output;
+}
+
+table STRIDED_SLICE_Input {
+    input: string;
+    starts: [int];
+    ends: [int];
+    strides: [int];
+    begin_mask: int;
+    end_mask: int;
+    shrink_axis_mask: int;
+}
+
+table STRIDED_SLICE_Output {
+    output: string;
 }
 
 table STRIDED_SLICE {
-    input:string;
-    starts:[int];
-    ends:[int];
-    strides:[int];
-    begin_mask:int;
-    end_mask:int;
-    shrink_axis_mask:int;
-    output:string;
+    input: STRIDED_SLICE_Input;
+    output: STRIDED_SLICE_Output;
+}
+
+table MUL_Input {
+    input1: string;
+    input2: string;
+    fuse:FuseCode;
+}
+
+table MUL_Output {
+    output: string;
 }
 
 table MUL {
-    input1:string;
-    input2:string;
-    fuse:FuseCode;
-    output:string;
+    input: MUL_Input;
+    output: MUL_Output;
+}
+
+table DEQUANTIZE_Input {
+    input: string;
+}
+
+table DEQUANTIZE_Output {
+    output: string;
 }
 
 table DEQUANTIZE {
-    input:string;
-    output:string;
+    input: DEQUANTIZE_Input;
+    output: DEQUANTIZE_Output;
+}
+
+table LOCAL_RESPONSE_NORMALIZATION_Input {
+    input: string;
+    radius: int;
+    bias: float;
+    alpha: float;
+    beta: float;
+}
+
+table LOCAL_RESPONSE_NORMALIZATION_Output {
+    output: string;
 }
 
 table LOCAL_RESPONSE_NORMALIZATION {
-    input:string;
-    radius:int;
-    bias:float;
-    alpha:float;
-    beta:float;
-    output:string;
+    input: LOCAL_RESPONSE_NORMALIZATION_Input;
+    output: LOCAL_RESPONSE_NORMALIZATION_Output;
+}
+
+table TANH_Input {
+    input: string;
+}
+
+table TANH_Output {
+    output: string;
 }
 
 table TANH {
-    input:string;
-    output:string;
+    input: TANH_Input;
+    output: TANH_Output;
+}
+
+table FLOOR_Input {
+    input: string;
+}
+
+table FLOOR_Output {
+    output: string;
 }
 
 table FLOOR {
-    input:string;
-    output:string;
+    input: FLOOR_Input;
+    output: FLOOR_Output;
+}
+
+table LOGISTIC_Input {
+    input: string;
+}
+
+table LOGISTIC_Output {
+    output: string;
 }
 
 table LOGISTIC {
-    input:string;
-    output:string;
+    input: LOGISTIC_Input;
+    output: LOGISTIC_Output;
+}
+
+table PRELU_Input {
+    input: string;
+    alpha: string;
+}
+
+table PRELU_Output {
+    output: string;
 }
 
 table PRELU {
-    input:string;
-    alpha:string;
-    output:string;
+    input: PRELU_Input;
+    output: PRELU_Output;
+}
+
+table POW_Input {
+    input: string;
+    exp: string;
+}
+
+table POW_Output {
+    output: string;
 }
 
 table POW {
-    input:string;
-    exp:string;
-    output:string;
+    input: POW_Input;
+    output: POW_Output;
+}
+
+table NEG_Input {
+    input: string;
+}
+
+table NEG_Output {
+    output: string;
 }
 
 table NEG {
-    input:string;
-    output:string;
+    input: NEG_Input;
+    output: NEG_Output;
+}
+
+table MINIMUM_Input {
+    input1: string;
+    input2: string;
+}
+
+table MINIMUM_Output {
+    output: string;
 }
 
 table MINIMUM {
-    input1:string;
-    input2:string;
-    output:string;
+    input: MINIMUM_Input;
+    output: MINIMUM_Output;
+}
+
+table MAXIMUM_Input {
+    input1: string;
+    input2: string;
+}
+
+table MAXIMUM_Output {
+    output: string;
 }
 
 table MAXIMUM {
-    input1:string;
-    input2:string;
-    output:string;
+    input: MAXIMUM_Input;
+    output: MAXIMUM_Output;
+}
+
+table LOG_Input {
+    input: string;
+}
+
+table LOG_Output {
+    output: string;
 }
 
 table LOG {
-    input:string;
-    output:string;
+    input: LOG_Input;
+    output: LOG_Output;
 }
 
 // Auto generated tables end

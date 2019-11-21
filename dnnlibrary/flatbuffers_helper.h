@@ -5,28 +5,28 @@
 #ifndef DNNLIBRARY_FLATBUFFERS_HELPER_H
 #define DNNLIBRARY_FLATBUFFERS_HELPER_H
 
+#include <common/daq_generated.h>
+#include <common/helper.h>
+#include <flatbuffers/flatbuffers.h>
+
 #include <string>
 #include <vector>
 
-#include <flatbuffers/flatbuffers.h>
-
-#include <common/daq_generated.h>
-#include <common/helper.h>
-
 #define UNPACK(name) const auto name = unpack_fbs(param->name());
 
-#define UNPACK_LAYER(name, ...)                \
-    const auto *param = layer->name##_param(); \
-    FOR_EACH(UNPACK, __VA_ARGS__)              \
-    VLOG(5) << "Layer: " << XSTR(name);        \
+#define UNPACK_LAYER(name, ...)                         \
+    const auto *param = layer->name##_param()->input(); \
+    FOR_EACH(UNPACK, __VA_ARGS__)                       \
+    VLOG(5) << "Layer: " << XSTR(name);                 \
     PNT_TO(VLOG(5), __VA_ARGS__);
 
-#define UNPACK_LAYER_QUANT(name, ...)                         \
-    const auto *param = layer->name##_param();                \
-    FOR_EACH(UNPACK, __VA_ARGS__)                             \
-    VLOG(5) << "Layer: " << XSTR(name);                       \
-    PNT_TO(VLOG(5), __VA_ARGS__);                             \
-    const auto *daq_quant_info = GetQuantInfo(model, output); \
+#define UNPACK_LAYER_QUANT(name, ...)                                          \
+    const auto *param = layer->name##_param()->input();                        \
+    FOR_EACH(UNPACK, __VA_ARGS__)                                              \
+    VLOG(5) << "Layer: " << XSTR(name);                                        \
+    PNT_TO(VLOG(5), __VA_ARGS__);                                              \
+    const auto output = unpack_fbs(layer->name##_param()->output()->output()); \
+    const auto *daq_quant_info = GetQuantInfo(model, output);                  \
     const auto quant_info = DaqQuantInfoToModelBuilderQuantInfo(daq_quant_info);
 
 #define ADD_LAYER(param_name, layer_name, ...) \

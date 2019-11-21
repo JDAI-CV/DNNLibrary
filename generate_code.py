@@ -250,13 +250,16 @@ def generate_onnx_converter():
             else:
                 return x['name']
 
-        cogout(f"const auto param = DNN::Create{op['nnapi']}Direct(builder_, ")
+        cogout(f"const auto input_param = DNN::Create{op['nnapi']}_InputDirect(builder_, ")
         cogout(', '.join(list(map(get_input_param, op['input']))))
         if op['fused']:
             cogout(', ConvertFuseCodeType(activation.second)')
-        cogout(', ')
+        cogoutl(');')
+        # cogout(', ')
+        cogout(f"const auto output_param = DNN::Create{op['nnapi']}_OutputDirect(builder_, ")
         cogout(', '.join(list(map(lambda x: f"{x['name']}.c_str()", op['output']))))
         cogoutl(');')
+        cogout(f"const auto param = DNN::Create{op['nnapi']}(builder_, input_param, output_param);")
         cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['nnapi']}, ")
         cogout(''.join(['0, '] * (op['pos'])))
         cogoutl('param);')
@@ -286,8 +289,8 @@ def generate_daq_reader():
         arg_names = [x['name'] for x in op['input']]
         if op['fused']:
             arg_names += ['fuse']
-        arg_names += [x['name'] for x in op['output']]
         cogoutl(f"UNPACK_LAYER_QUANT({op['nnapi']}, {', '.join(arg_names)});")
+        arg_names += [x['name'] for x in op['output']]
         for i, x in enumerate(op['input']):
             if x['cpp_type'] == 'optional_str':
                 cogoutl(f"const dnn::optional<std::string> {x['name']}_right_type "
@@ -307,22 +310,33 @@ def generate_fbs():
         cfg = yaml.load(f)
     # The target of fbs is the same as onnx converter
     infer_cfg(cfg, Target.OnnxConverter)
+
+    d = {
+        'int32_list': '[int]',
+        'int32_t': 'int',
+        'str': 'string',
+        'optional_str': 'string',
+        'str_list': '[string]',
+        'float': 'float',
+    }
     for i, op in enumerate(cfg):
-        cogoutl(f"table {op['nnapi']} {{")
-        d = {
-            'int32_list': '[int]',
-            'int32_t': 'int',
-            'str': 'string',
-            'optional_str': 'string',
-            'str_list': '[string]',
-            'float': 'float',
-        }
+        cogoutl(f"table {op['nnapi']}_Input {{")
         for x in op['input']:
-            cogoutl(f"    {x['name']}:{d[x['cpp_type']]};")
+            cogoutl(f"    {x['name']}: {d[x['cpp_type']]};")
         if op['fused']:
             cogoutl('    fuse:FuseCode;')
+        cogoutl('}')
+        cogoutl('')
+
+        cogoutl(f"table {op['nnapi']}_Output {{")
         for x in op['output']:
-            cogoutl(f"    {x['name']}:{d[x['cpp_type']]};")
+            cogoutl(f"    {x['name']}: {d[x['cpp_type']]};")
+        cogoutl('}')
+        cogoutl('')
+
+        cogoutl(f"table {op['nnapi']} {{")
+        cogoutl(f"    input: {op['nnapi']}_Input;")
+        cogoutl(f"    output: {op['nnapi']}_Output;")
         cogoutl('}')
         cogoutl('')
     update_code('common/daq.fbs', 'Auto generated tables', reformat=False)

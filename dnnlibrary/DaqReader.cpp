@@ -218,7 +218,7 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
             case DNN::LayerType::CONV_2D: {
                 UNPACK_LAYER_QUANT(CONV_2D, input, weight, bias, padding_left,
                                    padding_right, padding_top, padding_bottom,
-                                   stride_x, stride_y, fuse, output);
+                                   stride_x, stride_y, fuse);
                 const dnn::optional<std::string> bias_right_type =
                     (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
 
@@ -232,7 +232,7 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 UNPACK_LAYER_QUANT(AVERAGE_POOL_2D, input, padding_left,
                                    padding_right, padding_top, padding_bottom,
                                    stride_x, stride_y, kernel_width,
-                                   kernel_height, fuse, output);
+                                   kernel_height, fuse);
 
                 TRY(builder.AddLayer_AVERAGE_POOL_2D(
                     input, padding_left, padding_right, padding_top,
@@ -244,7 +244,7 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 UNPACK_LAYER_QUANT(MAX_POOL_2D, input, padding_left,
                                    padding_right, padding_top, padding_bottom,
                                    stride_x, stride_y, kernel_width,
-                                   kernel_height, fuse, output);
+                                   kernel_height, fuse);
 
                 TRY(builder.AddLayer_MAX_POOL_2D(
                     input, padding_left, padding_right, padding_top,
@@ -253,20 +253,19 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 break;
             }
             case DNN::LayerType::RELU: {
-                UNPACK_LAYER_QUANT(RELU, input, output);
+                UNPACK_LAYER_QUANT(RELU, input);
 
                 TRY(builder.AddLayer_RELU(input, output));
                 break;
             }
             case DNN::LayerType::SOFTMAX: {
-                UNPACK_LAYER_QUANT(SOFTMAX, input, beta, output);
+                UNPACK_LAYER_QUANT(SOFTMAX, input, beta);
 
                 TRY(builder.AddLayer_SOFTMAX(input, beta, output));
                 break;
             }
             case DNN::LayerType::FULLY_CONNECTED: {
-                UNPACK_LAYER_QUANT(FULLY_CONNECTED, input, weight, bias, fuse,
-                                   output);
+                UNPACK_LAYER_QUANT(FULLY_CONNECTED, input, weight, bias, fuse);
                 const dnn::optional<std::string> bias_right_type =
                     (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
 
@@ -275,14 +274,14 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 break;
             }
             case DNN::LayerType::ADD: {
-                UNPACK_LAYER_QUANT(ADD, input1, input2, fuse, output);
+                UNPACK_LAYER_QUANT(ADD, input1, input2, fuse);
 
                 TRY(builder.AddLayer_ADD(input1, input2, fuse, output,
                                          quant_info));
                 break;
             }
             case DNN::LayerType::CONCATENATION: {
-                UNPACK_LAYER_QUANT(CONCATENATION, inputs, axis, output);
+                UNPACK_LAYER_QUANT(CONCATENATION, inputs, axis);
 
                 TRY(builder.AddLayer_CONCATENATION(inputs, axis, output));
                 break;
@@ -291,7 +290,7 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 UNPACK_LAYER_QUANT(DEPTHWISE_CONV_2D, input, weight, bias,
                                    padding_left, padding_right, padding_top,
                                    padding_bottom, stride_x, stride_y,
-                                   depth_multiplier, fuse, output);
+                                   depth_multiplier, fuse);
                 const dnn::optional<std::string> bias_right_type =
                     (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
 
@@ -302,16 +301,14 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 break;
             }
             case DNN::LayerType::BATCH_TO_SPACE_ND: {
-                UNPACK_LAYER_QUANT(BATCH_TO_SPACE_ND, input, block_sizes,
-                                   output);
+                UNPACK_LAYER_QUANT(BATCH_TO_SPACE_ND, input, block_sizes);
 
                 TRY(builder.AddLayer_BATCH_TO_SPACE_ND(input, block_sizes,
                                                        output));
                 break;
             }
             case DNN::LayerType::SPACE_TO_BATCH_ND: {
-                UNPACK_LAYER_QUANT(SPACE_TO_BATCH_ND, input, block_sizes, pads,
-                                   output);
+                UNPACK_LAYER_QUANT(SPACE_TO_BATCH_ND, input, block_sizes, pads);
 
                 TRY(builder.AddLayer_SPACE_TO_BATCH_ND(input, block_sizes, pads,
                                                        output));
@@ -319,8 +316,7 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
             }
             case DNN::LayerType::STRIDED_SLICE: {
                 UNPACK_LAYER_QUANT(STRIDED_SLICE, input, starts, ends, strides,
-                                   begin_mask, end_mask, shrink_axis_mask,
-                                   output);
+                                   begin_mask, end_mask, shrink_axis_mask);
 
                 TRY(builder.AddLayer_STRIDED_SLICE(input, starts, ends, strides,
                                                    begin_mask, end_mask,
@@ -328,76 +324,76 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 break;
             }
             case DNN::LayerType::MUL: {
-                UNPACK_LAYER_QUANT(MUL, input1, input2, fuse, output);
+                UNPACK_LAYER_QUANT(MUL, input1, input2, fuse);
 
                 TRY(builder.AddLayer_MUL(input1, input2, fuse, output,
                                          quant_info));
                 break;
             }
             case DNN::LayerType::DEQUANTIZE: {
-                UNPACK_LAYER_QUANT(DEQUANTIZE, input, output);
+                UNPACK_LAYER_QUANT(DEQUANTIZE, input);
 
                 TRY(builder.AddLayer_DEQUANTIZE(input, output));
                 break;
             }
             case DNN::LayerType::LOCAL_RESPONSE_NORMALIZATION: {
                 UNPACK_LAYER_QUANT(LOCAL_RESPONSE_NORMALIZATION, input, radius,
-                                   bias, alpha, beta, output);
+                                   bias, alpha, beta);
 
                 TRY(builder.AddLayer_LOCAL_RESPONSE_NORMALIZATION(
                     input, radius, bias, alpha, beta, output));
                 break;
             }
             case DNN::LayerType::TANH: {
-                UNPACK_LAYER_QUANT(TANH, input, output);
+                UNPACK_LAYER_QUANT(TANH, input);
 
                 TRY(builder.AddLayer_TANH(input, output));
                 break;
             }
             case DNN::LayerType::FLOOR: {
-                UNPACK_LAYER_QUANT(FLOOR, input, output);
+                UNPACK_LAYER_QUANT(FLOOR, input);
 
                 TRY(builder.AddLayer_FLOOR(input, output));
                 break;
             }
             case DNN::LayerType::LOGISTIC: {
-                UNPACK_LAYER_QUANT(LOGISTIC, input, output);
+                UNPACK_LAYER_QUANT(LOGISTIC, input);
 
                 TRY(builder.AddLayer_LOGISTIC(input, output));
                 break;
             }
             case DNN::LayerType::PRELU: {
-                UNPACK_LAYER_QUANT(PRELU, input, alpha, output);
+                UNPACK_LAYER_QUANT(PRELU, input, alpha);
 
                 TRY(builder.AddLayer_PRELU(input, alpha, output));
                 break;
             }
             case DNN::LayerType::POW: {
-                UNPACK_LAYER_QUANT(POW, input, exp, output);
+                UNPACK_LAYER_QUANT(POW, input, exp);
 
                 TRY(builder.AddLayer_POW(input, exp, output));
                 break;
             }
             case DNN::LayerType::NEG: {
-                UNPACK_LAYER_QUANT(NEG, input, output);
+                UNPACK_LAYER_QUANT(NEG, input);
 
                 TRY(builder.AddLayer_NEG(input, output));
                 break;
             }
             case DNN::LayerType::MINIMUM: {
-                UNPACK_LAYER_QUANT(MINIMUM, input1, input2, output);
+                UNPACK_LAYER_QUANT(MINIMUM, input1, input2);
 
                 TRY(builder.AddLayer_MINIMUM(input1, input2, output));
                 break;
             }
             case DNN::LayerType::MAXIMUM: {
-                UNPACK_LAYER_QUANT(MAXIMUM, input1, input2, output);
+                UNPACK_LAYER_QUANT(MAXIMUM, input1, input2);
 
                 TRY(builder.AddLayer_MAXIMUM(input1, input2, output));
                 break;
             }
             case DNN::LayerType::LOG: {
-                UNPACK_LAYER_QUANT(LOG, input, output);
+                UNPACK_LAYER_QUANT(LOG, input);
 
                 TRY(builder.AddLayer_LOG(input, output));
                 break;

@@ -151,11 +151,14 @@ void OnnxConverter::WriteDaqLayer_CONV_2D(
 
     shaper_.Conv(m(input), m(weight), padding_left, padding_right, padding_top,
                  padding_bottom, stride_x, stride_y, output);
-    const auto param = DNN::CreateCONV_2DDirect(
+    const auto input_param = DNN::CreateCONV_2D_InputDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr, padding_left,
         padding_right, padding_top, padding_bottom, stride_x, stride_y,
-        ConvertFuseCodeType(activation.second), output.c_str());
+        ConvertFuseCodeType(activation.second));
+    const auto output_param =
+        DNN::CreateCONV_2D_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateCONV_2D(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::CONV_2D, param);
     layers_.push_back(layer);
@@ -183,10 +186,14 @@ void OnnxConverter::WriteDaqLayer_AVERAGE_POOL_2D(
     shaper_.Pool(m(input), padding_left, padding_right, padding_top,
                  padding_bottom, stride_x, stride_y, kernel_width,
                  kernel_height, output);
-    const auto param = DNN::CreateAVERAGE_POOL_2DDirect(
+    const auto input_param = DNN::CreateAVERAGE_POOL_2D_InputDirect(
         builder_, m(input).c_str(), padding_left, padding_right, padding_top,
         padding_bottom, stride_x, stride_y, kernel_width, kernel_height,
-        ConvertFuseCodeType(activation.second), output.c_str());
+        ConvertFuseCodeType(activation.second));
+    const auto output_param =
+        DNN::CreateAVERAGE_POOL_2D_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateAVERAGE_POOL_2D(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::AVERAGE_POOL_2D, 0, param);
     layers_.push_back(layer);
@@ -214,10 +221,14 @@ void OnnxConverter::WriteDaqLayer_MAX_POOL_2D(
     shaper_.Pool(m(input), padding_left, padding_right, padding_top,
                  padding_bottom, stride_x, stride_y, kernel_width,
                  kernel_height, output);
-    const auto param = DNN::CreateMAX_POOL_2DDirect(
+    const auto input_param = DNN::CreateMAX_POOL_2D_InputDirect(
         builder_, m(input).c_str(), padding_left, padding_right, padding_top,
         padding_bottom, stride_x, stride_y, kernel_width, kernel_height,
-        ConvertFuseCodeType(activation.second), output.c_str());
+        ConvertFuseCodeType(activation.second));
+    const auto output_param =
+        DNN::CreateMAX_POOL_2D_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateMAX_POOL_2D(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::MAX_POOL_2D, 0, 0, param);
     layers_.push_back(layer);
@@ -238,8 +249,11 @@ void OnnxConverter::WriteDaqLayer_RELU(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param =
-        DNN::CreateRELUDirect(builder_, m(input).c_str(), output.c_str());
+    const auto input_param =
+        DNN::CreateRELU_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateRELU_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateRELU(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::RELU, 0, 0, 0, param);
     layers_.push_back(layer);
@@ -260,8 +274,11 @@ void OnnxConverter::WriteDaqLayer_SOFTMAX(const std::string &input, float beta,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param = DNN::CreateSOFTMAXDirect(builder_, m(input).c_str(),
-                                                beta, output.c_str());
+    const auto input_param =
+        DNN::CreateSOFTMAX_InputDirect(builder_, m(input).c_str(), beta);
+    const auto output_param =
+        DNN::CreateSOFTMAX_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateSOFTMAX(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::SOFTMAX, 0, 0, 0, 0, param);
     layers_.push_back(layer);
@@ -309,10 +326,14 @@ void OnnxConverter::WriteDaqLayer_FULLY_CONNECTED(
     }
 
     shaper_.FC(m(input), m(weight), output);
-    const auto param = DNN::CreateFULLY_CONNECTEDDirect(
+    const auto input_param = DNN::CreateFULLY_CONNECTED_InputDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr,
-        ConvertFuseCodeType(activation.second), output.c_str());
+        ConvertFuseCodeType(activation.second));
+    const auto output_param =
+        DNN::CreateFULLY_CONNECTED_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateFULLY_CONNECTED(builder_, input_param, output_param);
     const auto layer = DNN::CreateLayer(
         builder_, DNN::LayerType::FULLY_CONNECTED, 0, 0, 0, 0, 0, param);
     layers_.push_back(layer);
@@ -348,9 +369,12 @@ void OnnxConverter::WriteDaqLayer_ADD(const std::string &input1,
     }
 
     shaper_.Eltwise(m(input1), m(input2), output);
-    const auto param = DNN::CreateADDDirect(
+    const auto input_param = DNN::CreateADD_InputDirect(
         builder_, m(input1).c_str(), m(input2).c_str(),
-        ConvertFuseCodeType(activation.second), output.c_str());
+        ConvertFuseCodeType(activation.second));
+    const auto output_param =
+        DNN::CreateADD_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateADD(builder_, input_param, output_param);
     const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::ADD, 0, 0, 0,
                                         0, 0, 0, param);
     layers_.push_back(layer);
@@ -371,8 +395,12 @@ void OnnxConverter::WriteDaqLayer_CONCATENATION(
 
     const auto inputs_fb = FbStrVector(inputs);
     shaper_.Concat(inputs, axis, output);
-    const auto param = DNN::CreateCONCATENATIONDirect(builder_, &inputs_fb,
-                                                      axis, output.c_str());
+    const auto input_param =
+        DNN::CreateCONCATENATION_InputDirect(builder_, &inputs_fb, axis);
+    const auto output_param =
+        DNN::CreateCONCATENATION_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateCONCATENATION(builder_, input_param, output_param);
     const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::CONCATENATION,
                                         0, 0, 0, 0, 0, 0, 0, param);
     layers_.push_back(layer);
@@ -425,12 +453,15 @@ void OnnxConverter::WriteDaqLayer_DEPTHWISE_CONV_2D(
     shaper_.DepthwiseConv(m(input), m(weight), padding_left, padding_right,
                           padding_top, padding_bottom, stride_x, stride_y,
                           output);
-    const auto param = DNN::CreateDEPTHWISE_CONV_2DDirect(
+    const auto input_param = DNN::CreateDEPTHWISE_CONV_2D_InputDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr, padding_left,
         padding_right, padding_top, padding_bottom, stride_x, stride_y,
-        depth_multiplier, ConvertFuseCodeType(activation.second),
-        output.c_str());
+        depth_multiplier, ConvertFuseCodeType(activation.second));
+    const auto output_param =
+        DNN::CreateDEPTHWISE_CONV_2D_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateDEPTHWISE_CONV_2D(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::DEPTHWISE_CONV_2D, 0, 0, 0,
                          0, 0, 0, 0, 0, param);
@@ -453,8 +484,12 @@ void OnnxConverter::WriteDaqLayer_BATCH_TO_SPACE_ND(
     }
 
     shaper_.BatchToSpace(m(input), block_sizes, output);
-    const auto param = DNN::CreateBATCH_TO_SPACE_NDDirect(
-        builder_, m(input).c_str(), &block_sizes, output.c_str());
+    const auto input_param = DNN::CreateBATCH_TO_SPACE_ND_InputDirect(
+        builder_, m(input).c_str(), &block_sizes);
+    const auto output_param =
+        DNN::CreateBATCH_TO_SPACE_ND_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateBATCH_TO_SPACE_ND(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::BATCH_TO_SPACE_ND, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, param);
@@ -477,8 +512,12 @@ void OnnxConverter::WriteDaqLayer_SPACE_TO_BATCH_ND(
     }
 
     shaper_.SpaceToBatch(m(input), block_sizes, pads, output);
-    const auto param = DNN::CreateSPACE_TO_BATCH_NDDirect(
-        builder_, m(input).c_str(), &block_sizes, &pads, output.c_str());
+    const auto input_param = DNN::CreateSPACE_TO_BATCH_ND_InputDirect(
+        builder_, m(input).c_str(), &block_sizes, &pads);
+    const auto output_param =
+        DNN::CreateSPACE_TO_BATCH_ND_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateSPACE_TO_BATCH_ND(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::SPACE_TO_BATCH_ND, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, param);
@@ -504,9 +543,13 @@ void OnnxConverter::WriteDaqLayer_STRIDED_SLICE(
 
     shaper_.StridedSlice(m(input), starts, ends, strides, begin_mask, end_mask,
                          shrink_axis_mask, output);
-    const auto param = DNN::CreateSTRIDED_SLICEDirect(
+    const auto input_param = DNN::CreateSTRIDED_SLICE_InputDirect(
         builder_, m(input).c_str(), &starts, &ends, &strides, begin_mask,
-        end_mask, shrink_axis_mask, output.c_str());
+        end_mask, shrink_axis_mask);
+    const auto output_param =
+        DNN::CreateSTRIDED_SLICE_OutputDirect(builder_, output.c_str());
+    const auto param =
+        DNN::CreateSTRIDED_SLICE(builder_, input_param, output_param);
     const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::STRIDED_SLICE,
                                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
     layers_.push_back(layer);
@@ -542,9 +585,12 @@ void OnnxConverter::WriteDaqLayer_MUL(const std::string &input1,
     }
 
     shaper_.Eltwise(m(input1), m(input2), output);
-    const auto param = DNN::CreateMULDirect(
+    const auto input_param = DNN::CreateMUL_InputDirect(
         builder_, m(input1).c_str(), m(input2).c_str(),
-        ConvertFuseCodeType(activation.second), output.c_str());
+        ConvertFuseCodeType(activation.second));
+    const auto output_param =
+        DNN::CreateMUL_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateMUL(builder_, input_param, output_param);
     const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::MUL, 0, 0, 0,
                                         0, 0, 0, 0, 0, 0, 0, 0, 0, param);
     layers_.push_back(layer);
@@ -565,8 +611,12 @@ void OnnxConverter::WriteDaqLayer_DEQUANTIZE(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
+    const auto input_param =
+        DNN::CreateDEQUANTIZE_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateDEQUANTIZE_OutputDirect(builder_, output.c_str());
     const auto param =
-        DNN::CreateDEQUANTIZEDirect(builder_, m(input).c_str(), output.c_str());
+        DNN::CreateDEQUANTIZE(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::DEQUANTIZE, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, param);
@@ -589,8 +639,14 @@ void OnnxConverter::WriteDaqLayer_LOCAL_RESPONSE_NORMALIZATION(
     }
 
     shaper_.Identity(m(input), output);
-    const auto param = DNN::CreateLOCAL_RESPONSE_NORMALIZATIONDirect(
-        builder_, m(input).c_str(), radius, bias, alpha, beta, output.c_str());
+    const auto input_param =
+        DNN::CreateLOCAL_RESPONSE_NORMALIZATION_InputDirect(
+            builder_, m(input).c_str(), radius, bias, alpha, beta);
+    const auto output_param =
+        DNN::CreateLOCAL_RESPONSE_NORMALIZATION_OutputDirect(builder_,
+                                                             output.c_str());
+    const auto param = DNN::CreateLOCAL_RESPONSE_NORMALIZATION(
+        builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::LOCAL_RESPONSE_NORMALIZATION,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -612,8 +668,11 @@ void OnnxConverter::WriteDaqLayer_TANH(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param =
-        DNN::CreateTANHDirect(builder_, m(input).c_str(), output.c_str());
+    const auto input_param =
+        DNN::CreateTANH_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateTANH_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateTANH(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::TANH, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, param);
@@ -635,8 +694,11 @@ void OnnxConverter::WriteDaqLayer_FLOOR(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param =
-        DNN::CreateFLOORDirect(builder_, m(input).c_str(), output.c_str());
+    const auto input_param =
+        DNN::CreateFLOOR_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateFLOOR_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateFLOOR(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::FLOOR, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -658,8 +720,11 @@ void OnnxConverter::WriteDaqLayer_LOGISTIC(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param =
-        DNN::CreateLOGISTICDirect(builder_, m(input).c_str(), output.c_str());
+    const auto input_param =
+        DNN::CreateLOGISTIC_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateLOGISTIC_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateLOGISTIC(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::LOGISTIC, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -682,8 +747,11 @@ void OnnxConverter::WriteDaqLayer_PRELU(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param = DNN::CreatePRELUDirect(builder_, m(input).c_str(),
-                                              m(alpha).c_str(), output.c_str());
+    const auto input_param = DNN::CreatePRELU_InputDirect(
+        builder_, m(input).c_str(), m(alpha).c_str());
+    const auto output_param =
+        DNN::CreatePRELU_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreatePRELU(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::PRELU, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -706,8 +774,11 @@ void OnnxConverter::WriteDaqLayer_POW(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param = DNN::CreatePOWDirect(builder_, m(input).c_str(),
-                                            m(exp).c_str(), output.c_str());
+    const auto input_param =
+        DNN::CreatePOW_InputDirect(builder_, m(input).c_str(), m(exp).c_str());
+    const auto output_param =
+        DNN::CreatePOW_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreatePOW(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::POW, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -729,8 +800,11 @@ void OnnxConverter::WriteDaqLayer_NEG(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param =
-        DNN::CreateNEGDirect(builder_, m(input).c_str(), output.c_str());
+    const auto input_param =
+        DNN::CreateNEG_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateNEG_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateNEG(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::NEG, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -765,8 +839,11 @@ void OnnxConverter::WriteDaqLayer_MINIMUM(const std::string &input1,
     }
 
     shaper_.Eltwise(m(input1), m(input2), output);
-    const auto param = DNN::CreateMINIMUMDirect(
-        builder_, m(input1).c_str(), m(input2).c_str(), output.c_str());
+    const auto input_param = DNN::CreateMINIMUM_InputDirect(
+        builder_, m(input1).c_str(), m(input2).c_str());
+    const auto output_param =
+        DNN::CreateMINIMUM_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateMINIMUM(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::MINIMUM, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -801,8 +878,11 @@ void OnnxConverter::WriteDaqLayer_MAXIMUM(const std::string &input1,
     }
 
     shaper_.Eltwise(m(input1), m(input2), output);
-    const auto param = DNN::CreateMAXIMUMDirect(
-        builder_, m(input1).c_str(), m(input2).c_str(), output.c_str());
+    const auto input_param = DNN::CreateMAXIMUM_InputDirect(
+        builder_, m(input1).c_str(), m(input2).c_str());
+    const auto output_param =
+        DNN::CreateMAXIMUM_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateMAXIMUM(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::MAXIMUM, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
@@ -824,8 +904,11 @@ void OnnxConverter::WriteDaqLayer_LOG(const std::string &input,
     }
 
     shaper_.Identity(m(input), output);
-    const auto param =
-        DNN::CreateLOGDirect(builder_, m(input).c_str(), output.c_str());
+    const auto input_param =
+        DNN::CreateLOG_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateLOG_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateLOG(builder_, input_param, output_param);
     const auto layer =
         DNN::CreateLayer(builder_, DNN::LayerType::LOG, 0, 0, 0, 0, 0, 0, 0, 0,
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
