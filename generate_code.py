@@ -296,7 +296,7 @@ def generate_daq_reader():
         if op['support_quant_asymm']:
             arg_names += ['quant_info']
         cogoutl(f"""
-                builder.AddLayer_{op['nnapi']}({', '.join(arg_names)});
+                TRY(builder.AddLayer_{op['nnapi']}({', '.join(arg_names)}));
                 break;
             }}""")
     update_code('dnnlibrary/DaqReader.cpp', 'auto generated layer reader')
