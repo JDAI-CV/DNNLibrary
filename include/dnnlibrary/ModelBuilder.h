@@ -5,6 +5,13 @@
 #ifndef NNAPIEXAMPLE_MODELBUILDER_H
 #define NNAPIEXAMPLE_MODELBUILDER_H
 
+#include <common/Shaper.h>
+#include <common/StrKeyMap.h>
+#include <common/data_types.h>
+#include <dnnlibrary/Device.h>
+#include <dnnlibrary/Model.h>
+#include <dnnlibrary/NeuralNetworksWrapper.h>
+
 #include <map>
 #include <memory>
 #include <numeric>
@@ -12,13 +19,6 @@
 #include <set>
 #include <string>
 #include <vector>
-
-#include <common/Shaper.h>
-#include <common/StrKeyMap.h>
-#include <common/data_types.h>
-#include <dnnlibrary/Device.h>
-#include <dnnlibrary/Model.h>
-#include <dnnlibrary/NeuralNetworksWrapper.h>
 
 namespace dnn {
 class ModelBuilder {
@@ -112,90 +112,90 @@ class ModelBuilder {
     Index AddInput(std::string name,
                    const android::nn::wrapper::OperandType &operand_type);
     // ModelBuilder auto generated methods start
-    void AddLayerCONV_2D(
+    void AddLayer_CONV_2D(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    void AddLayerAVERAGE_POOL_2D(
+    void AddLayer_AVERAGE_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    void AddLayerMAX_POOL_2D(
+    void AddLayer_MAX_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
         int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    void AddLayerRELU(const std::string &input, const std::string &output);
-    void AddLayerSOFTMAX(const std::string &input, float beta,
-                         const std::string &output);
-    void AddLayerFULLY_CONNECTED(
+    void AddLayer_RELU(const std::string &input, const std::string &output);
+    void AddLayer_SOFTMAX(const std::string &input, float beta,
+                          const std::string &output);
+    void AddLayer_FULLY_CONNECTED(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    void AddLayerADD(
+    void AddLayer_ADD(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    void AddLayerCONCATENATION(const std::vector<std::string> &inputs,
-                               int32_t axis, const std::string &output);
-    void AddLayerDEPTHWISE_CONV_2D(
+    void AddLayer_CONCATENATION(const std::vector<std::string> &inputs,
+                                int32_t axis, const std::string &output);
+    void AddLayer_DEPTHWISE_CONV_2D(
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
         int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
         int32_t fuse_code, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    void AddLayerBATCH_TO_SPACE_ND(const std::string &input,
-                                   const std::vector<int32_t> &block_sizes,
-                                   const std::string &output);
-    void AddLayerSPACE_TO_BATCH_ND(const std::string &input,
-                                   const std::vector<int32_t> &block_sizes,
-                                   const std::vector<int32_t> &pads,
-                                   const std::string &output);
-    void AddLayerSTRIDED_SLICE(const std::string &input,
-                               const std::vector<int32_t> &starts,
-                               const std::vector<int32_t> &ends,
-                               const std::vector<int32_t> &strides,
-                               int32_t begin_mask, int32_t end_mask,
-                               int32_t shrink_axis_mask,
-                               const std::string &output);
-    void AddLayerMUL(
+    void AddLayer_BATCH_TO_SPACE_ND(const std::string &input,
+                                    const std::vector<int32_t> &block_sizes,
+                                    const std::string &output);
+    void AddLayer_SPACE_TO_BATCH_ND(const std::string &input,
+                                    const std::vector<int32_t> &block_sizes,
+                                    const std::vector<int32_t> &pads,
+                                    const std::string &output);
+    void AddLayer_STRIDED_SLICE(const std::string &input,
+                                const std::vector<int32_t> &starts,
+                                const std::vector<int32_t> &ends,
+                                const std::vector<int32_t> &strides,
+                                int32_t begin_mask, int32_t end_mask,
+                                int32_t shrink_axis_mask,
+                                const std::string &output);
+    void AddLayer_MUL(
         const std::string &input1, const std::string &input2, int32_t fuse_code,
         const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
-    void AddLayerDEQUANTIZE(const std::string &input,
-                            const std::string &output);
-    void AddLayerLOCAL_RESPONSE_NORMALIZATION(const std::string &input,
-                                              int32_t radius, float bias,
-                                              float alpha, float beta,
-                                              const std::string &output);
-    void AddLayerTANH(const std::string &input, const std::string &output);
-    void AddLayerFLOOR(const std::string &input, const std::string &output);
-    void AddLayerLOGISTIC(const std::string &input, const std::string &output);
+    void AddLayer_DEQUANTIZE(const std::string &input,
+                             const std::string &output);
+    void AddLayer_LOCAL_RESPONSE_NORMALIZATION(const std::string &input,
+                                               int32_t radius, float bias,
+                                               float alpha, float beta,
+                                               const std::string &output);
+    void AddLayer_TANH(const std::string &input, const std::string &output);
+    void AddLayer_FLOOR(const std::string &input, const std::string &output);
+    void AddLayer_LOGISTIC(const std::string &input, const std::string &output);
+    void AddLayer_PRELU(const std::string &input, const std::string &alpha,
+                        const std::string &output);
 
    private:
-    void AddLayerPRELUImpl(const std::string &input, const std::string &alpha,
-                           const std::string &output);
+    void AddLayer_PRELU_Impl(const std::string &input, const std::string &alpha,
+                             const std::string &output);
 
    public:
-    void AddLayerPOW(const std::string &input, const std::string &exp,
-                     const std::string &output);
-    void AddLayerNEG(const std::string &input, const std::string &output);
-    void AddLayerMINIMUM(const std::string &input1, const std::string &input2,
-                         const std::string &output);
-    void AddLayerMAXIMUM(const std::string &input1, const std::string &input2,
-                         const std::string &output);
-    void AddLayerLOG(const std::string &input, const std::string &output);
+    void AddLayer_POW(const std::string &input, const std::string &exp,
+                      const std::string &output);
+    void AddLayer_NEG(const std::string &input, const std::string &output);
+    void AddLayer_MINIMUM(const std::string &input1, const std::string &input2,
+                          const std::string &output);
+    void AddLayer_MAXIMUM(const std::string &input1, const std::string &input2,
+                          const std::string &output);
+    void AddLayer_LOG(const std::string &input, const std::string &output);
     // ModelBuilder auto generated methods end
-    void AddLayerPRELU(const std::string &input, const std::string &alpha,
-                       const std::string &output);
     Index AddTensorFromPersistentBuffer(
         const std::string &name, const void *buffer,
         const android::nn::wrapper::OperandType &operand_type);

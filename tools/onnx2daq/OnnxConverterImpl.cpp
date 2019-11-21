@@ -1,6 +1,6 @@
+#include <common/helper.h>
 #include <tools/onnx2daq/OnnxConverter.h>
 
-#include <common/helper.h>
 #include "NodeAttrHelper.h"
 
 using std::string;
@@ -106,13 +106,11 @@ namespace dnn {
 // }
 
 // OnnxConverter auto generated methods start
-void OnnxConverter::AddLayerCONV_2D(const std::string &input,
-                                    const std::string &weight,
-                                    const dnn::optional<std::string> &bias,
-                                    int32_t padding_left, int32_t padding_right,
-                                    int32_t padding_top, int32_t padding_bottom,
-                                    int32_t stride_x, int32_t stride_y,
-                                    const std::string &output) {
+void OnnxConverter::WriteDaqLayer_CONV_2D(
+    const std::string &input, const std::string &weight,
+    const dnn::optional<std::string> &bias, int32_t padding_left,
+    int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
+    int32_t stride_x, int32_t stride_y, const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
 
     {
@@ -163,7 +161,7 @@ void OnnxConverter::AddLayerCONV_2D(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerAVERAGE_POOL_2D(
+void OnnxConverter::WriteDaqLayer_AVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -194,7 +192,7 @@ void OnnxConverter::AddLayerAVERAGE_POOL_2D(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerMAX_POOL_2D(
+void OnnxConverter::WriteDaqLayer_MAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
@@ -225,8 +223,8 @@ void OnnxConverter::AddLayerMAX_POOL_2D(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerRELU(const std::string &input,
-                                 const std::string &output) {
+void OnnxConverter::WriteDaqLayer_RELU(const std::string &input,
+                                       const std::string &output) {
     {
         const auto name = input;
 
@@ -247,8 +245,8 @@ void OnnxConverter::AddLayerRELU(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerSOFTMAX(const std::string &input, float beta,
-                                    const std::string &output) {
+void OnnxConverter::WriteDaqLayer_SOFTMAX(const std::string &input, float beta,
+                                          const std::string &output) {
     {
         const auto name = input;
 
@@ -269,7 +267,7 @@ void OnnxConverter::AddLayerSOFTMAX(const std::string &input, float beta,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerFULLY_CONNECTED(
+void OnnxConverter::WriteDaqLayer_FULLY_CONNECTED(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
@@ -320,9 +318,9 @@ void OnnxConverter::AddLayerFULLY_CONNECTED(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerADD(const std::string &input1,
-                                const std::string &input2,
-                                const std::string &output) {
+void OnnxConverter::WriteDaqLayer_ADD(const std::string &input1,
+                                      const std::string &input2,
+                                      const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
 
     {
@@ -358,7 +356,7 @@ void OnnxConverter::AddLayerADD(const std::string &input1,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerCONCATENATION(
+void OnnxConverter::WriteDaqLayer_CONCATENATION(
     const std::vector<std::string> &inputs, int32_t axis,
     const std::string &output) {
     for (const auto &name : inputs) {
@@ -380,7 +378,7 @@ void OnnxConverter::AddLayerCONCATENATION(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerDEPTHWISE_CONV_2D(
+void OnnxConverter::WriteDaqLayer_DEPTHWISE_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -439,7 +437,7 @@ void OnnxConverter::AddLayerDEPTHWISE_CONV_2D(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerBATCH_TO_SPACE_ND(
+void OnnxConverter::WriteDaqLayer_BATCH_TO_SPACE_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::string &output) {
     {
@@ -463,7 +461,7 @@ void OnnxConverter::AddLayerBATCH_TO_SPACE_ND(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerSPACE_TO_BATCH_ND(
+void OnnxConverter::WriteDaqLayer_SPACE_TO_BATCH_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::vector<int32_t> &pads, const std::string &output) {
     {
@@ -487,13 +485,11 @@ void OnnxConverter::AddLayerSPACE_TO_BATCH_ND(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerSTRIDED_SLICE(const std::string &input,
-                                          const std::vector<int32_t> &starts,
-                                          const std::vector<int32_t> &ends,
-                                          const std::vector<int32_t> &strides,
-                                          int32_t begin_mask, int32_t end_mask,
-                                          int32_t shrink_axis_mask,
-                                          const std::string &output) {
+void OnnxConverter::WriteDaqLayer_STRIDED_SLICE(
+    const std::string &input, const std::vector<int32_t> &starts,
+    const std::vector<int32_t> &ends, const std::vector<int32_t> &strides,
+    int32_t begin_mask, int32_t end_mask, int32_t shrink_axis_mask,
+    const std::string &output) {
     {
         const auto name = input;
 
@@ -516,9 +512,9 @@ void OnnxConverter::AddLayerSTRIDED_SLICE(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerMUL(const std::string &input1,
-                                const std::string &input2,
-                                const std::string &output) {
+void OnnxConverter::WriteDaqLayer_MUL(const std::string &input1,
+                                      const std::string &input2,
+                                      const std::string &output) {
     const auto activation = FindActivation(model_proto_, output);
 
     {
@@ -554,8 +550,8 @@ void OnnxConverter::AddLayerMUL(const std::string &input1,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerDEQUANTIZE(const std::string &input,
-                                       const std::string &output) {
+void OnnxConverter::WriteDaqLayer_DEQUANTIZE(const std::string &input,
+                                             const std::string &output) {
     {
         const auto name = input;
 
@@ -577,7 +573,7 @@ void OnnxConverter::AddLayerDEQUANTIZE(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerLOCAL_RESPONSE_NORMALIZATION(
+void OnnxConverter::WriteDaqLayer_LOCAL_RESPONSE_NORMALIZATION(
     const std::string &input, int32_t radius, float bias, float alpha,
     float beta, const std::string &output) {
     {
@@ -601,8 +597,8 @@ void OnnxConverter::AddLayerLOCAL_RESPONSE_NORMALIZATION(
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerTANH(const std::string &input,
-                                 const std::string &output) {
+void OnnxConverter::WriteDaqLayer_TANH(const std::string &input,
+                                       const std::string &output) {
     {
         const auto name = input;
 
@@ -624,8 +620,8 @@ void OnnxConverter::AddLayerTANH(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerFLOOR(const std::string &input,
-                                  const std::string &output) {
+void OnnxConverter::WriteDaqLayer_FLOOR(const std::string &input,
+                                        const std::string &output) {
     {
         const auto name = input;
 
@@ -647,8 +643,8 @@ void OnnxConverter::AddLayerFLOOR(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerLOGISTIC(const std::string &input,
-                                     const std::string &output) {
+void OnnxConverter::WriteDaqLayer_LOGISTIC(const std::string &input,
+                                           const std::string &output) {
     {
         const auto name = input;
 
@@ -670,9 +666,9 @@ void OnnxConverter::AddLayerLOGISTIC(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerPRELU(const std::string &input,
-                                  const std::string &alpha,
-                                  const std::string &output) {
+void OnnxConverter::WriteDaqLayer_PRELU(const std::string &input,
+                                        const std::string &alpha,
+                                        const std::string &output) {
     {
         const auto name = input;
 
@@ -694,9 +690,9 @@ void OnnxConverter::AddLayerPRELU(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerPOW(const std::string &input,
-                                const std::string &exp,
-                                const std::string &output) {
+void OnnxConverter::WriteDaqLayer_POW(const std::string &input,
+                                      const std::string &exp,
+                                      const std::string &output) {
     {
         const auto name = input;
 
@@ -718,8 +714,8 @@ void OnnxConverter::AddLayerPOW(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerNEG(const std::string &input,
-                                const std::string &output) {
+void OnnxConverter::WriteDaqLayer_NEG(const std::string &input,
+                                      const std::string &output) {
     {
         const auto name = input;
 
@@ -741,9 +737,9 @@ void OnnxConverter::AddLayerNEG(const std::string &input,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerMINIMUM(const std::string &input1,
-                                    const std::string &input2,
-                                    const std::string &output) {
+void OnnxConverter::WriteDaqLayer_MINIMUM(const std::string &input1,
+                                          const std::string &input2,
+                                          const std::string &output) {
     {
         const auto name = input1;
 
@@ -777,9 +773,9 @@ void OnnxConverter::AddLayerMINIMUM(const std::string &input1,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerMAXIMUM(const std::string &input1,
-                                    const std::string &input2,
-                                    const std::string &output) {
+void OnnxConverter::WriteDaqLayer_MAXIMUM(const std::string &input1,
+                                          const std::string &input2,
+                                          const std::string &output) {
     {
         const auto name = input1;
 
@@ -813,8 +809,8 @@ void OnnxConverter::AddLayerMAXIMUM(const std::string &input1,
     layers_.push_back(layer);
 }
 
-void OnnxConverter::AddLayerLOG(const std::string &input,
-                                const std::string &output) {
+void OnnxConverter::WriteDaqLayer_LOG(const std::string &input,
+                                      const std::string &output) {
     {
         const auto name = input;
 

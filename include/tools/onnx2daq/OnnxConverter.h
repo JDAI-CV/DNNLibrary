@@ -110,77 +110,81 @@ class OnnxConverter {
     void SetIdentity(const std::string &input_name,
                      const std::string &output_name);
     // OnnxConverter auto generated methods start
-    void AddLayerCONV_2D(const std::string &input, const std::string &weight,
-                         const dnn::optional<std::string> &bias,
-                         int32_t padding_left, int32_t padding_right,
-                         int32_t padding_top, int32_t padding_bottom,
-                         int32_t stride_x, int32_t stride_y,
-                         const std::string &output);
-    void AddLayerAVERAGE_POOL_2D(const std::string &input, int32_t padding_left,
-                                 int32_t padding_right, int32_t padding_top,
-                                 int32_t padding_bottom, int32_t stride_x,
-                                 int32_t stride_y, int32_t kernel_width,
-                                 int32_t kernel_height,
-                                 const std::string &output);
-    void AddLayerMAX_POOL_2D(const std::string &input, int32_t padding_left,
-                             int32_t padding_right, int32_t padding_top,
-                             int32_t padding_bottom, int32_t stride_x,
-                             int32_t stride_y, int32_t kernel_width,
-                             int32_t kernel_height, const std::string &output);
-    void AddLayerRELU(const std::string &input, const std::string &output);
-    void AddLayerSOFTMAX(const std::string &input, float beta,
-                         const std::string &output);
-    void AddLayerFULLY_CONNECTED(const std::string &input,
-                                 const std::string &weight,
-                                 const dnn::optional<std::string> &bias,
-                                 const std::string &output);
-    void AddLayerADD(const std::string &input1, const std::string &input2,
-                     const std::string &output);
-    void AddLayerCONCATENATION(const std::vector<std::string> &inputs,
-                               int32_t axis, const std::string &output);
-    void AddLayerDEPTHWISE_CONV_2D(const std::string &input,
-                                   const std::string &weight,
-                                   const dnn::optional<std::string> &bias,
+    void WriteDaqLayer_CONV_2D(const std::string &input,
+                               const std::string &weight,
+                               const dnn::optional<std::string> &bias,
+                               int32_t padding_left, int32_t padding_right,
+                               int32_t padding_top, int32_t padding_bottom,
+                               int32_t stride_x, int32_t stride_y,
+                               const std::string &output);
+    void WriteDaqLayer_AVERAGE_POOL_2D(
+        const std::string &input, int32_t padding_left, int32_t padding_right,
+        int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
+        int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
+        const std::string &output);
+    void WriteDaqLayer_MAX_POOL_2D(const std::string &input,
                                    int32_t padding_left, int32_t padding_right,
                                    int32_t padding_top, int32_t padding_bottom,
                                    int32_t stride_x, int32_t stride_y,
-                                   int32_t depth_multiplier,
+                                   int32_t kernel_width, int32_t kernel_height,
                                    const std::string &output);
-    void AddLayerBATCH_TO_SPACE_ND(const std::string &input,
-                                   const std::vector<int32_t> &block_sizes,
-                                   const std::string &output);
-    void AddLayerSPACE_TO_BATCH_ND(const std::string &input,
-                                   const std::vector<int32_t> &block_sizes,
-                                   const std::vector<int32_t> &pads,
-                                   const std::string &output);
-    void AddLayerSTRIDED_SLICE(const std::string &input,
-                               const std::vector<int32_t> &starts,
-                               const std::vector<int32_t> &ends,
-                               const std::vector<int32_t> &strides,
-                               int32_t begin_mask, int32_t end_mask,
-                               int32_t shrink_axis_mask,
-                               const std::string &output);
-    void AddLayerMUL(const std::string &input1, const std::string &input2,
-                     const std::string &output);
-    void AddLayerDEQUANTIZE(const std::string &input,
+    void WriteDaqLayer_RELU(const std::string &input,
                             const std::string &output);
-    void AddLayerLOCAL_RESPONSE_NORMALIZATION(const std::string &input,
-                                              int32_t radius, float bias,
-                                              float alpha, float beta,
-                                              const std::string &output);
-    void AddLayerTANH(const std::string &input, const std::string &output);
-    void AddLayerFLOOR(const std::string &input, const std::string &output);
-    void AddLayerLOGISTIC(const std::string &input, const std::string &output);
-    void AddLayerPRELU(const std::string &input, const std::string &alpha,
-                       const std::string &output);
-    void AddLayerPOW(const std::string &input, const std::string &exp,
-                     const std::string &output);
-    void AddLayerNEG(const std::string &input, const std::string &output);
-    void AddLayerMINIMUM(const std::string &input1, const std::string &input2,
-                         const std::string &output);
-    void AddLayerMAXIMUM(const std::string &input1, const std::string &input2,
-                         const std::string &output);
-    void AddLayerLOG(const std::string &input, const std::string &output);
+    void WriteDaqLayer_SOFTMAX(const std::string &input, float beta,
+                               const std::string &output);
+    void WriteDaqLayer_FULLY_CONNECTED(const std::string &input,
+                                       const std::string &weight,
+                                       const dnn::optional<std::string> &bias,
+                                       const std::string &output);
+    void WriteDaqLayer_ADD(const std::string &input1, const std::string &input2,
+                           const std::string &output);
+    void WriteDaqLayer_CONCATENATION(const std::vector<std::string> &inputs,
+                                     int32_t axis, const std::string &output);
+    void WriteDaqLayer_DEPTHWISE_CONV_2D(
+        const std::string &input, const std::string &weight,
+        const dnn::optional<std::string> &bias, int32_t padding_left,
+        int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
+        int32_t stride_x, int32_t stride_y, int32_t depth_multiplier,
+        const std::string &output);
+    void WriteDaqLayer_BATCH_TO_SPACE_ND(
+        const std::string &input, const std::vector<int32_t> &block_sizes,
+        const std::string &output);
+    void WriteDaqLayer_SPACE_TO_BATCH_ND(
+        const std::string &input, const std::vector<int32_t> &block_sizes,
+        const std::vector<int32_t> &pads, const std::string &output);
+    void WriteDaqLayer_STRIDED_SLICE(const std::string &input,
+                                     const std::vector<int32_t> &starts,
+                                     const std::vector<int32_t> &ends,
+                                     const std::vector<int32_t> &strides,
+                                     int32_t begin_mask, int32_t end_mask,
+                                     int32_t shrink_axis_mask,
+                                     const std::string &output);
+    void WriteDaqLayer_MUL(const std::string &input1, const std::string &input2,
+                           const std::string &output);
+    void WriteDaqLayer_DEQUANTIZE(const std::string &input,
+                                  const std::string &output);
+    void WriteDaqLayer_LOCAL_RESPONSE_NORMALIZATION(const std::string &input,
+                                                    int32_t radius, float bias,
+                                                    float alpha, float beta,
+                                                    const std::string &output);
+    void WriteDaqLayer_TANH(const std::string &input,
+                            const std::string &output);
+    void WriteDaqLayer_FLOOR(const std::string &input,
+                             const std::string &output);
+    void WriteDaqLayer_LOGISTIC(const std::string &input,
+                                const std::string &output);
+    void WriteDaqLayer_PRELU(const std::string &input, const std::string &alpha,
+                             const std::string &output);
+    void WriteDaqLayer_POW(const std::string &input, const std::string &exp,
+                           const std::string &output);
+    void WriteDaqLayer_NEG(const std::string &input, const std::string &output);
+    void WriteDaqLayer_MINIMUM(const std::string &input1,
+                               const std::string &input2,
+                               const std::string &output);
+    void WriteDaqLayer_MAXIMUM(const std::string &input1,
+                               const std::string &input2,
+                               const std::string &output);
+    void WriteDaqLayer_LOG(const std::string &input, const std::string &output);
     // OnnxConverter auto generated methods end
 
     /**

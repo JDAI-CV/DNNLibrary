@@ -718,13 +718,13 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
             if (group == 1) {
                 VLOG(5) << "Vanilla conv";
-                AddLayerCONV_2D(input_name, ori_weight_name, bias_name,
+                WriteDaqLayerCONV_2D(input_name, ori_weight_name, bias_name,
                                 onnx_pads[1], onnx_pads[3], onnx_pads[0],
                                 onnx_pads[2], onnx_strides[1], onnx_strides[0],
                                 output_name);
             } else if (onnx_weight.shape[1] == 1) {  // depthwise
                 VLOG(5) << "Depthwise conv";
-                AddLayerDEPTHWISE_CONV_2D(
+                WriteDaqLayerDEPTHWISE_CONV_2D(
                     input_name, ori_weight_name, bias_name, onnx_pads[1],
                     onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1],
                     onnx_strides[0], onnx_weight.shape[0] / group, output_name);
@@ -767,12 +767,12 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 CHECK_EQ(nnapi_strides.size(), 2ul);
                 // kernel_shape of onnx model is [height, width]
                 if (op == "AveragePool") {
-                    AddLayerAVERAGE_POOL_2D(
+                    WriteDaqLayerAVERAGE_POOL_2D(
                         input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
                         onnx_pads[2], onnx_strides[1], onnx_strides[0],
                         kernel_shape[1], kernel_shape[0], output_name);
                 } else {
-                    AddLayerMAX_POOL_2D(
+                    WriteDaqLayerMAX_POOL_2D(
                         input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
                         onnx_pads[2], onnx_strides[1], onnx_strides[0],
                         kernel_shape[1], kernel_shape[0], output_name);
@@ -781,11 +781,11 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 const auto input_height = shaper_[input_name][1];
                 const auto input_width = shaper_[input_name][2];
                 if (op == "GlobalAveragePool") {
-                    AddLayerAVERAGE_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
+                    WriteDaqLayerAVERAGE_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
                                             input_width, input_height,
                                             output_name);
                 } else {
-                    AddLayerMAX_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
+                    WriteDaqLayerMAX_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
                                         input_width, input_height, output_name);
                 }
             }
@@ -794,7 +794,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             VLOG(5) << "Start converting Relu";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerRELU(input_name, output_name);
+            WriteDaqLayerRELU(input_name, output_name);
             VLOG(5) << "Converting Relu completed";
 
         } else if (op == "PRelu") {
@@ -802,21 +802,21 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto input_name = m(node.input(0));
             const auto slope_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            AddLayerPRELU(input_name, slope_name, output_name);
+            WriteDaqLayerPRELU(input_name, slope_name, output_name);
             VLOG(5) << "Converting PRelu completed";
         } else if (op == "Add") {
             VLOG(5) << "Start converting Add";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            AddLayerADD(input1_name, input2_name, output_name);
+            WriteDaqLayerADD(input1_name, input2_name, output_name);
             VLOG(5) << "Converting Add completed";
         } else if (op == "Mul") {
             VLOG(5) << "Start converting Mul";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            AddLayerMUL(input1_name, input2_name, output_name);
+            WriteDaqLayerMUL(input1_name, input2_name, output_name);
             VLOG(5) << "Converting Mul completed";
         } else if (op == "Gemm") {
             VLOG(5) << "Start converting Gemm";
@@ -832,7 +832,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto alpha = helper.get("alpha", 1.0f);
             const auto beta = helper.get("beta", 1.0f);
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
-                AddLayerFULLY_CONNECTED(input_name, weight_name, bias_name,
+                WriteDaqLayerFULLY_CONNECTED(input_name, weight_name, bias_name,
                                         output_name);
             } else {
                 throw std::invalid_argument(
@@ -846,7 +846,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             VLOG(5) << "Start converting Softmax";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerSOFTMAX(input_name, 1.f, output_name);
+            WriteDaqLayerSOFTMAX(input_name, 1.f, output_name);
             VLOG(5) << "Converting Softmax completed";
         } else if (op == "Concat") {
             VLOG(5) << "Start converting Concat";
@@ -857,7 +857,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
             const auto axis = helper.get("axis", 1);
             const auto output_name = m(node.output(0));
-            AddLayerCONCATENATION(concat_inputs_str, axis_nchw_to_nhwc[axis],
+            WriteDaqLayerCONCATENATION(concat_inputs_str, axis_nchw_to_nhwc[axis],
                                   output_name);
             VLOG(5) << "Converting Concat completed";
         } else if (op == "Dropout") {
@@ -909,8 +909,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            AddLayerMUL(input_name, tensor_a_name, tensor_imm_product_name);
-            AddLayerADD(tensor_imm_product_name, tensor_b_name, output_name);
+            WriteDaqLayerMUL(input_name, tensor_a_name, tensor_imm_product_name);
+            WriteDaqLayerADD(tensor_imm_product_name, tensor_b_name, output_name);
 
             VLOG(5) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
@@ -935,26 +935,26 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto radius = (size - 1) / 2;
             alpha /= size;  // The implementation of ONNX LRN is not the same as
                             // that of NNAPI LRN
-            AddLayerLOCAL_RESPONSE_NORMALIZATION(node.input(0), radius, bias,
+            WriteDaqLayerLOCAL_RESPONSE_NORMALIZATION(node.input(0), radius, bias,
                                                  alpha, beta, node.output(0));
             VLOG(5) << "Converting LRN completed";
         } else if (op == "Tanh") {
             VLOG(5) << "Start converting Tanh";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerTANH(input_name, output_name);
+            WriteDaqLayerTANH(input_name, output_name);
             VLOG(5) << "Converting Tanh completed";
         } else if (op == "Floor") {
             VLOG(5) << "Start converting Floor";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerFLOOR(input_name, output_name);
+            WriteDaqLayerFLOOR(input_name, output_name);
             VLOG(5) << "Converting Floor completed";
         } else if (op == "Sigmoid") {
             VLOG(5) << "Start converting Sigmoid";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerLOGISTIC(input_name, output_name);
+            WriteDaqLayerLOGISTIC(input_name, output_name);
             VLOG(5) << "Converting Sigmoid completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
@@ -964,7 +964,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             if (std::find(dequantize_after_.begin(), dequantize_after_.end(),
                           output) != dequantize_after_.end()) {
                 css dequant_output = output + "_dequant";
-                AddLayerDEQUANTIZE(output, dequant_output);
+                WriteDaqLayerDEQUANTIZE(output, dequant_output);
                 name_map_[output] = dequant_output;
             }
         }

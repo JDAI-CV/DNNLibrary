@@ -198,7 +198,7 @@ def generate_onnx_converter():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void OnnxConverter::AddLayer{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
+        cogoutl(f"void OnnxConverter::WriteDaqLayer_{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
         if op['fused']:
             cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
         for x in op['input']:
@@ -268,7 +268,7 @@ def generate_onnx_converter():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void AddLayer{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str});")
+        cogoutl(f"void WriteDaqLayer_{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str});")
     update_code('include/tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
 
 
@@ -296,7 +296,7 @@ def generate_daq_reader():
         if op['support_quant_asymm']:
             arg_names += ['quant_info']
         cogoutl(f"""
-                builder.AddLayer{op['nnapi']}({', '.join(arg_names)});
+                builder.AddLayer_{op['nnapi']}({', '.join(arg_names)});
                 break;
             }}""")
     update_code('dnnlibrary/DaqReader.cpp', 'auto generated layer reader')
@@ -348,8 +348,8 @@ def generate_model_builder():
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("void ModelBuilder::AddLayer{}{}({}) {{".format(
-            op['nnapi'], '' if op['builder_simple'] else 'Impl', params_str))
+        cogoutl("void ModelBuilder::AddLayer_{}{}({}) {{".format(
+            op['nnapi'], '' if op['builder_simple'] else '_Impl', params_str))
         cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
                 f'throw std::runtime_error("{op["nnapi"]} requires API {op["api"]}");'
                 f'}}')
@@ -394,12 +394,13 @@ def generate_model_builder():
             # A hack
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info=dnn::nullopt'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        if op['builder_simple']:
-            cogoutl("void AddLayer{}({});".format(
-                op['nnapi'], params_str))
-        else:
+        cogoutl("void AddLayer_{}({});".format(
+            op['nnapi'], params_str))
+
+        # if op['builder_simple'] is not True, we generate both AddLayer_* and AddLayer_*_Impl declaration
+        if not op['builder_simple']:
             cogoutl('private:')
-            cogoutl("void AddLayer{}Impl({});".format(
+            cogoutl("void AddLayer_{}_Impl({});".format(
                 op['nnapi'], params_str))
             cogoutl('public:')
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
