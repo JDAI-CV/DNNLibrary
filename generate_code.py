@@ -348,10 +348,10 @@ def generate_model_builder():
         if op['support_quant_asymm']:
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("void ModelBuilder::AddLayer_{}{}({}) {{".format(
+        cogoutl("expected<Unit, std::string> ModelBuilder::AddLayer_{}{}({}) {{".format(
             op['nnapi'], '' if op['builder_simple'] else '_Impl', params_str))
         cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
-                f'throw std::runtime_error("{op["nnapi"]} requires API {op["api"]}");'
+                f'return make_unexpected("{op["nnapi"]} requires API {op["api"]}");'
                 f'}}')
         tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
         scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
@@ -381,6 +381,7 @@ def generate_model_builder():
         cogout(
             '''RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
     }
     
     '''
@@ -395,13 +396,13 @@ def generate_model_builder():
             # A hack
             params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info=dnn::nullopt'))
         params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("void AddLayer_{}({});".format(
+        cogoutl("expected<Unit, std::string> AddLayer_{}({});".format(
             op['nnapi'], params_str))
 
         # if op['builder_simple'] is not True, we generate both AddLayer_* and AddLayer_*_Impl declaration
         if not op['builder_simple']:
             cogoutl('private:')
-            cogoutl("void AddLayer_{}_Impl({});".format(
+            cogoutl("expected<Unit, std::string> AddLayer_{}_Impl({});".format(
                 op['nnapi'], params_str))
             cogoutl('public:')
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')

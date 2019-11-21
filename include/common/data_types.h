@@ -9,6 +9,6 @@ namespace dnn {
     using nonstd::nullopt_t;
     using tl::expected;
     using tl::make_unexpected;
-    using tl::monostate;
+    using Unit = tl::monostate;
     using tl::unexpected;
 }

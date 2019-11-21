@@ -11,7 +11,7 @@ namespace dnn {
 using namespace android::nn::wrapper;
 
 // ModelBuilder auto generated methods start
-void ModelBuilder::AddLayer_CONV_2D(
+expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -19,7 +19,7 @@ void ModelBuilder::AddLayer_CONV_2D(
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("CONV_2D requires API 27");
+        return make_unexpected("CONV_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -63,16 +63,17 @@ void ModelBuilder::AddLayer_CONV_2D(
         AddOperation(ANEURALNETWORKS_CONV_2D, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_AVERAGE_POOL_2D(
+expected<Unit, std::string> ModelBuilder::AddLayer_AVERAGE_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
     int32_t fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("AVERAGE_POOL_2D requires API 27");
+        return make_unexpected("AVERAGE_POOL_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -90,16 +91,17 @@ void ModelBuilder::AddLayer_AVERAGE_POOL_2D(
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_MAX_POOL_2D(
+expected<Unit, std::string> ModelBuilder::AddLayer_MAX_POOL_2D(
     const std::string &input, int32_t padding_left, int32_t padding_right,
     int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
     int32_t stride_y, int32_t kernel_width, int32_t kernel_height,
     int32_t fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("MAX_POOL_2D requires API 27");
+        return make_unexpected("MAX_POOL_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -117,12 +119,13 @@ void ModelBuilder::AddLayer_MAX_POOL_2D(
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_RELU(const std::string &input,
-                                 const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_RELU(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("RELU requires API 27");
+        return make_unexpected("RELU requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -135,12 +138,13 @@ void ModelBuilder::AddLayer_RELU(const std::string &input,
         AddOperation(ANEURALNETWORKS_RELU, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_SOFTMAX(const std::string &input, float beta,
-                                    const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_SOFTMAX(
+    const std::string &input, float beta, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("SOFTMAX requires API 27");
+        return make_unexpected("SOFTMAX requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -154,15 +158,16 @@ void ModelBuilder::AddLayer_SOFTMAX(const std::string &input, float beta,
         AddOperation(ANEURALNETWORKS_SOFTMAX, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_FULLY_CONNECTED(
+expected<Unit, std::string> ModelBuilder::AddLayer_FULLY_CONNECTED(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("FULLY_CONNECTED requires API 27");
+        return make_unexpected("FULLY_CONNECTED requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -204,14 +209,15 @@ void ModelBuilder::AddLayer_FULLY_CONNECTED(
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_ADD(
+expected<Unit, std::string> ModelBuilder::AddLayer_ADD(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("ADD requires API 27");
+        return make_unexpected("ADD requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -228,13 +234,14 @@ void ModelBuilder::AddLayer_ADD(
         AddOperation(ANEURALNETWORKS_ADD, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_CONCATENATION(
+expected<Unit, std::string> ModelBuilder::AddLayer_CONCATENATION(
     const std::vector<std::string> &inputs, int32_t axis,
     const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("CONCATENATION requires API 27");
+        return make_unexpected("CONCATENATION requires API 27");
     }
     IndexSeq input_indexes;
     for (const auto &x : inputs) {
@@ -249,9 +256,10 @@ void ModelBuilder::AddLayer_CONCATENATION(
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
+expected<Unit, std::string> ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
@@ -259,7 +267,7 @@ void ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
     int32_t fuse_code, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("DEPTHWISE_CONV_2D requires API 27");
+        return make_unexpected("DEPTHWISE_CONV_2D requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -305,13 +313,14 @@ void ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_BATCH_TO_SPACE_ND(
+expected<Unit, std::string> ModelBuilder::AddLayer_BATCH_TO_SPACE_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
-        throw std::runtime_error("BATCH_TO_SPACE_ND requires API 28");
+        return make_unexpected("BATCH_TO_SPACE_ND requires API 28");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -328,13 +337,14 @@ void ModelBuilder::AddLayer_BATCH_TO_SPACE_ND(
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_SPACE_TO_BATCH_ND(
+expected<Unit, std::string> ModelBuilder::AddLayer_SPACE_TO_BATCH_ND(
     const std::string &input, const std::vector<int32_t> &block_sizes,
     const std::vector<int32_t> &pads, const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
-        throw std::runtime_error("SPACE_TO_BATCH_ND requires API 28");
+        return make_unexpected("SPACE_TO_BATCH_ND requires API 28");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -355,17 +365,16 @@ void ModelBuilder::AddLayer_SPACE_TO_BATCH_ND(
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_STRIDED_SLICE(const std::string &input,
-                                          const std::vector<int32_t> &starts,
-                                          const std::vector<int32_t> &ends,
-                                          const std::vector<int32_t> &strides,
-                                          int32_t begin_mask, int32_t end_mask,
-                                          int32_t shrink_axis_mask,
-                                          const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_STRIDED_SLICE(
+    const std::string &input, const std::vector<int32_t> &starts,
+    const std::vector<int32_t> &ends, const std::vector<int32_t> &strides,
+    int32_t begin_mask, int32_t end_mask, int32_t shrink_axis_mask,
+    const std::string &output) {
     if (nnapi_->android_sdk_version < 28) {
-        throw std::runtime_error("STRIDED_SLICE requires API 28");
+        return make_unexpected("STRIDED_SLICE requires API 28");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -392,14 +401,15 @@ void ModelBuilder::AddLayer_STRIDED_SLICE(const std::string &input,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_MUL(
+expected<Unit, std::string> ModelBuilder::AddLayer_MUL(
     const std::string &input1, const std::string &input2, int32_t fuse_code,
     const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("MUL requires API 27");
+        return make_unexpected("MUL requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -416,12 +426,13 @@ void ModelBuilder::AddLayer_MUL(
         AddOperation(ANEURALNETWORKS_MUL, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_DEQUANTIZE(const std::string &input,
-                                       const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_DEQUANTIZE(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("DEQUANTIZE requires API 27");
+        return make_unexpected("DEQUANTIZE requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -434,14 +445,14 @@ void ModelBuilder::AddLayer_DEQUANTIZE(const std::string &input,
                                          input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_LOCAL_RESPONSE_NORMALIZATION(
+expected<Unit, std::string> ModelBuilder::AddLayer_LOCAL_RESPONSE_NORMALIZATION(
     const std::string &input, int32_t radius, float bias, float alpha,
     float beta, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error(
-            "LOCAL_RESPONSE_NORMALIZATION requires API 27");
+        return make_unexpected("LOCAL_RESPONSE_NORMALIZATION requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -456,12 +467,13 @@ void ModelBuilder::AddLayer_LOCAL_RESPONSE_NORMALIZATION(
                      input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_TANH(const std::string &input,
-                                 const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_TANH(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("TANH requires API 27");
+        return make_unexpected("TANH requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -474,12 +486,13 @@ void ModelBuilder::AddLayer_TANH(const std::string &input,
         AddOperation(ANEURALNETWORKS_TANH, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_FLOOR(const std::string &input,
-                                  const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_FLOOR(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("FLOOR requires API 27");
+        return make_unexpected("FLOOR requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -492,12 +505,13 @@ void ModelBuilder::AddLayer_FLOOR(const std::string &input,
         AddOperation(ANEURALNETWORKS_FLOOR, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_LOGISTIC(const std::string &input,
-                                     const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_LOGISTIC(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 27) {
-        throw std::runtime_error("LOGISTIC requires API 27");
+        return make_unexpected("LOGISTIC requires API 27");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -510,13 +524,14 @@ void ModelBuilder::AddLayer_LOGISTIC(const std::string &input,
         AddOperation(ANEURALNETWORKS_LOGISTIC, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_PRELU_Impl(const std::string &input,
-                                       const std::string &alpha,
-                                       const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_PRELU_Impl(
+    const std::string &input, const std::string &alpha,
+    const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("PRELU requires API 29");
+        return make_unexpected("PRELU requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -532,13 +547,14 @@ void ModelBuilder::AddLayer_PRELU_Impl(const std::string &input,
         AddOperation(ANEURALNETWORKS_PRELU, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_POW(const std::string &input,
-                                const std::string &exp,
-                                const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_POW(
+    const std::string &input, const std::string &exp,
+    const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("POW requires API 29");
+        return make_unexpected("POW requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -554,12 +570,13 @@ void ModelBuilder::AddLayer_POW(const std::string &input,
         AddOperation(ANEURALNETWORKS_POW, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_NEG(const std::string &input,
-                                const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_NEG(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("NEG requires API 29");
+        return make_unexpected("NEG requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -572,13 +589,14 @@ void ModelBuilder::AddLayer_NEG(const std::string &input,
         AddOperation(ANEURALNETWORKS_NEG, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_MINIMUM(const std::string &input1,
-                                    const std::string &input2,
-                                    const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_MINIMUM(
+    const std::string &input1, const std::string &input2,
+    const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("MINIMUM requires API 29");
+        return make_unexpected("MINIMUM requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -594,13 +612,14 @@ void ModelBuilder::AddLayer_MINIMUM(const std::string &input1,
         AddOperation(ANEURALNETWORKS_MINIMUM, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_MAXIMUM(const std::string &input1,
-                                    const std::string &input2,
-                                    const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_MAXIMUM(
+    const std::string &input1, const std::string &input2,
+    const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("MAXIMUM requires API 29");
+        return make_unexpected("MAXIMUM requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input1);
@@ -616,12 +635,13 @@ void ModelBuilder::AddLayer_MAXIMUM(const std::string &input1,
         AddOperation(ANEURALNETWORKS_MAXIMUM, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
-void ModelBuilder::AddLayer_LOG(const std::string &input,
-                                const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_LOG(
+    const std::string &input, const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
-        throw std::runtime_error("LOG requires API 29");
+        return make_unexpected("LOG requires API 29");
     }
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
@@ -634,13 +654,14 @@ void ModelBuilder::AddLayer_LOG(const std::string &input,
         AddOperation(ANEURALNETWORKS_LOG, input_indexes, operand_type)[0];
     RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
+    return Unit();
 }
 
 // ModelBuilder auto generated methods end
 
-void ModelBuilder::AddLayer_PRELU(const std::string &input,
-                                  const std::string &alpha,
-                                  const std::string &output) {
+expected<Unit, std::string> ModelBuilder::AddLayer_PRELU(
+    const std::string &input, const std::string &alpha,
+    const std::string &output) {
     if (nnapi_->android_sdk_version < 29) {
         const auto neg1_name = output + "_neg1";
         const auto imm1_name = output + "_imm1";
@@ -671,6 +692,7 @@ void ModelBuilder::AddLayer_PRELU(const std::string &input,
     } else {
         AddLayer_PRELU_Impl(input, alpha, output);
     }
+    return Unit();
 }
 
 // Methods for backward compatibility
