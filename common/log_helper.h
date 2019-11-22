@@ -4,7 +4,7 @@
 #include <iostream>
 #include <vector>
 
-#include <glog/logging.h>
+#include <common/data_types.h>
 
 template <typename T>
 std::ostream& operator<<(std::ostream& output, std::vector<T> const& values) {
@@ -16,6 +16,28 @@ std::ostream& operator<<(std::ostream& output, std::vector<T> const& values) {
         }
     }
     output << "]";
+    return output;
+}
+
+inline std::ostream& operator<<(std::ostream& output, const dnn::FuseCode& value) {
+    switch (value) {
+        case dnn::FuseCode::NONE: {
+            output << "FuseCode::NONE";
+            break;
+        }
+        case dnn::FuseCode::RELU: {
+            output << "FuseCode::RELU";
+            break;
+        }
+        case dnn::FuseCode::RELU1: {
+            output << "FuseCode::RELU1";
+            break;
+        }
+        case dnn::FuseCode::RELU6: {
+            output << "FuseCode::RELU6";
+            break;
+        }
+    }
     return output;
 }
 

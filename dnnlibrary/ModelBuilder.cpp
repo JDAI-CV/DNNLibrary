@@ -84,6 +84,16 @@ DEFINE_OPERAND_FROM_SCALAR(float, float32, FLOAT32);
 
 #undef DEFINE_OPERAND_FROM_SCALAR
 
+template <typename E>
+constexpr typename std::underlying_type<E>::type to_underlying(E e) noexcept {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
+ModelBuilder::Index ModelBuilder::OperandFromScalar(dnn::FuseCode value) {
+    return OperandFromScalar(to_underlying(value));
+}
+
+
 ModelBuilder::Index ModelBuilder::AddMissingOperand(
     const OperandType &operand_type) {
     const auto index = AddNewOperand(operand_type);

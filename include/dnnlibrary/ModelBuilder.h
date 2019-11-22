@@ -67,6 +67,7 @@ class ModelBuilder {
     Index OperandFromScalar(int32_t value);
     Index OperandFromScalar(float value);
     Index OperandFromScalar(uint32_t value);
+    Index OperandFromScalar(FuseCode value);
     Index AddMissingOperand(
         const android::nn::wrapper::OperandType &operand_type);
     Index FillOperand(const std::string &name,

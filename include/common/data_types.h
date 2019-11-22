@@ -4,6 +4,7 @@
 #include <common/optional.h>
 
 #include <common/expected.hpp>
+#include <iostream>
 
 namespace dnn {
 using nonstd::bad_optional_access;
@@ -21,6 +22,9 @@ using tl::unexpected;
     if (!ret) {           \
         return ret;       \
     }
+
+enum class FuseCode { NONE, RELU, RELU1, RELU6 };
+
 }  // namespace dnn
 
 #endif /* DNN_DATA_TYPES_H */

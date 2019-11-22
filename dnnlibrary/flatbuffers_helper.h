@@ -6,6 +6,7 @@
 #define DNNLIBRARY_FLATBUFFERS_HELPER_H
 
 #include <common/daq_generated.h>
+#include <common/data_types.h>
 #include <common/helper.h>
 #include <flatbuffers/flatbuffers.h>
 
@@ -46,16 +47,16 @@ inline const std::string get_input(const std::string input) {
     return input;
 }
 
-inline uint32_t unpack_fbs(const DNN::FuseCode fbs) {
+inline dnn::FuseCode unpack_fbs(const DNN::FuseCode fbs) {
     switch (fbs) {
         case DNN::FuseCode::None:
-            return 0;  // FuseCode::ANEURALNETWORKS_FUSED_NONE;
+            return dnn::FuseCode::NONE;
         case DNN::FuseCode::Relu:
-            return 1;  // FuseCode::ANEURALNETWORKS_FUSED_RELU;
+            return dnn::FuseCode::RELU;
         case DNN::FuseCode::Relu1:
-            return 2;  // FuseCode::ANEURALNETWORKS_FUSED_RELU1;
+            return dnn::FuseCode::RELU1;
         case DNN::FuseCode::Relu6:
-            return 3;  // FuseCode::ANEURALNETWORKS_FUSED_RELU6;
+            return dnn::FuseCode::RELU6;
     }
     throw std::invalid_argument("Invalid fuse_code");
 }

@@ -51,8 +51,6 @@ class OnnxConverter {
         }
     };
 
-    enum class FuseCode { FUSED_NONE, FUSED_RELU, FUSED_RELU1, FUSED_RELU6 };
-
     struct QuantInfo {
         enum class Type {
             QUANT8_SYMM,

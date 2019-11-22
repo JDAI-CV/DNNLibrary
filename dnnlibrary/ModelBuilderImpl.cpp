@@ -676,15 +676,15 @@ expected<Unit, std::string> ModelBuilder::AddLayer_PRELU(
         // negative branch
         float neg1_buf[1]{-1.f};
         AddTensorFromBuffer(neg1_name, neg1_buf, {Type::TENSOR_FLOAT32, {1}});
-        AddLayer_MUL(input, neg1_name, ModelBuilder::ACTIVATION_NONE, imm2_name,
+        AddLayer_MUL(input, neg1_name, FuseCode::NONE, imm2_name,
                      dnn::nullopt);
         AddLayer_RELU(imm2_name, imm3_name);
-        AddLayer_MUL(imm3_name, alpha, ModelBuilder::ACTIVATION_NONE, imm4_name,
+        AddLayer_MUL(imm3_name, alpha, FuseCode::NONE, imm4_name,
                      dnn::nullopt);
-        AddLayer_MUL(imm4_name, neg1_name, ModelBuilder::ACTIVATION_NONE,
+        AddLayer_MUL(imm4_name, neg1_name, FuseCode::NONE,
                      imm5_name, dnn::nullopt);
         // add two branches
-        AddLayer_ADD(imm1_name, imm5_name, ModelBuilder::ACTIVATION_NONE,
+        AddLayer_ADD(imm1_name, imm5_name, FuseCode::NONE,
                      output, dnn::nullopt);
     } else {
         AddLayer_PRELU_Impl(input, alpha, output);

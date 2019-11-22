@@ -31,37 +31,37 @@ std::string OnnxConverter::m(const std::string &str) const {
 
 DNN::FuseCode OnnxConverter::ConvertFuseCodeType(FuseCode fuse_code) {
     switch (fuse_code) {
-        case FuseCode::FUSED_NONE:
+        case FuseCode::NONE:
             return DNN::FuseCode::None;
-        case FuseCode::FUSED_RELU:
+        case FuseCode::RELU:
             return DNN::FuseCode::Relu;
-        case FuseCode::FUSED_RELU1:
+        case FuseCode::RELU1:
             return DNN::FuseCode::Relu1;
-        case FuseCode::FUSED_RELU6:
+        case FuseCode::RELU6:
             return DNN::FuseCode::Relu6;
     }
     throw std::invalid_argument("Invalid FuseCode");
 }
 
 std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
-          OnnxConverter::FuseCode>
+          FuseCode>
 OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                               css &output_name) {
     std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
               FuseCode>
-        activation{{}, FuseCode::FUSED_NONE};
+        activation{{}, FuseCode::NONE};
     int i = 0;
     for (const auto &_node : model_proto.graph().node()) {
         if (!_node.input().empty() && output_name == _node.input(0) &&
             _node.op_type() == "Relu") {
             // If there are two branches after a conv/pool and both branches has
             // a relu on the top, we have to add two normal relu layers
-            if (activation.second != FuseCode::FUSED_NONE) {
-                return {{}, FuseCode::FUSED_NONE};
+            if (activation.second != FuseCode::NONE) {
+                return {{}, FuseCode::NONE};
             }
             const auto node_pair = std::make_pair(i, _node);
             activation = std::make_pair(dnn::make_optional(node_pair),
-                                        FuseCode::FUSED_RELU);
+                                        FuseCode::RELU);
         }
         i++;
     }
@@ -916,7 +916,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            WriteDaqLayer_MUL(input_name, tensor_a_name, FuseCode::FUSED_NONE,
+            WriteDaqLayer_MUL(input_name, tensor_a_name, FuseCode::NONE,
                               tensor_imm_product_name);
             WriteDaqLayer_ADD(tensor_imm_product_name, tensor_b_name, act,
                               output_name);
