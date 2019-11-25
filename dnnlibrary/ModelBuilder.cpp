@@ -17,7 +17,6 @@
 #include <common/helper.h>
 #include <dnnlibrary/android_log_helper.h>
 #include <dnnlibrary/nnapi_helper.h>
-#include <dnnlibrary/operand_helper.h>
 #include <glog/logging.h>
 
 namespace dnn {

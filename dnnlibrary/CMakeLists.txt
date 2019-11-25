@@ -6,7 +6,6 @@ set(dnnlibrary_src
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/DaqReader.h
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/nnapi_implementation.h
     android_log_helper.h
-    operand_helper.h
     flatbuffers_helper.h
     ModelBuilder.cpp
     ModelBuilderImpl.cpp
