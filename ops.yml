@@ -44,7 +44,7 @@
         -
             predefined: fuse_code
         - name: nchw
-          nnapi_type: bool
+          nnapi_type: scalar
           cpp_type: bool
           needed_by_shaper: true
           api: 29

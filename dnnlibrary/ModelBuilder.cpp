@@ -77,6 +77,7 @@ OperandType ModelBuilder::GetOperandType(const QuantInfo &quant_info,
         return map_type##_operand_map_[value];                               \
     }
 
+DEFINE_OPERAND_FROM_SCALAR(bool, bool, BOOL);
 DEFINE_OPERAND_FROM_SCALAR(uint32_t, uint32, UINT32);
 DEFINE_OPERAND_FROM_SCALAR(int32_t, int32, INT32);
 DEFINE_OPERAND_FROM_SCALAR(float, float32, FLOAT32);
@@ -380,5 +381,10 @@ dnn::optional<std::vector<Device>> ModelBuilder::GetDevices() {
     } else {
         return dnn::nullopt;
     }
+}
+
+
+int32_t ModelBuilder::android_api_level() const {
+    return nnapi_->android_sdk_version;
 }
 }  // namespace dnn

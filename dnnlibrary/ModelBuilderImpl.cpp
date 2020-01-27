@@ -67,9 +67,25 @@ expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D_Impl(
         bias_idx_val = operand_indexes_.at(bias.value());
     }
     input_indexes.push_back(bias_idx_val);
-    AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
-                      padding_bottom, stride_x, stride_y, fuse_code, dilation_x,
-                      dilation_y);
+    AddScalarOperands(input_indexes, padding_left);
+    AddScalarOperands(input_indexes, padding_right);
+    AddScalarOperands(input_indexes, padding_top);
+    AddScalarOperands(input_indexes, padding_bottom);
+    AddScalarOperands(input_indexes, stride_x);
+    AddScalarOperands(input_indexes, stride_y);
+    AddScalarOperands(input_indexes, fuse_code);
+
+    if (android_api_level() > 29) {
+        AddScalarOperands(input_indexes, nchw);
+    }
+
+    if (android_api_level() > 29) {
+        AddScalarOperands(input_indexes, dilation_x);
+    }
+
+    if (android_api_level() > 29) {
+        AddScalarOperands(input_indexes, dilation_y);
+    }
     shaper_.Conv(input, weight, padding_left, padding_right, padding_top,
                  padding_bottom, stride_x, stride_y, nchw, dilation_x,
                  dilation_y, output);
@@ -95,9 +111,15 @@ expected<Unit, std::string> ModelBuilder::AddLayer_AVERAGE_POOL_2D(
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
-    AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
-                      padding_bottom, stride_x, stride_y, kernel_width,
-                      kernel_height, fuse_code);
+    AddScalarOperands(input_indexes, padding_left);
+    AddScalarOperands(input_indexes, padding_right);
+    AddScalarOperands(input_indexes, padding_top);
+    AddScalarOperands(input_indexes, padding_bottom);
+    AddScalarOperands(input_indexes, stride_x);
+    AddScalarOperands(input_indexes, stride_y);
+    AddScalarOperands(input_indexes, kernel_width);
+    AddScalarOperands(input_indexes, kernel_height);
+    AddScalarOperands(input_indexes, fuse_code);
     shaper_.Pool(input, padding_left, padding_right, padding_top,
                  padding_bottom, stride_x, stride_y, kernel_width,
                  kernel_height, output);
@@ -123,9 +145,15 @@ expected<Unit, std::string> ModelBuilder::AddLayer_MAX_POOL_2D(
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
-    AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
-                      padding_bottom, stride_x, stride_y, kernel_width,
-                      kernel_height, fuse_code);
+    AddScalarOperands(input_indexes, padding_left);
+    AddScalarOperands(input_indexes, padding_right);
+    AddScalarOperands(input_indexes, padding_top);
+    AddScalarOperands(input_indexes, padding_bottom);
+    AddScalarOperands(input_indexes, stride_x);
+    AddScalarOperands(input_indexes, stride_y);
+    AddScalarOperands(input_indexes, kernel_width);
+    AddScalarOperands(input_indexes, kernel_height);
+    AddScalarOperands(input_indexes, fuse_code);
     shaper_.Pool(input, padding_left, padding_right, padding_top,
                  padding_bottom, stride_x, stride_y, kernel_width,
                  kernel_height, output);
@@ -315,9 +343,14 @@ expected<Unit, std::string> ModelBuilder::AddLayer_DEPTHWISE_CONV_2D(
         bias_idx_val = operand_indexes_.at(bias.value());
     }
     input_indexes.push_back(bias_idx_val);
-    AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
-                      padding_bottom, stride_x, stride_y, depth_multiplier,
-                      fuse_code);
+    AddScalarOperands(input_indexes, padding_left);
+    AddScalarOperands(input_indexes, padding_right);
+    AddScalarOperands(input_indexes, padding_top);
+    AddScalarOperands(input_indexes, padding_bottom);
+    AddScalarOperands(input_indexes, stride_x);
+    AddScalarOperands(input_indexes, stride_y);
+    AddScalarOperands(input_indexes, depth_multiplier);
+    AddScalarOperands(input_indexes, fuse_code);
     shaper_.DepthwiseConv(input, weight, padding_left, padding_right,
                           padding_top, padding_bottom, stride_x, stride_y,
                           output);
@@ -406,7 +439,9 @@ expected<Unit, std::string> ModelBuilder::AddLayer_STRIDED_SLICE(
         "input_strides_of_" + output, &strides[0],
         {Type::TENSOR_INT32, Shape{static_cast<uint32_t>(strides.size())}});
     input_indexes.push_back(strides_idx);
-    AddScalarOperands(input_indexes, begin_mask, end_mask, shrink_axis_mask);
+    AddScalarOperands(input_indexes, begin_mask);
+    AddScalarOperands(input_indexes, end_mask);
+    AddScalarOperands(input_indexes, shrink_axis_mask);
     shaper_.StridedSlice(input, starts, ends, strides, begin_mask, end_mask,
                          shrink_axis_mask, output);
     const OperandType operand_type =
@@ -472,7 +507,10 @@ expected<Unit, std::string> ModelBuilder::AddLayer_LOCAL_RESPONSE_NORMALIZATION(
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
     input_indexes.push_back(input_idx);
-    AddScalarOperands(input_indexes, radius, bias, alpha, beta);
+    AddScalarOperands(input_indexes, radius);
+    AddScalarOperands(input_indexes, bias);
+    AddScalarOperands(input_indexes, alpha);
+    AddScalarOperands(input_indexes, beta);
     shaper_.Identity(input, output);
     const OperandType operand_type =
         GetOperandType(operand_types_.at(input).type, shaper_[output]);
@@ -880,16 +918,3 @@ ModelBuilder::IndexSeq ModelBuilder::AddOperation(
 }
 
 }  // namespace dnn
-
-
-
-    
-    
-
-
-
-                             
-                              
-                             
-                         
-

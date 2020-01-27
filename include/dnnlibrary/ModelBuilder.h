@@ -41,6 +41,7 @@ class ModelBuilder {
     Shaper shaper_;
     IndexSeq input_index_vec_;
     IndexSeq output_index_vec_;
+    std::map<bool, Index> bool_operand_map_;
     std::map<uint32_t, Index> uint32_operand_map_;
     std::map<int32_t, Index> int32_operand_map_;
     std::map<float, Index> float32_operand_map_;
@@ -64,6 +65,7 @@ class ModelBuilder {
     IndexSeq AddOperation(int op, IndexSeq input_indexes,
                           OperandTypes... output_types);
 
+    Index OperandFromScalar(bool value);
     Index OperandFromScalar(int32_t value);
     Index OperandFromScalar(float value);
     Index OperandFromScalar(uint32_t value);
@@ -87,6 +89,8 @@ class ModelBuilder {
         const dnn::optional<QuantInfo> &quant_info = dnn::nullopt);
     android::nn::wrapper::OperandType GetOperandType(
         const QuantInfo &quant_info, const Shape &dims);
+
+    int32_t android_api_level() const;
 
     const NnApi *nnapi_ = nullptr;
 

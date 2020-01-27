@@ -400,8 +400,14 @@ def generate_model_builder():
         for x in tensor_input:
             cogoutl(add_tensor_operand(x))
         # cogoutl('IndexSeq input_indexes{{{}}};'.format(', '.join([x['name'] + "_idx" for x in tensor_input])))
-        if len(scalar_input) > 0:
-            cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
+        for x in scalar_input:
+            if 'api' in x:
+                cogoutl(f"""
+                    if (android_api_level() > {x['api']}) {{
+                        AddScalarOperands(input_indexes, {x['name']});
+                    }}""")
+            else:
+                cogoutl(f"AddScalarOperands(input_indexes, {x['name']});")
         cogoutl('shaper_.{}({});'.format(op['shaper'],
                                          ', '.join([x['name'] for x in ipt_opt if x['needed_by_shaper']])))
         if op['output_tensor_type'] != 'auto':
