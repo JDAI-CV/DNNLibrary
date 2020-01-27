@@ -43,8 +43,7 @@ DNN::FuseCode OnnxConverter::ConvertFuseCodeType(FuseCode fuse_code) {
     throw std::invalid_argument("Invalid FuseCode");
 }
 
-std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
-          FuseCode>
+std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>, FuseCode>
 OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                               css &output_name) {
     std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
@@ -60,8 +59,8 @@ OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                 return {{}, FuseCode::NONE};
             }
             const auto node_pair = std::make_pair(i, _node);
-            activation = std::make_pair(dnn::make_optional(node_pair),
-                                        FuseCode::RELU);
+            activation =
+                std::make_pair(dnn::make_optional(node_pair), FuseCode::RELU);
         }
         i++;
     }
@@ -718,10 +717,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto act = FindActivation(model_proto_, output_name);
             if (group == 1) {
                 VLOG(5) << "Vanilla conv";
-                WriteDaqLayer_CONV_2D(input_name, ori_weight_name, bias_name,
-                                      onnx_pads[1], onnx_pads[3], onnx_pads[0],
-                                      onnx_pads[2], onnx_strides[1],
-                                      onnx_strides[0], act.second, output_name);
+                WriteDaqLayer_CONV_2D(
+                    input_name, ori_weight_name, bias_name, onnx_pads[1],
+                    onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1],
+                    onnx_strides[0], act.second, false, 1, 1, output_name);
             } else if (onnx_weight.shape[1] == 1) {  // depthwise
                 VLOG(5) << "Depthwise conv";
                 WriteDaqLayer_DEPTHWISE_CONV_2D(

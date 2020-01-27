@@ -43,7 +43,26 @@
             needed_by_shaper: true
         -
             predefined: fuse_code
+        - name: nchw
+          nnapi_type: bool
+          cpp_type: bool
+          needed_by_shaper: true
+          api: 29
+          default: "false"
+        - name: dilation_x
+          nnapi_type: scalar
+          cpp_type: int32_t
+          needed_by_shaper: true
+          api: 29
+          default: "1"
+        - name: dilation_y
+          nnapi_type: scalar
+          cpp_type: int32_t
+          needed_by_shaper: true
+          api: 29
+          default: "1"
     support_quant_asymm: true
+    builder_simple: false
     api: 27
 -
     input:

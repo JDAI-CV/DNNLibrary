@@ -117,9 +117,20 @@ class ModelBuilder {
         const std::string &input, const std::string &weight,
         const dnn::optional<std::string> &bias, int32_t padding_left,
         int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-        int32_t stride_x, int32_t stride_y, FuseCode fuse_code,
-        const std::string &output,
+        int32_t stride_x, int32_t stride_y, FuseCode fuse_code, bool nchw,
+        int32_t dilation_x, int32_t dilation_y, const std::string &output,
         const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
+
+   private:
+    expected<Unit, std::string> AddLayer_CONV_2D_Impl(
+        const std::string &input, const std::string &weight,
+        const dnn::optional<std::string> &bias, int32_t padding_left,
+        int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
+        int32_t stride_x, int32_t stride_y, FuseCode fuse_code, bool nchw,
+        int32_t dilation_x, int32_t dilation_y, const std::string &output,
+        const dnn::optional<QuantInfo> &output_quant_info = dnn::nullopt);
+
+   public:
     expected<Unit, std::string> AddLayer_AVERAGE_POOL_2D(
         const std::string &input, int32_t padding_left, int32_t padding_right,
         int32_t padding_top, int32_t padding_bottom, int32_t stride_x,

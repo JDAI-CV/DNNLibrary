@@ -72,6 +72,9 @@ table CONV_2D_Input {
     stride_x: int;
     stride_y: int;
     fuse_code: FuseCode;
+    nchw: bool;
+    dilation_x: int;
+    dilation_y: int;
 }
 
 table CONV_2D_Output {

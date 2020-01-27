@@ -661,7 +661,10 @@ struct CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_PADDING_BOTTOM = 16,
     VT_STRIDE_X = 18,
     VT_STRIDE_Y = 20,
-    VT_FUSE_CODE = 22
+    VT_FUSE_CODE = 22,
+    VT_NCHW = 24,
+    VT_DILATION_X = 26,
+    VT_DILATION_Y = 28
   };
   const flatbuffers::String *input() const {
     return GetPointer<const flatbuffers::String *>(VT_INPUT);
@@ -693,6 +696,15 @@ struct CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   FuseCode fuse_code() const {
     return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
   }
+  bool nchw() const {
+    return GetField<uint8_t>(VT_NCHW, 0) != 0;
+  }
+  int32_t dilation_x() const {
+    return GetField<int32_t>(VT_DILATION_X, 0);
+  }
+  int32_t dilation_y() const {
+    return GetField<int32_t>(VT_DILATION_Y, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_INPUT) &&
@@ -708,6 +720,9 @@ struct CONV_2D_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_STRIDE_X) &&
            VerifyField<int32_t>(verifier, VT_STRIDE_Y) &&
            VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
+           VerifyField<uint8_t>(verifier, VT_NCHW) &&
+           VerifyField<int32_t>(verifier, VT_DILATION_X) &&
+           VerifyField<int32_t>(verifier, VT_DILATION_Y) &&
            verifier.EndTable();
   }
 };
@@ -745,6 +760,15 @@ struct CONV_2D_InputBuilder {
   void add_fuse_code(FuseCode fuse_code) {
     fbb_.AddElement<int8_t>(CONV_2D_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
   }
+  void add_nchw(bool nchw) {
+    fbb_.AddElement<uint8_t>(CONV_2D_Input::VT_NCHW, static_cast<uint8_t>(nchw), 0);
+  }
+  void add_dilation_x(int32_t dilation_x) {
+    fbb_.AddElement<int32_t>(CONV_2D_Input::VT_DILATION_X, dilation_x, 0);
+  }
+  void add_dilation_y(int32_t dilation_y) {
+    fbb_.AddElement<int32_t>(CONV_2D_Input::VT_DILATION_Y, dilation_y, 0);
+  }
   explicit CONV_2D_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -768,8 +792,13 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_Input(
     int32_t padding_bottom = 0,
     int32_t stride_x = 0,
     int32_t stride_y = 0,
-    FuseCode fuse_code = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None,
+    bool nchw = false,
+    int32_t dilation_x = 0,
+    int32_t dilation_y = 0) {
   CONV_2D_InputBuilder builder_(_fbb);
+  builder_.add_dilation_y(dilation_y);
+  builder_.add_dilation_x(dilation_x);
   builder_.add_stride_y(stride_y);
   builder_.add_stride_x(stride_x);
   builder_.add_padding_bottom(padding_bottom);
@@ -779,6 +808,7 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_Input(
   builder_.add_bias(bias);
   builder_.add_weight(weight);
   builder_.add_input(input);
+  builder_.add_nchw(nchw);
   builder_.add_fuse_code(fuse_code);
   return builder_.Finish();
 }
@@ -794,7 +824,10 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_InputDirect(
     int32_t padding_bottom = 0,
     int32_t stride_x = 0,
     int32_t stride_y = 0,
-    FuseCode fuse_code = FuseCode::None) {
+    FuseCode fuse_code = FuseCode::None,
+    bool nchw = false,
+    int32_t dilation_x = 0,
+    int32_t dilation_y = 0) {
   auto input__ = input ? _fbb.CreateString(input) : 0;
   auto weight__ = weight ? _fbb.CreateString(weight) : 0;
   auto bias__ = bias ? _fbb.CreateString(bias) : 0;
@@ -809,7 +842,10 @@ inline flatbuffers::Offset<CONV_2D_Input> CreateCONV_2D_InputDirect(
       padding_bottom,
       stride_x,
       stride_y,
-      fuse_code);
+      fuse_code,
+      nchw,
+      dilation_x,
+      dilation_y);
 }
 
 struct CONV_2D_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {

@@ -218,14 +218,15 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
             case DNN::LayerType::CONV_2D: {
                 UNPACK_LAYER_QUANT(CONV_2D, input, weight, bias, padding_left,
                                    padding_right, padding_top, padding_bottom,
-                                   stride_x, stride_y, fuse_code);
+                                   stride_x, stride_y, fuse_code, nchw,
+                                   dilation_x, dilation_y);
                 const dnn::optional<std::string> bias_right_type =
                     (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
 
                 TRY(builder.AddLayer_CONV_2D(
                     input, weight, bias_right_type, padding_left, padding_right,
                     padding_top, padding_bottom, stride_x, stride_y, fuse_code,
-                    output, quant_info));
+                    nchw, dilation_x, dilation_y, output, quant_info));
                 break;
             }
             case DNN::LayerType::AVERAGE_POOL_2D: {

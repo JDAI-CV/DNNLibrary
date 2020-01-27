@@ -11,16 +11,31 @@ namespace dnn {
 using namespace android::nn::wrapper;
 
 // ModelBuilder auto generated methods start
-expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D(
+expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D_Impl(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-    int32_t stride_x, int32_t stride_y, FuseCode fuse_code,
-    const std::string &output,
+    int32_t stride_x, int32_t stride_y, FuseCode fuse_code, bool nchw,
+    int32_t dilation_x, int32_t dilation_y, const std::string &output,
     const dnn::optional<QuantInfo> &output_quant_info) {
     if (nnapi_->android_sdk_version < 27) {
         return make_unexpected("CONV_2D requires API 27");
     }
+
+    if (nchw != false && nnapi_->android_sdk_version < 29) {
+        return make_unexpected("Input \"nchw\" of CONV_2D requires API 29");
+    }
+
+    if (dilation_x != 1 && nnapi_->android_sdk_version < 29) {
+        return make_unexpected(
+            "Input \"dilation_x\" of CONV_2D requires API 29");
+    }
+
+    if (dilation_y != 1 && nnapi_->android_sdk_version < 29) {
+        return make_unexpected(
+            "Input \"dilation_y\" of CONV_2D requires API 29");
+    }
+
     IndexSeq input_indexes;
     imm_blob_inputs_.insert(input);
     const auto input_idx = operand_indexes_.at(input);
@@ -53,9 +68,11 @@ expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D(
     }
     input_indexes.push_back(bias_idx_val);
     AddScalarOperands(input_indexes, padding_left, padding_right, padding_top,
-                      padding_bottom, stride_x, stride_y, fuse_code);
+                      padding_bottom, stride_x, stride_y, fuse_code, dilation_x,
+                      dilation_y);
     shaper_.Conv(input, weight, padding_left, padding_right, padding_top,
-                 padding_bottom, stride_x, stride_y, output);
+                 padding_bottom, stride_x, stride_y, nchw, dilation_x,
+                 dilation_y, output);
     const OperandType operand_type = GetOperandType(
         operand_types_.at(input).type, shaper_[output], output_quant_info);
     const auto output_idx =
@@ -656,6 +673,29 @@ expected<Unit, std::string> ModelBuilder::AddLayer_LOG(
 
 // ModelBuilder auto generated methods end
 
+expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D(
+    const std::string &input, const std::string &weight,
+    const dnn::optional<std::string> &bias, int32_t padding_left,
+    int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
+    int32_t stride_x, int32_t stride_y, FuseCode fuse_code, bool nchw,
+    int32_t dilation_x, int32_t dilation_y, const std::string &output,
+    const dnn::optional<QuantInfo> &output_quant_info) {
+    if (nnapi_->android_sdk_version < 29) {
+        if (dilation_x != 1 || dilation_y != 1) {
+            return make_unexpected("It is not supported now");
+        }
+        return AddLayer_CONV_2D_Impl(
+            input, weight, bias, padding_left, padding_right, padding_top,
+            padding_bottom, stride_x, stride_y, fuse_code, nchw, dilation_x,
+            dilation_y, output, output_quant_info);
+    } else {
+        return AddLayer_CONV_2D_Impl(
+            input, weight, bias, padding_left, padding_right, padding_top,
+            padding_bottom, stride_x, stride_y, fuse_code, nchw, dilation_x,
+            dilation_y, output, output_quant_info);
+    }
+}
+
 expected<Unit, std::string> ModelBuilder::AddLayer_PRELU(
     const std::string &input, const std::string &alpha,
     const std::string &output) {
@@ -676,16 +716,14 @@ expected<Unit, std::string> ModelBuilder::AddLayer_PRELU(
         // negative branch
         float neg1_buf[1]{-1.f};
         AddTensorFromBuffer(neg1_name, neg1_buf, {Type::TENSOR_FLOAT32, {1}});
-        AddLayer_MUL(input, neg1_name, FuseCode::NONE, imm2_name,
-                     dnn::nullopt);
+        AddLayer_MUL(input, neg1_name, FuseCode::NONE, imm2_name, dnn::nullopt);
         AddLayer_RELU(imm2_name, imm3_name);
-        AddLayer_MUL(imm3_name, alpha, FuseCode::NONE, imm4_name,
+        AddLayer_MUL(imm3_name, alpha, FuseCode::NONE, imm4_name, dnn::nullopt);
+        AddLayer_MUL(imm4_name, neg1_name, FuseCode::NONE, imm5_name,
                      dnn::nullopt);
-        AddLayer_MUL(imm4_name, neg1_name, FuseCode::NONE,
-                     imm5_name, dnn::nullopt);
         // add two branches
-        AddLayer_ADD(imm1_name, imm5_name, FuseCode::NONE,
-                     output, dnn::nullopt);
+        AddLayer_ADD(imm1_name, imm5_name, FuseCode::NONE, output,
+                     dnn::nullopt);
     } else {
         AddLayer_PRELU_Impl(input, alpha, output);
     }
@@ -842,3 +880,16 @@ ModelBuilder::IndexSeq ModelBuilder::AddOperation(
 }
 
 }  // namespace dnn
+
+
+
+    
+    
+
+
+
+                             
+                              
+                             
+                         
+

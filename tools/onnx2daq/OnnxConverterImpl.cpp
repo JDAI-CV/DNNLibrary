@@ -110,8 +110,8 @@ void OnnxConverter::WriteDaqLayer_CONV_2D(
     const std::string &input, const std::string &weight,
     const dnn::optional<std::string> &bias, int32_t padding_left,
     int32_t padding_right, int32_t padding_top, int32_t padding_bottom,
-    int32_t stride_x, int32_t stride_y, FuseCode fuse_code,
-    const std::string &output) {
+    int32_t stride_x, int32_t stride_y, FuseCode fuse_code, bool nchw,
+    int32_t dilation_x, int32_t dilation_y, const std::string &output) {
     {
         const auto name = input;
 
@@ -149,12 +149,13 @@ void OnnxConverter::WriteDaqLayer_CONV_2D(
     }
 
     shaper_.Conv(m(input), m(weight), padding_left, padding_right, padding_top,
-                 padding_bottom, stride_x, stride_y, output);
+                 padding_bottom, stride_x, stride_y, nchw, dilation_x,
+                 dilation_y, output);
     const auto input_param = DNN::CreateCONV_2D_InputDirect(
         builder_, m(input).c_str(), m(weight).c_str(),
         bias.has_value() ? bias.value().c_str() : nullptr, padding_left,
         padding_right, padding_top, padding_bottom, stride_x, stride_y,
-        ConvertFuseCodeType(fuse_code));
+        ConvertFuseCodeType(fuse_code), nchw, dilation_x, dilation_y);
     const auto output_param =
         DNN::CreateCONV_2D_OutputDirect(builder_, output.c_str());
     const auto param = DNN::CreateCONV_2D(builder_, input_param, output_param);

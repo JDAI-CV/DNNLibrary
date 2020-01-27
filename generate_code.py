@@ -2,7 +2,7 @@ import io
 import subprocess
 import yaml
 from enum import Enum
-from typing import Tuple
+from typing import Dict
 
 str_io = io.StringIO()
 
@@ -29,7 +29,19 @@ def cogoutl(txt):
     print(txt, file=str_io)
 
 
-def get_param(elem: dict) -> Tuple[str, str]:
+def param_to_string_in_declaration(param: Dict[str, str]) -> str:
+    ret = param['type'] + ' ' + param['name']
+    if 'default' in param:
+        ret += '=' + param['default']
+    return ret
+
+
+def param_to_string_in_definition(param: Dict[str, str]) -> str:
+    ret = param['type'] + ' ' + param['name']
+    return ret
+
+
+def get_param(elem: dict) -> Dict[str, str]:
     """
     get parameter in function signature from yaml element, e.g.
     -
@@ -40,15 +52,20 @@ def get_param(elem: dict) -> Tuple[str, str]:
     :return: A tuple, (type, name)
     """
     if elem['cpp_type'] == 'str':
-        return 'const std::string &', elem['name']
+        ret = {'type': 'const std::string &', 'name': elem['name']}
     elif elem['cpp_type'] == 'optional_str':
-        return 'const dnn::optional<std::string> &', elem['name']
+        ret = {'type': 'const dnn::optional<std::string> &', 'name': elem['name']}
     elif elem['cpp_type'] == 'str_list':
-        return 'const std::vector<std::string> &', elem['name']
+        ret = {'type': 'const std::vector<std::string> &', 'name': elem['name']}
     elif elem['cpp_type'] == 'int32_list':
-        return 'const std::vector<int32_t> &', elem['name']
+        ret = {'type': 'const std::vector<int32_t> &', 'name': elem['name']}
     else:
-        return elem['cpp_type'], elem['name']
+        ret = {'type': elem['cpp_type'], 'name': elem['name']}
+    # If we make some input (e.g. api 29 new input) optional, the outputs (after inputs in arg list)
+    # have to be optional too, so disable it.
+    # if 'default' in elem:
+        # ret['default'] = elem['default']
+    return ret
 
 
 def add_optional_bias():
@@ -201,7 +218,7 @@ def generate_onnx_converter():
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+        params_str = ', '.join(map(param_to_string_in_definition, params))
         cogoutl(f"void OnnxConverter::WriteDaqLayer_{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
         # if has_fuse_code_attr(op):
             # cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
@@ -274,7 +291,7 @@ def generate_onnx_converter():
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+        params_str = ', '.join(map(param_to_string_in_declaration, params))
         cogoutl(f"void WriteDaqLayer_{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str});")
     update_code('include/tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
 
@@ -320,7 +337,8 @@ def generate_fbs():
         'optional_str': 'string',
         'str_list': '[string]',
         'float': 'float',
-        'FuseCode': 'FuseCode'
+        'FuseCode': 'FuseCode',
+        'bool': 'bool',
     }
     for i, op in enumerate(cfg):
         cogoutl(f"table {op['nnapi']}_Input {{")
@@ -361,13 +379,20 @@ def generate_model_builder():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
-            params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+            params.append({'type': 'const dnn::optional<QuantInfo> &', 'name': 'output_quant_info'})
+        params_str = ', '.join(map(param_to_string_in_definition, params))
         cogoutl("expected<Unit, std::string> ModelBuilder::AddLayer_{}{}({}) {{".format(
             op['nnapi'], '' if op['builder_simple'] else '_Impl', params_str))
         cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
                 f'return make_unexpected("{op["nnapi"]} requires API {op["api"]}");'
                 f'}}')
+        for ipt in op['input']:
+            if 'default' in ipt and 'api' in ipt:
+                cogoutl(f'''
+                    if ({ipt['name']} != {ipt['default']} && nnapi_->android_sdk_version < {ipt['api']}) {{
+                        return make_unexpected("Input \\"{ipt['name']}\\" of {op["nnapi"]} requires API {ipt["api"]}");
+                    }}
+                ''')
         tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
         scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
 
@@ -408,9 +433,8 @@ def generate_model_builder():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
-            # A hack
-            params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info=dnn::nullopt'))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
+            params.append({'type': 'const dnn::optional<QuantInfo> &', 'name': 'output_quant_info', 'default': 'dnn::nullopt'})
+        params_str = ', '.join(map(param_to_string_in_declaration, params))
         cogoutl("expected<Unit, std::string> AddLayer_{}({});".format(
             op['nnapi'], params_str))
 

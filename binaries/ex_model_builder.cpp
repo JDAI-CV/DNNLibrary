@@ -42,7 +42,8 @@ int main() {
         builder.AddTensorFromBuffer("bias", bias_buf,
                                     {Type::TENSOR_FLOAT32, {3}});
         builder.AddLayer_CONV_2D("data", "weight", "bias", 1, 1, 0, 0, 0, 0,
-                                 dnn::FuseCode::NONE, "output", dnn::nullopt);
+                                 dnn::FuseCode::NONE, false, 1, 1, "output",
+                                 dnn::nullopt);
     }
     auto model = builder.AddOutput("output").Compile(
         ModelBuilder::PREFERENCE_FAST_SINGLE_ANSWER);
