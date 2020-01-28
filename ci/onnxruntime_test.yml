@@ -27,7 +27,7 @@ pool:
 steps:
   - checkout: self
     submodules: true
-  - script: git clone --recursive https://github.com/microsoft/onnxruntime $(Agent.HomeDirectory)/onnxruntime
+  - script: git clone --recursive --branch fix_android_build https://github.com/daquexian/onnxruntime $(Agent.HomeDirectory)/onnxruntime
     displayName: Clone ONNX Runtime
   - script: rm -rf $(Agent.HomeDirectory)/onnxruntime/cmake/external/DNNLibrary && cp -r $(Build.SourcesDirectory) $(Agent.HomeDirectory)/onnxruntime/cmake/external/DNNLibrary
     displayName: Copy latest DNNLibrary
