@@ -12,6 +12,14 @@ int main(int argc, char *argv[])
     // FIXME: Handle the return value
     model_proto.ParseFromString(ss.str());
     dnn::OnnxConverter converter;
-    PNT(converter.GetSupportedNodes(model_proto));
-    return 0;
+    const auto nodes = converter.GetSupportedNodes(model_proto);
+    if (nodes) {
+        const auto &supported_ops = nodes.value();
+        PNT(supported_ops);
+        return 0;
+    } else {
+        const auto &error = nodes.error();
+        PNT(error);
+        return 1;
+    }
 }

@@ -215,7 +215,7 @@ class OnnxConverter {
     void Clear();
 
    public:
-    std::vector<std::vector<int>> GetSupportedNodes(
+    expected<std::vector<std::vector<int>>, std::string> GetSupportedNodes(
         ONNX_NAMESPACE::ModelProto model_proto);
     void Convert(const std::string &model_str, const std::string &filepath,
                  const std::string &table_file = "");
