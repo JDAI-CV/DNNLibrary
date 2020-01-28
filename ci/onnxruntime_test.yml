@@ -27,14 +27,14 @@ pool:
 steps:
   - checkout: self
     submodules: true
-  - script: git clone --recursive https://github.com/microsoft/onnxruntime /onnxruntime
+  - script: git clone --recursive https://github.com/microsoft/onnxruntime $(Agent.HomeDirectory)/onnxruntime
     displayName: Clone ONNX Runtime
-  - script: rm -rf /onnxruntime/cmake/external/DNNLibrary && cp -r $(Build.SourcesDirectory) /onnxruntime/cmake/external/DNNLibrary
+  - script: rm -rf $(Agent.HomeDirectory)/onnxruntime/cmake/external/DNNLibrary && cp -r $(Build.SourcesDirectory) $(Agent.HomeDirectory)/onnxruntime/cmake/external/DNNLibrary
     displayName: Copy latest DNNLibrary
   - script: pip install cmake==3.13.2.post1 && alias cmake=/usr/local/bin/cmake && cmake --version && brew install coreutils
     displayName: Install cmake 3.13 and coreutils
   - script: echo "y" | $ANDROID_HOME/tools/bin/sdkmanager --install 'ndk-bundle'
     displayName: Install Android NDK
   - script: tools/ci_build/build.py --android --build_dir build --android_ndk $ANDROID_HOME/ndk-bundle --android_abi=x86_64 --skip_submodule_sync --parallel --use_dnnlibrary
-    workingDirectory: /onnxruntime
+    workingDirectory: $(Agent.HomeDirectory)/onnxruntime
     displayName: Build and Test on Android Emulator
