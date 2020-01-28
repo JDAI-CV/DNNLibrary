@@ -184,6 +184,10 @@ class OnnxConverter {
                                const std::string &input2,
                                const std::string &output);
     void WriteDaqLayer_LOG(const std::string &input, const std::string &output);
+    void WriteDaqLayer_ABS(const std::string &input, const std::string &output);
+    void WriteDaqLayer_EXP(const std::string &input, const std::string &output);
+    void WriteDaqLayer_SUB(const std::string &input1, const std::string &input2,
+                           FuseCode fuse_code, const std::string &output);
     // OnnxConverter auto generated methods end
 
     /**

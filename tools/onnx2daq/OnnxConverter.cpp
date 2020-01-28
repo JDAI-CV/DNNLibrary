@@ -448,30 +448,52 @@ std::pair<bool, std::string> OnnxConverter::IsNodeSupported(
 #endif
     NodeAttrHelper helper(node);
     const auto &op = node.op_type();
-    const std::vector<std::string> supported_types{
-        "Conv",          "AveragePool",
-        "MaxPool",       "GlobalAveragePool",
-        "GlobalMaxPool", "Relu",
-        "PRelu",         "Add",
-        "Mul",           "Gemm",
-        "Softmax",       "Concat",
-        "Dropout",       "BatchNormalization",
-        "Reshape",       "LRN",
-        "Identity",      "Tanh",
-        "Floor",         "Sigmoid"};
-    if (std::find(supported_types.begin(), supported_types.end(), op) ==
-        supported_types.end()) {
+    std::map<std::string, int> supported_ops{{"Conv", 27},
+                                             {"AveragePool", 27},
+                                             {"MaxPool", 27},
+                                             {"GlobalAveragePool", 27},
+                                             {"GlobalMaxPool", 27},
+                                             {"Relu", 27},
+                                             {"PRelu", 27},
+                                             {"Add", 27},
+                                             {"Mul", 27},
+                                             {"Gemm", 27},
+                                             {"Softmax", 27},
+                                             {"Concat", 27},
+                                             {"Dropout", 27},
+                                             {"BatchNormalization", 27},
+                                             {"Reshape", 27},
+                                             {"LRN", 27},
+                                             {"Identity", 27},
+                                             {"Tanh", 27},
+                                             {"Floor", 27},
+                                             {"Sigmoid", 27},
+                                             {"Abs", 29},
+                                             {"Exp", 29},
+                                             {"Sub", 27}};
+    if (supported_ops.find(op) == supported_ops.end()) {
         return {false, "Unsupported operator " + op};
     }
+#ifdef __ANDROID__
+    if (supported_ops[op] > GetAndroidSdkVersion()) {
+        return {false, "Operator " + op + " is only supported on API > " +
+                           std::to_string(supported_ops[op])};
+    }
+#endif
     if (op == "Conv") {
         const auto strides = helper.get("strides", vector<int>{1, 1});
         const auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
         const auto dilations = helper.get("dilations", vector<int>{1, 1});
         const auto group = helper.get("group", 1);
-        if (dilations != vector<int>{1, 1} && strides != vector<int>{1, 1}) {
-            return {false,
-                    "Both dilations and strides > 1 is not supported for now"};
+        // if (dilations != vector<int>{1, 1} && strides != vector<int>{1, 1}) {
+#ifdef __ANDROID__
+        if (dilations != vector<int>{1, 1} && GetAndroidSdkVersion() <= 29) {
+            return {
+                false,
+                // "Both dilations and strides > 1 is not supported for now"};
+                "Dilations > 1 is not supported for API < 29 now"};
         }
+#endif
         const auto weight_name = m(node.input(1));
         if (onnx_tensors_.has(weight_name)) {
             const auto &onnx_weight = onnx_tensors_.at(weight_name);
@@ -798,7 +820,6 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto output_name = m(node.output(0));
             WriteDaqLayer_RELU(input_name, output_name);
             VLOG(5) << "Converting Relu completed";
-
         } else if (op == "PRelu") {
             VLOG(5) << "Start converting PRelu";
             const auto input_name = m(node.input(0));
@@ -964,6 +985,26 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto output_name = m(node.output(0));
             WriteDaqLayer_LOGISTIC(input_name, output_name);
             VLOG(5) << "Converting Sigmoid completed";
+        } else if (op == "Abs") {
+            VLOG(5) << "Start converting Abs";
+            const auto input_name = m(node.input(0));
+            const auto output_name = m(node.output(0));
+            WriteDaqLayer_ABS(input_name, output_name);
+            VLOG(5) << "Converting Abs completed";
+        } else if (op == "Exp") {
+            VLOG(5) << "Start converting Exp";
+            const auto input_name = m(node.input(0));
+            const auto output_name = m(node.output(0));
+            WriteDaqLayer_EXP(input_name, output_name);
+            VLOG(5) << "Converting Exp completed";
+        } else if (op == "Sub") {
+            VLOG(5) << "Start converting Sub";
+            const auto input1_name = m(node.input(0));
+            const auto input2_name = m(node.input(1));
+            const auto output_name = m(node.output(0));
+            const auto act = FindActivation(model_proto_, output_name).second;
+            WriteDaqLayer_SUB(input1_name, input2_name, act, output_name);
+            VLOG(5) << "Converting Sub completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
         }

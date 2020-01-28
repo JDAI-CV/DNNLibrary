@@ -158,6 +158,24 @@ struct LOG_Output;
 
 struct LOG;
 
+struct ABS_Input;
+
+struct ABS_Output;
+
+struct ABS;
+
+struct EXP_Input;
+
+struct EXP_Output;
+
+struct EXP;
+
+struct SUB_Input;
+
+struct SUB_Output;
+
+struct SUB;
+
 struct Layer;
 
 struct Model;
@@ -278,11 +296,14 @@ enum class LayerType : int8_t {
   MINIMUM = 21,
   MAXIMUM = 22,
   LOG = 23,
+  ABS = 24,
+  EXP = 25,
+  SUB = 26,
   MIN = CONV_2D,
-  MAX = LOG
+  MAX = SUB
 };
 
-inline const LayerType (&EnumValuesLayerType())[24] {
+inline const LayerType (&EnumValuesLayerType())[27] {
   static const LayerType values[] = {
     LayerType::CONV_2D,
     LayerType::AVERAGE_POOL_2D,
@@ -307,7 +328,10 @@ inline const LayerType (&EnumValuesLayerType())[24] {
     LayerType::NEG,
     LayerType::MINIMUM,
     LayerType::MAXIMUM,
-    LayerType::LOG
+    LayerType::LOG,
+    LayerType::ABS,
+    LayerType::EXP,
+    LayerType::SUB
   };
   return values;
 }
@@ -338,13 +362,16 @@ inline const char * const *EnumNamesLayerType() {
     "MINIMUM",
     "MAXIMUM",
     "LOG",
+    "ABS",
+    "EXP",
+    "SUB",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameLayerType(LayerType e) {
-  if (e < LayerType::CONV_2D || e > LayerType::LOG) return "";
+  if (e < LayerType::CONV_2D || e > LayerType::SUB) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesLayerType()[index];
 }
@@ -5127,6 +5154,488 @@ inline flatbuffers::Offset<LOG> CreateLOG(
   return builder_.Finish();
 }
 
+struct ABS_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           verifier.EndTable();
+  }
+};
+
+struct ABS_InputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(ABS_Input::VT_INPUT, input);
+  }
+  explicit ABS_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ABS_InputBuilder &operator=(const ABS_InputBuilder &);
+  flatbuffers::Offset<ABS_Input> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<ABS_Input>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<ABS_Input> CreateABS_Input(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0) {
+  ABS_InputBuilder builder_(_fbb);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<ABS_Input> CreateABS_InputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr) {
+  auto input__ = input ? _fbb.CreateString(input) : 0;
+  return DNN::CreateABS_Input(
+      _fbb,
+      input__);
+}
+
+struct ABS_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_OUTPUT = 4
+  };
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct ABS_OutputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(ABS_Output::VT_OUTPUT, output);
+  }
+  explicit ABS_OutputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ABS_OutputBuilder &operator=(const ABS_OutputBuilder &);
+  flatbuffers::Offset<ABS_Output> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<ABS_Output>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<ABS_Output> CreateABS_Output(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  ABS_OutputBuilder builder_(_fbb);
+  builder_.add_output(output);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<ABS_Output> CreateABS_OutputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *output = nullptr) {
+  auto output__ = output ? _fbb.CreateString(output) : 0;
+  return DNN::CreateABS_Output(
+      _fbb,
+      output__);
+}
+
+struct ABS FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const ABS_Input *input() const {
+    return GetPointer<const ABS_Input *>(VT_INPUT);
+  }
+  const ABS_Output *output() const {
+    return GetPointer<const ABS_Output *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyTable(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyTable(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct ABSBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<ABS_Input> input) {
+    fbb_.AddOffset(ABS::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<ABS_Output> output) {
+    fbb_.AddOffset(ABS::VT_OUTPUT, output);
+  }
+  explicit ABSBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  ABSBuilder &operator=(const ABSBuilder &);
+  flatbuffers::Offset<ABS> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<ABS>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<ABS> CreateABS(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<ABS_Input> input = 0,
+    flatbuffers::Offset<ABS_Output> output = 0) {
+  ABSBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+struct EXP_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4
+  };
+  const flatbuffers::String *input() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyString(input()) &&
+           verifier.EndTable();
+  }
+};
+
+struct EXP_InputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<flatbuffers::String> input) {
+    fbb_.AddOffset(EXP_Input::VT_INPUT, input);
+  }
+  explicit EXP_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  EXP_InputBuilder &operator=(const EXP_InputBuilder &);
+  flatbuffers::Offset<EXP_Input> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<EXP_Input>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<EXP_Input> CreateEXP_Input(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input = 0) {
+  EXP_InputBuilder builder_(_fbb);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<EXP_Input> CreateEXP_InputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input = nullptr) {
+  auto input__ = input ? _fbb.CreateString(input) : 0;
+  return DNN::CreateEXP_Input(
+      _fbb,
+      input__);
+}
+
+struct EXP_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_OUTPUT = 4
+  };
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct EXP_OutputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(EXP_Output::VT_OUTPUT, output);
+  }
+  explicit EXP_OutputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  EXP_OutputBuilder &operator=(const EXP_OutputBuilder &);
+  flatbuffers::Offset<EXP_Output> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<EXP_Output>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<EXP_Output> CreateEXP_Output(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  EXP_OutputBuilder builder_(_fbb);
+  builder_.add_output(output);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<EXP_Output> CreateEXP_OutputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *output = nullptr) {
+  auto output__ = output ? _fbb.CreateString(output) : 0;
+  return DNN::CreateEXP_Output(
+      _fbb,
+      output__);
+}
+
+struct EXP FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const EXP_Input *input() const {
+    return GetPointer<const EXP_Input *>(VT_INPUT);
+  }
+  const EXP_Output *output() const {
+    return GetPointer<const EXP_Output *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyTable(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyTable(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct EXPBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<EXP_Input> input) {
+    fbb_.AddOffset(EXP::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<EXP_Output> output) {
+    fbb_.AddOffset(EXP::VT_OUTPUT, output);
+  }
+  explicit EXPBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  EXPBuilder &operator=(const EXPBuilder &);
+  flatbuffers::Offset<EXP> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<EXP>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<EXP> CreateEXP(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<EXP_Input> input = 0,
+    flatbuffers::Offset<EXP_Output> output = 0) {
+  EXPBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
+struct SUB_Input FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT1 = 4,
+    VT_INPUT2 = 6,
+    VT_FUSE_CODE = 8
+  };
+  const flatbuffers::String *input1() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT1);
+  }
+  const flatbuffers::String *input2() const {
+    return GetPointer<const flatbuffers::String *>(VT_INPUT2);
+  }
+  FuseCode fuse_code() const {
+    return static_cast<FuseCode>(GetField<int8_t>(VT_FUSE_CODE, 0));
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT1) &&
+           verifier.VerifyString(input1()) &&
+           VerifyOffset(verifier, VT_INPUT2) &&
+           verifier.VerifyString(input2()) &&
+           VerifyField<int8_t>(verifier, VT_FUSE_CODE) &&
+           verifier.EndTable();
+  }
+};
+
+struct SUB_InputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input1(flatbuffers::Offset<flatbuffers::String> input1) {
+    fbb_.AddOffset(SUB_Input::VT_INPUT1, input1);
+  }
+  void add_input2(flatbuffers::Offset<flatbuffers::String> input2) {
+    fbb_.AddOffset(SUB_Input::VT_INPUT2, input2);
+  }
+  void add_fuse_code(FuseCode fuse_code) {
+    fbb_.AddElement<int8_t>(SUB_Input::VT_FUSE_CODE, static_cast<int8_t>(fuse_code), 0);
+  }
+  explicit SUB_InputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SUB_InputBuilder &operator=(const SUB_InputBuilder &);
+  flatbuffers::Offset<SUB_Input> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<SUB_Input>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SUB_Input> CreateSUB_Input(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> input1 = 0,
+    flatbuffers::Offset<flatbuffers::String> input2 = 0,
+    FuseCode fuse_code = FuseCode::None) {
+  SUB_InputBuilder builder_(_fbb);
+  builder_.add_input2(input2);
+  builder_.add_input1(input1);
+  builder_.add_fuse_code(fuse_code);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<SUB_Input> CreateSUB_InputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *input1 = nullptr,
+    const char *input2 = nullptr,
+    FuseCode fuse_code = FuseCode::None) {
+  auto input1__ = input1 ? _fbb.CreateString(input1) : 0;
+  auto input2__ = input2 ? _fbb.CreateString(input2) : 0;
+  return DNN::CreateSUB_Input(
+      _fbb,
+      input1__,
+      input2__,
+      fuse_code);
+}
+
+struct SUB_Output FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_OUTPUT = 4
+  };
+  const flatbuffers::String *output() const {
+    return GetPointer<const flatbuffers::String *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyString(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SUB_OutputBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_output(flatbuffers::Offset<flatbuffers::String> output) {
+    fbb_.AddOffset(SUB_Output::VT_OUTPUT, output);
+  }
+  explicit SUB_OutputBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SUB_OutputBuilder &operator=(const SUB_OutputBuilder &);
+  flatbuffers::Offset<SUB_Output> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<SUB_Output>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SUB_Output> CreateSUB_Output(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> output = 0) {
+  SUB_OutputBuilder builder_(_fbb);
+  builder_.add_output(output);
+  return builder_.Finish();
+}
+
+inline flatbuffers::Offset<SUB_Output> CreateSUB_OutputDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *output = nullptr) {
+  auto output__ = output ? _fbb.CreateString(output) : 0;
+  return DNN::CreateSUB_Output(
+      _fbb,
+      output__);
+}
+
+struct SUB FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_INPUT = 4,
+    VT_OUTPUT = 6
+  };
+  const SUB_Input *input() const {
+    return GetPointer<const SUB_Input *>(VT_INPUT);
+  }
+  const SUB_Output *output() const {
+    return GetPointer<const SUB_Output *>(VT_OUTPUT);
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_INPUT) &&
+           verifier.VerifyTable(input()) &&
+           VerifyOffset(verifier, VT_OUTPUT) &&
+           verifier.VerifyTable(output()) &&
+           verifier.EndTable();
+  }
+};
+
+struct SUBBuilder {
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_input(flatbuffers::Offset<SUB_Input> input) {
+    fbb_.AddOffset(SUB::VT_INPUT, input);
+  }
+  void add_output(flatbuffers::Offset<SUB_Output> output) {
+    fbb_.AddOffset(SUB::VT_OUTPUT, output);
+  }
+  explicit SUBBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  SUBBuilder &operator=(const SUBBuilder &);
+  flatbuffers::Offset<SUB> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<SUB>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<SUB> CreateSUB(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<SUB_Input> input = 0,
+    flatbuffers::Offset<SUB_Output> output = 0) {
+  SUBBuilder builder_(_fbb);
+  builder_.add_output(output);
+  builder_.add_input(input);
+  return builder_.Finish();
+}
+
 struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_TYPE = 4,
@@ -5153,7 +5662,10 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_NEG_PARAM = 46,
     VT_MINIMUM_PARAM = 48,
     VT_MAXIMUM_PARAM = 50,
-    VT_LOG_PARAM = 52
+    VT_LOG_PARAM = 52,
+    VT_ABS_PARAM = 54,
+    VT_EXP_PARAM = 56,
+    VT_SUB_PARAM = 58
   };
   LayerType type() const {
     return static_cast<LayerType>(GetField<int8_t>(VT_TYPE, 0));
@@ -5230,6 +5742,15 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const LOG *LOG_param() const {
     return GetPointer<const LOG *>(VT_LOG_PARAM);
   }
+  const ABS *ABS_param() const {
+    return GetPointer<const ABS *>(VT_ABS_PARAM);
+  }
+  const EXP *EXP_param() const {
+    return GetPointer<const EXP *>(VT_EXP_PARAM);
+  }
+  const SUB *SUB_param() const {
+    return GetPointer<const SUB *>(VT_SUB_PARAM);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_TYPE) &&
@@ -5281,6 +5802,12 @@ struct Layer FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(MAXIMUM_param()) &&
            VerifyOffset(verifier, VT_LOG_PARAM) &&
            verifier.VerifyTable(LOG_param()) &&
+           VerifyOffset(verifier, VT_ABS_PARAM) &&
+           verifier.VerifyTable(ABS_param()) &&
+           VerifyOffset(verifier, VT_EXP_PARAM) &&
+           verifier.VerifyTable(EXP_param()) &&
+           VerifyOffset(verifier, VT_SUB_PARAM) &&
+           verifier.VerifyTable(SUB_param()) &&
            verifier.EndTable();
   }
 };
@@ -5363,6 +5890,15 @@ struct LayerBuilder {
   void add_LOG_param(flatbuffers::Offset<LOG> LOG_param) {
     fbb_.AddOffset(Layer::VT_LOG_PARAM, LOG_param);
   }
+  void add_ABS_param(flatbuffers::Offset<ABS> ABS_param) {
+    fbb_.AddOffset(Layer::VT_ABS_PARAM, ABS_param);
+  }
+  void add_EXP_param(flatbuffers::Offset<EXP> EXP_param) {
+    fbb_.AddOffset(Layer::VT_EXP_PARAM, EXP_param);
+  }
+  void add_SUB_param(flatbuffers::Offset<SUB> SUB_param) {
+    fbb_.AddOffset(Layer::VT_SUB_PARAM, SUB_param);
+  }
   explicit LayerBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -5401,8 +5937,14 @@ inline flatbuffers::Offset<Layer> CreateLayer(
     flatbuffers::Offset<NEG> NEG_param = 0,
     flatbuffers::Offset<MINIMUM> MINIMUM_param = 0,
     flatbuffers::Offset<MAXIMUM> MAXIMUM_param = 0,
-    flatbuffers::Offset<LOG> LOG_param = 0) {
+    flatbuffers::Offset<LOG> LOG_param = 0,
+    flatbuffers::Offset<ABS> ABS_param = 0,
+    flatbuffers::Offset<EXP> EXP_param = 0,
+    flatbuffers::Offset<SUB> SUB_param = 0) {
   LayerBuilder builder_(_fbb);
+  builder_.add_SUB_param(SUB_param);
+  builder_.add_EXP_param(EXP_param);
+  builder_.add_ABS_param(ABS_param);
   builder_.add_LOG_param(LOG_param);
   builder_.add_MAXIMUM_param(MAXIMUM_param);
   builder_.add_MINIMUM_param(MINIMUM_param);

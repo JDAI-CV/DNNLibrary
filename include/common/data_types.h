@@ -17,10 +17,12 @@ using tl::make_unexpected;
 using Unit = tl::monostate;
 using tl::unexpected;
 
-#define TRY(x)            \
-    const auto ret = (x); \
-    if (!ret) {           \
-        return ret;       \
+#define TRY(x)                \
+    {                         \
+        const auto ret = (x); \
+        if (!ret) {           \
+            return ret;       \
+        }                     \
     }
 
 enum class FuseCode { NONE, RELU, RELU1, RELU6 };

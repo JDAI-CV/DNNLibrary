@@ -31,6 +31,9 @@ enum LayerType:byte {
     MINIMUM,
     MAXIMUM,
     LOG,
+    ABS,
+    EXP,
+    SUB,
 // Auto generated layer types end
     }
 
@@ -439,6 +442,47 @@ table LOG {
     output: LOG_Output;
 }
 
+table ABS_Input {
+    input: string;
+}
+
+table ABS_Output {
+    output: string;
+}
+
+table ABS {
+    input: ABS_Input;
+    output: ABS_Output;
+}
+
+table EXP_Input {
+    input: string;
+}
+
+table EXP_Output {
+    output: string;
+}
+
+table EXP {
+    input: EXP_Input;
+    output: EXP_Output;
+}
+
+table SUB_Input {
+    input1: string;
+    input2: string;
+    fuse_code: FuseCode;
+}
+
+table SUB_Output {
+    output: string;
+}
+
+table SUB {
+    input: SUB_Input;
+    output: SUB_Output;
+}
+
 // Auto generated tables end
 
 
@@ -469,6 +513,9 @@ table Layer {
     MINIMUM_param:MINIMUM;
     MAXIMUM_param:MAXIMUM;
     LOG_param:LOG;
+    ABS_param:ABS;
+    EXP_param:EXP;
+    SUB_param:SUB;
 // Auto generated fields end
 }
 

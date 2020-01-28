@@ -709,6 +709,68 @@ expected<Unit, std::string> ModelBuilder::AddLayer_LOG(
     return Unit();
 }
 
+expected<Unit, std::string> ModelBuilder::AddLayer_ABS(
+    const std::string &input, const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        return make_unexpected("ABS requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_ABS, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return Unit();
+}
+
+expected<Unit, std::string> ModelBuilder::AddLayer_EXP(
+    const std::string &input, const std::string &output) {
+    if (nnapi_->android_sdk_version < 29) {
+        return make_unexpected("EXP requires API 29");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input);
+    const auto input_idx = operand_indexes_.at(input);
+    input_indexes.push_back(input_idx);
+    shaper_.Identity(input, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_EXP, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return Unit();
+}
+
+expected<Unit, std::string> ModelBuilder::AddLayer_SUB_Impl(
+    const std::string &input1, const std::string &input2, FuseCode fuse_code,
+    const std::string &output) {
+    if (nnapi_->android_sdk_version < 28) {
+        return make_unexpected("SUB requires API 28");
+    }
+    IndexSeq input_indexes;
+    imm_blob_inputs_.insert(input1);
+    const auto input1_idx = operand_indexes_.at(input1);
+    input_indexes.push_back(input1_idx);
+    imm_blob_inputs_.insert(input2);
+    const auto input2_idx = operand_indexes_.at(input2);
+    input_indexes.push_back(input2_idx);
+    AddScalarOperands(input_indexes, fuse_code);
+    shaper_.Eltwise(input1, input2, output);
+    const OperandType operand_type =
+        GetOperandType(operand_types_.at(input1).type, shaper_[output]);
+    const auto output_idx =
+        AddOperation(ANEURALNETWORKS_SUB, input_indexes, operand_type)[0];
+    RegisterOperand(output, output_idx, operand_type);
+    imm_blob_outputs_.insert(output);
+    return Unit();
+}
+
 // ModelBuilder auto generated methods end
 
 expected<Unit, std::string> ModelBuilder::AddLayer_CONV_2D(
@@ -754,16 +816,35 @@ expected<Unit, std::string> ModelBuilder::AddLayer_PRELU(
         // negative branch
         float neg1_buf[1]{-1.f};
         AddTensorFromBuffer(neg1_name, neg1_buf, {Type::TENSOR_FLOAT32, {1}});
-        AddLayer_MUL(input, neg1_name, FuseCode::NONE, imm2_name, dnn::nullopt);
-        AddLayer_RELU(imm2_name, imm3_name);
-        AddLayer_MUL(imm3_name, alpha, FuseCode::NONE, imm4_name, dnn::nullopt);
-        AddLayer_MUL(imm4_name, neg1_name, FuseCode::NONE, imm5_name,
-                     dnn::nullopt);
+        TRY(AddLayer_MUL(input, neg1_name, FuseCode::NONE, imm2_name,
+                         dnn::nullopt));
+        TRY(AddLayer_RELU(imm2_name, imm3_name));
+        TRY(AddLayer_MUL(imm3_name, alpha, FuseCode::NONE, imm4_name,
+                         dnn::nullopt));
+        TRY(AddLayer_MUL(imm4_name, neg1_name, FuseCode::NONE, imm5_name,
+                         dnn::nullopt));
         // add two branches
-        AddLayer_ADD(imm1_name, imm5_name, FuseCode::NONE, output,
-                     dnn::nullopt);
+        TRY(AddLayer_ADD(imm1_name, imm5_name, FuseCode::NONE, output,
+                         dnn::nullopt));
     } else {
-        AddLayer_PRELU_Impl(input, alpha, output);
+        TRY(AddLayer_PRELU_Impl(input, alpha, output));
+    }
+    return Unit();
+}
+
+expected<Unit, std::string> ModelBuilder::AddLayer_SUB(
+    const std::string &input1, const std::string &input2, FuseCode fuse_code,
+    const std::string &output) {
+    if (nnapi_->android_sdk_version < 28) {
+        const auto neg1_name = output + "_neg1";
+        const auto imm1_name = output + "_imm1";
+        const float neg1_buf[1]{-1.f};
+        AddTensorFromBuffer(neg1_name, neg1_buf, {Type::TENSOR_FLOAT32, {1}});
+        TRY(AddLayer_MUL(input2, neg1_name, FuseCode::NONE, imm1_name,
+                         dnn::nullopt));
+        TRY(AddLayer_ADD(input1, imm1_name, fuse_code, output));
+    } else {
+        TRY(AddLayer_SUB_Impl(input1, input2, fuse_code, output));
     }
     return Unit();
 }
