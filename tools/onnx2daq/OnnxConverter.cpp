@@ -1,3 +1,4 @@
+#include <common/data_types.h>
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <common/helper.h>
@@ -271,8 +272,9 @@ void OnnxConverter::HandleInitializer() {
                    ONNX_NAMESPACE::TensorProto_DataType_INT64) {
             // TODO: shape of reshape layer
         } else {
-            PNT(tensor.name(), tensor.data_type());
-            DNN_ASSERT(false, "");
+            DNN_ASSERT(false, "The data type \"" + std::to_string(tensor.data_type()) +
+                                  "\" of tensor \"" +
+                                  tensor.name() + "\" is not supported");
         }
         operands_.push_back(name);
     }
@@ -630,34 +632,38 @@ bool IsValidSupportedNodesVec(const std::vector<int> &supported_node_vec,
     return false;
 }
 
-std::vector<std::vector<int>> OnnxConverter::GetSupportedNodes(
+expected<std::vector<std::vector<int>>, std::string> OnnxConverter::GetSupportedNodes(
     ONNX_NAMESPACE::ModelProto model_proto) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
     ONNX_NAMESPACE::shape_inference::InferShapes(model_proto);
     model_proto_ = model_proto;
-    HandleInitializer();
+    try {
+        HandleInitializer();
 
-    std::vector<std::vector<int>> supported_node_vecs;
-    std::vector<int> supported_node_vec;
-    for (int i = 0; i < model_proto.graph().node_size(); i++) {
-        bool supported;
-        std::string error_msg;
-        std::tie(supported, error_msg) =
-            IsNodeSupported(model_proto, model_proto.graph().node(i));
-        if (supported) {
-            supported_node_vec.push_back(i);
-        } else {
-            if (IsValidSupportedNodesVec(supported_node_vec, model_proto)) {
-                supported_node_vecs.push_back(supported_node_vec);
-                supported_node_vec.clear();
+        std::vector<std::vector<int>> supported_node_vecs;
+        std::vector<int> supported_node_vec;
+        for (int i = 0; i < model_proto.graph().node_size(); i++) {
+            bool supported;
+            std::string error_msg;
+            std::tie(supported, error_msg) =
+                IsNodeSupported(model_proto, model_proto.graph().node(i));
+            if (supported) {
+                supported_node_vec.push_back(i);
+            } else {
+                if (IsValidSupportedNodesVec(supported_node_vec, model_proto)) {
+                    supported_node_vecs.push_back(supported_node_vec);
+                    supported_node_vec.clear();
+                }
             }
         }
+        if (IsValidSupportedNodesVec(supported_node_vec, model_proto)) {
+            supported_node_vecs.push_back(supported_node_vec);
+        }
+        Clear();
+        return supported_node_vecs;
+    } catch (std::exception &e) {
+        return make_unexpected(e.what());
     }
-    if (IsValidSupportedNodesVec(supported_node_vec, model_proto)) {
-        supported_node_vecs.push_back(supported_node_vec);
-    }
-    Clear();
-    return supported_node_vecs;
 }
 
 void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
