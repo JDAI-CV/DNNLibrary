@@ -956,7 +956,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             VLOG(5) << "Start converting Floor";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            WriteDaqLayer_LOGISTIC(input_name, output_name);
+            WriteDaqLayer_FLOOR(input_name, output_name);
             VLOG(5) << "Converting Floor completed";
         } else if (op == "Sigmoid") {
             VLOG(5) << "Start converting Sigmoid";
