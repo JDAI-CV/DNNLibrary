@@ -70,6 +70,12 @@ std::string layer_type_to_str(DNN::LayerType type) {
             return "MAXIMUM";
         case DNN::LayerType::LOG:
             return "LOG";
+        case DNN::LayerType::ABS:
+            return "ABS";
+        case DNN::LayerType::EXP:
+            return "EXP";
+        case DNN::LayerType::SUB:
+            return "SUB";
             // DaqReader auto generated layer_type_to_str end
     }
 }
@@ -399,6 +405,24 @@ expected<Unit, std::string> AddLayers(const DNN::Model &model,
                 UNPACK_LAYER_QUANT(LOG, input);
 
                 TRY(builder.AddLayer_LOG(input, output));
+                break;
+            }
+            case DNN::LayerType::ABS: {
+                UNPACK_LAYER_QUANT(ABS, input);
+
+                TRY(builder.AddLayer_ABS(input, output));
+                break;
+            }
+            case DNN::LayerType::EXP: {
+                UNPACK_LAYER_QUANT(EXP, input);
+
+                TRY(builder.AddLayer_EXP(input, output));
+                break;
+            }
+            case DNN::LayerType::SUB: {
+                UNPACK_LAYER_QUANT(SUB, input1, input2, fuse_code);
+
+                TRY(builder.AddLayer_SUB(input1, input2, fuse_code, output));
                 break;
             }
                 // auto generated layer reader end

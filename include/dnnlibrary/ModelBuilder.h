@@ -220,6 +220,22 @@ class ModelBuilder {
                                                  const std::string &output);
     expected<Unit, std::string> AddLayer_LOG(const std::string &input,
                                              const std::string &output);
+    expected<Unit, std::string> AddLayer_ABS(const std::string &input,
+                                             const std::string &output);
+    expected<Unit, std::string> AddLayer_EXP(const std::string &input,
+                                             const std::string &output);
+    expected<Unit, std::string> AddLayer_SUB(const std::string &input1,
+                                             const std::string &input2,
+                                             FuseCode fuse_code,
+                                             const std::string &output);
+
+   private:
+    expected<Unit, std::string> AddLayer_SUB_Impl(const std::string &input1,
+                                                  const std::string &input2,
+                                                  FuseCode fuse_code,
+                                                  const std::string &output);
+
+   public:
     // ModelBuilder auto generated methods end
     Index AddTensorFromPersistentBuffer(
         const std::string &name, const void *buffer,

@@ -906,6 +906,99 @@ void OnnxConverter::WriteDaqLayer_LOG(const std::string &input,
     layers_.push_back(layer);
 }
 
+void OnnxConverter::WriteDaqLayer_ABS(const std::string &input,
+                                      const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto input_param =
+        DNN::CreateABS_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateABS_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateABS(builder_, input_param, output_param);
+    const auto layer =
+        DNN::CreateLayer(builder_, DNN::LayerType::ABS, 0, 0, 0, 0, 0, 0, 0, 0,
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::WriteDaqLayer_EXP(const std::string &input,
+                                      const std::string &output) {
+    {
+        const auto name = input;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Identity(m(input), output);
+    const auto input_param =
+        DNN::CreateEXP_InputDirect(builder_, m(input).c_str());
+    const auto output_param =
+        DNN::CreateEXP_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateEXP(builder_, input_param, output_param);
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::EXP, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
+void OnnxConverter::WriteDaqLayer_SUB(const std::string &input1,
+                                      const std::string &input2,
+                                      FuseCode fuse_code,
+                                      const std::string &output) {
+    {
+        const auto name = input1;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    {
+        const auto name = input2;
+
+        if (onnx_tensors_.has(name)) {
+            const auto &onnx_tensor = onnx_tensors_.at(name);
+            const auto new_tensor = OnnxToNnapiAxes0231(onnx_tensor);
+            shaper_.AddShape(name, new_tensor.shape);
+            nnapi_tensors_[name] = new_tensor;
+            CreateTensorFb(name, new_tensor);
+        }
+    }
+
+    shaper_.Eltwise(m(input1), m(input2), output);
+    const auto input_param = DNN::CreateSUB_InputDirect(
+        builder_, m(input1).c_str(), m(input2).c_str(),
+        ConvertFuseCodeType(fuse_code));
+    const auto output_param =
+        DNN::CreateSUB_OutputDirect(builder_, output.c_str());
+    const auto param = DNN::CreateSUB(builder_, input_param, output_param);
+    const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::SUB, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, param);
+    layers_.push_back(layer);
+}
+
 // OnnxConverter auto generated methods end
 
 }  // namespace dnn

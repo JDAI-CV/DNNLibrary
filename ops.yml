@@ -431,16 +431,19 @@
     nnapi: LOG
     shaper: Identity
     api: 29
-#-
-#    name: Mean
-#    input:
-#        -
-#            name: dims
-#            nnapi_type: tensor
-#            cpp_type: int32_list
-#            needed_by_shaper: true
-#        -
-#            name: keep_dims
-#            nnapi_type: scalar
-#            cpp_type: bool
-#    api: 28
+
+- nnapi: ABS
+  shaper: Identity
+  api: 29
+
+- nnapi: EXP
+  shaper: Identity
+  api: 29
+
+- nnapi: SUB
+  base_input_num: 2
+  input:
+    - predefined: fuse_code
+  builder_simple: false
+  shaper: Eltwise
+  api: 28
