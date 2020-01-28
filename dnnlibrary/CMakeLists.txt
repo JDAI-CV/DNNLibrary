@@ -6,7 +6,6 @@ set(dnnlibrary_src
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/DaqReader.h
     ${PROJECT_SOURCE_DIR}/include/dnnlibrary/nnapi_implementation.h
     android_log_helper.h
-    operand_helper.h
     flatbuffers_helper.h
     ModelBuilder.cpp
     ModelBuilderImpl.cpp
@@ -17,6 +16,8 @@ set(dnnlibrary_src
     ${PROJECT_SOURCE_DIR}/include/common/Shaper.h
     ${PROJECT_SOURCE_DIR}/common/Shaper.cpp
     ${PROJECT_SOURCE_DIR}/include/common/StrKeyMap.h 
+    ${PROJECT_SOURCE_DIR}/common/internal_vars.cpp
+    ${PROJECT_SOURCE_DIR}/common/internal_vars.h
     )
 if (DNN_READ_ONNX)
     list(APPEND dnnlibrary_src 

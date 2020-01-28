@@ -10,35 +10,39 @@ Shaper::len_t Shaper::total(const Shape &shape) {
     return Product(shape);
 }
 
-/**
- *  strides: [stride_y, stride_x]
- *  paddings: [top, left, bottom, right]
- */
-void Shaper::Conv(const std::string &input_name, const std::string &weight_name,
-                  const std::vector<int32_t> paddings,
-                  const std::vector<int32_t> strides,
-                  const std::string &output_name) {
-    Shaper::Conv(input_name, strides[1], strides[0], 1, 1, paddings[1],
-                 paddings[3], paddings[0], paddings[2], weight_name,
-                 output_name);
-}
-
-void Shaper::Conv(const std::string &input_name,
-                  const std::vector<int32_t> paddings,
-                  const std::vector<int32_t> strides,
-                  const std::vector<int32_t> dilations,
-                  const std::string &weight_name,
-                  const std::string &output_name) {
-    Shaper::Conv(input_name, strides[1], strides[0], dilations[1], dilations[0],
-                 paddings[1], paddings[3], paddings[0], paddings[2],
-                 weight_name, output_name);
-}
+// /**
+//  *  strides: [stride_y, stride_x]
+//  *  paddings: [top, left, bottom, right]
+//  */
+// void Shaper::Conv(const std::string &input_name, const std::string
+// &weight_name,
+//                   const std::vector<int32_t> paddings,
+//                   const std::vector<int32_t> strides,
+//                   const std::string &output_name) {
+//     Shaper::Conv(input_name, strides[1], strides[0], 1, 1, paddings[1],
+//                  paddings[3], paddings[0], paddings[2], weight_name,
+//                  output_name);
+// }
+//
+// void Shaper::Conv(const std::string &input_name,
+//                   const std::vector<int32_t> paddings,
+//                   const std::vector<int32_t> strides,
+//                   const std::vector<int32_t> dilations,
+//                   const std::string &weight_name,
+//                   const std::string &output_name) {
+//     Shaper::Conv(input_name, strides[1], strides[0], dilations[1],
+//     dilations[0],
+//                  paddings[1], paddings[3], paddings[0], paddings[2],
+//                  weight_name, output_name);
+// }
 void Shaper::Conv(const std::string &input, const std::string &weight,
                   int32_t padding_left, int32_t padding_right,
                   int32_t padding_top, int32_t padding_bottom, int32_t stride_x,
-                  int32_t stride_y, const std::string &output) {
-    Conv(input, stride_x, stride_y, 1, 1, padding_left, padding_right,
-         padding_top, padding_bottom, weight, output);
+                  int32_t stride_y, const bool nchw, const int32_t dilation_x,
+                  const int32_t dilation_y, const std::string &output) {
+    DNN_ASSERT_EQ(nchw, false);
+    Conv(input, stride_x, stride_y, dilation_x, dilation_y, padding_left,
+         padding_right, padding_top, padding_bottom, weight, output);
 }
 
 void Shaper::Conv(const std::string &input_name, int32_t strideX,
@@ -63,17 +67,18 @@ void Shaper::Conv(const std::string &input_name, int32_t strideX,
     shape_map_[output_name] = outputDimen;
 }
 
-void Shaper::DepthwiseConv(const std::string &input_name,
-                           const std::vector<int32_t> paddings,
-                           const std::vector<int32_t> strides,
-                           const std::vector<int32_t> dilations,
-                           const std::string &weight_name,
-                           const std::string &output_name) {
-    Shaper::DepthwiseConv(input_name, strides[1], strides[0], dilations[1],
-                          dilations[0], paddings[1], paddings[3], paddings[0],
-                          paddings[2], weight_name, output_name);
-}
-
+// void Shaper::DepthwiseConv(const std::string &input_name,
+//                            const std::vector<int32_t> paddings,
+//                            const std::vector<int32_t> strides,
+//                            const std::vector<int32_t> dilations,
+//                            const std::string &weight_name,
+//                            const std::string &output_name) {
+//     Shaper::DepthwiseConv(input_name, strides[1], strides[0], dilations[1],
+//                           dilations[0], paddings[1], paddings[3],
+//                           paddings[0], paddings[2], weight_name,
+//                           output_name);
+// }
+//
 void Shaper::DepthwiseConv(const std::string &input_name,
                            const std::string &weight_name, int32_t padding_left,
                            int32_t padding_right, int32_t padding_top,
@@ -185,7 +190,7 @@ void Shaper::Softmax(const std::string &input_name,
     shape_map_[output_name] = shape_map_.at(input_name);
 }
 
-void Shaper::Relu(const std::string &input_name,
+void Shaper::ReLU(const std::string &input_name,
                   const std::string &output_name) {
     shape_map_[output_name] = shape_map_.at(input_name);
 }

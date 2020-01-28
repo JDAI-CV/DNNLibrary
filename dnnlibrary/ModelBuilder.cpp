@@ -13,12 +13,11 @@
 #include <sstream>
 #include <tuple>
 
-#include <android_log_helper.h>
 #include <common/data_types.h>
 #include <common/helper.h>
+#include <dnnlibrary/android_log_helper.h>
+#include <dnnlibrary/nnapi_helper.h>
 #include <glog/logging.h>
-#include <nnapi_helper.h>
-#include <operand_helper.h>
 
 namespace dnn {
 using std::array;
@@ -78,11 +77,22 @@ OperandType ModelBuilder::GetOperandType(const QuantInfo &quant_info,
         return map_type##_operand_map_[value];                               \
     }
 
+DEFINE_OPERAND_FROM_SCALAR(bool, bool, BOOL);
 DEFINE_OPERAND_FROM_SCALAR(uint32_t, uint32, UINT32);
 DEFINE_OPERAND_FROM_SCALAR(int32_t, int32, INT32);
 DEFINE_OPERAND_FROM_SCALAR(float, float32, FLOAT32);
 
 #undef DEFINE_OPERAND_FROM_SCALAR
+
+template <typename E>
+constexpr typename std::underlying_type<E>::type to_underlying(E e) noexcept {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
+ModelBuilder::Index ModelBuilder::OperandFromScalar(dnn::FuseCode value) {
+    return OperandFromScalar(to_underlying(value));
+}
+
 
 ModelBuilder::Index ModelBuilder::AddMissingOperand(
     const OperandType &operand_type) {
@@ -114,10 +124,7 @@ ModelBuilder::Index ModelBuilder::AddTensorFromMemory(const string &name,
     return index;
 }
 
-ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
-    const string &name, const void *buffer, const OperandType &operand_type) {
-    DNN_ASSERT(!operand_type.dimensions.empty(), "");
-    DNN_ASSERT(!isScalarType(operand_type.type), "");
+size_t GetBytesNumFromOperandType(const OperandType &operand_type) {
     size_t element_size;
     switch (operand_type.type) {
         case Type::TENSOR_BOOL8:
@@ -148,13 +155,56 @@ ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
             throw std::invalid_argument("Wrong type: " +
                                         typeToStr(operand_type.type));
     }
+    return Product(operand_type.dimensions) * element_size;
+}
+
+/**
+ * @brief Add NNAPI operand from `buffer`, the memory pointed
+ * by `buffer` should be persistent until the execution finished.
+ * No copying.
+ *
+ * @param name The name of operand
+ * @param buffer The address of the buffer
+ * @param operand_type The OperandType of the operand
+ *
+ * @return The index of the added operand
+ */
+ModelBuilder::Index ModelBuilder::AddTensorFromPersistentBuffer(
+    const string &name, const void *buffer, const OperandType &operand_type) {
+    DNN_ASSERT(!operand_type.dimensions.empty(), "");
+    DNN_ASSERT(!isScalarType(operand_type.type), "");
     uint32_t index = AddNewOperand(operand_type);
     THROW_ON_ERROR(nnapi_->ANeuralNetworksModel_setOperandValue(
-        dnn_model_->model_, index, buffer,
-        Product(operand_type.dimensions) * element_size));
+        dnn_model_->model_, index, buffer, GetBytesNumFromOperandType(operand_type)
+        ));
     shaper_.AddShape(name, operand_type.dimensions);
     RegisterOperand(name, index, operand_type);
     return index;
+}
+
+/**
+ * @brief It is the same as `AddTensorFromPersistentBuffer` except
+ * the memory pointed by `buffer` will be copied so that `buffer`
+ * does not need to be persistent
+ *
+ * @param name
+ * @param buffer
+ * @param operand_type
+ *
+ * @return
+ */
+ModelBuilder::Index ModelBuilder::AddTensorFromBuffer(
+    const string &name, const void *buffer, const OperandType &operand_type) {
+    const auto bytes = GetBytesNumFromOperandType(operand_type);
+    auto persistent_buf = std::unique_ptr<uint8_t[]>(
+        new uint8_t[bytes]);
+    memmove(persistent_buf.get(), buffer, bytes);
+
+    auto idx =
+        AddTensorFromPersistentBuffer(name, persistent_buf.get(), operand_type);
+    RegisterBufferPointer(std::move(persistent_buf));
+
+    return idx;
 }
 
 std::unique_ptr<Model> ModelBuilder::Compile(uint32_t preference) {
@@ -242,7 +292,8 @@ ModelBuilder::Index ModelBuilder::GetBlobIndex(const string &blobName) {
         for (size_t i = 0; i < Product(operand_type.dimensions); i++) {   \
             buf[i] = val;                                                 \
         }                                                                 \
-        auto idx = AddTensorFromBuffer(name, buf.get(), operand_type);    \
+        auto idx =                                                        \
+            AddTensorFromPersistentBuffer(name, buf.get(), operand_type); \
         RegisterBufferPointer(std::move(buf));                            \
         return idx;                                                       \
     }
@@ -330,5 +381,10 @@ dnn::optional<std::vector<Device>> ModelBuilder::GetDevices() {
     } else {
         return dnn::nullopt;
     }
+}
+
+
+int32_t ModelBuilder::android_api_level() const {
+    return nnapi_->android_sdk_version;
 }
 }  // namespace dnn

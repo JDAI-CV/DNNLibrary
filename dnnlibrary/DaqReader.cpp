@@ -2,64 +2,74 @@
 // Created by daquexian on 8/13/18.
 //
 
+#include <common/data_types.h>
+#include <common/internal_vars.h>
 #include <dnnlibrary/DaqReader.h>
-
+#include <dnnlibrary/android_log_helper.h>
+#include <dnnlibrary/flatbuffers_helper.h>
 #include <fcntl.h>
+#include <glog/logging.h>
 #include <sys/mman.h>
 #include <unistd.h>
+
 #include <fstream>
 #include <iostream>
 
-#include <android_log_helper.h>
-#include <flatbuffers_helper.h>
-#include <glog/logging.h>
-
 namespace dnn {
-void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder);
+expected<Unit, std::string> ReadDaqImpl(const uint8_t *buf,
+                                        ModelBuilder &builder);
 
 std::string layer_type_to_str(DNN::LayerType type) {
     switch (type) {
             // DaqReader auto generated layer_type_to_str start
-        case DNN::LayerType::Conv2D:
-            return "Conv2D";
-        case DNN::LayerType::AvePool:
-            return "AvePool";
-        case DNN::LayerType::MaxPool:
-            return "MaxPool";
-        case DNN::LayerType::Relu:
-            return "Relu";
-        case DNN::LayerType::Softmax:
-            return "Softmax";
-        case DNN::LayerType::FC:
-            return "FC";
-        case DNN::LayerType::Add:
-            return "Add";
-        case DNN::LayerType::Concat:
-            return "Concat";
-        case DNN::LayerType::DepthwiseConv2D:
-            return "DepthwiseConv2D";
-        case DNN::LayerType::BatchToSpace:
-            return "BatchToSpace";
-        case DNN::LayerType::SpaceToBatch:
-            return "SpaceToBatch";
-        case DNN::LayerType::StridedSlice:
-            return "StridedSlice";
-        case DNN::LayerType::Mul:
-            return "Mul";
-        case DNN::LayerType::AddScalar:
-            return "AddScalar";
-        case DNN::LayerType::MulScalar:
-            return "MulScalar";
-        case DNN::LayerType::Dequantize:
-            return "Dequantize";
-        case DNN::LayerType::LRN:
-            return "LRN";
-        case DNN::LayerType::Tanh:
-            return "Tanh";
-        case DNN::LayerType::Floor:
-            return "Floor";
-        case DNN::LayerType::Logistic:
-            return "Logistic";
+        case DNN::LayerType::CONV_2D:
+            return "CONV_2D";
+        case DNN::LayerType::AVERAGE_POOL_2D:
+            return "AVERAGE_POOL_2D";
+        case DNN::LayerType::MAX_POOL_2D:
+            return "MAX_POOL_2D";
+        case DNN::LayerType::RELU:
+            return "RELU";
+        case DNN::LayerType::SOFTMAX:
+            return "SOFTMAX";
+        case DNN::LayerType::FULLY_CONNECTED:
+            return "FULLY_CONNECTED";
+        case DNN::LayerType::ADD:
+            return "ADD";
+        case DNN::LayerType::CONCATENATION:
+            return "CONCATENATION";
+        case DNN::LayerType::DEPTHWISE_CONV_2D:
+            return "DEPTHWISE_CONV_2D";
+        case DNN::LayerType::BATCH_TO_SPACE_ND:
+            return "BATCH_TO_SPACE_ND";
+        case DNN::LayerType::SPACE_TO_BATCH_ND:
+            return "SPACE_TO_BATCH_ND";
+        case DNN::LayerType::STRIDED_SLICE:
+            return "STRIDED_SLICE";
+        case DNN::LayerType::MUL:
+            return "MUL";
+        case DNN::LayerType::DEQUANTIZE:
+            return "DEQUANTIZE";
+        case DNN::LayerType::LOCAL_RESPONSE_NORMALIZATION:
+            return "LOCAL_RESPONSE_NORMALIZATION";
+        case DNN::LayerType::TANH:
+            return "TANH";
+        case DNN::LayerType::FLOOR:
+            return "FLOOR";
+        case DNN::LayerType::LOGISTIC:
+            return "LOGISTIC";
+        case DNN::LayerType::PRELU:
+            return "PRELU";
+        case DNN::LayerType::POW:
+            return "POW";
+        case DNN::LayerType::NEG:
+            return "NEG";
+        case DNN::LayerType::MINIMUM:
+            return "MINIMUM";
+        case DNN::LayerType::MAXIMUM:
+            return "MAXIMUM";
+        case DNN::LayerType::LOG:
+            return "LOG";
             // DaqReader auto generated layer_type_to_str end
     }
 }
@@ -110,6 +120,10 @@ dnn::optional<ModelBuilder::QuantInfo> DaqQuantInfoToModelBuilderQuantInfo(
     quant_info.zero_point_ = daq_quant_info->zero_point();
 
     return quant_info;
+}
+
+bool CheckVersion(const DNN::Model *model) {
+    return model->version() == dnn::CURRENT_MODEL_VERSION;
 }
 
 void AddInitializersFromBuffer(const DNN::Model &model, ModelBuilder &builder) {
@@ -196,190 +210,400 @@ void AddOutputs(const DNN::Model &model, ModelBuilder &builder) {
     }
 }
 
-void AddLayers(const DNN::Model &model, ModelBuilder &builder) {
+expected<Unit, std::string> AddLayers(const DNN::Model &model,
+                                      ModelBuilder &builder) {
     for (const auto layer : *model.layers()) {
         switch (layer->type()) {
-            case DNN::LayerType::Conv2D: {
-                UNPACK_LAYER_QUANT(conv2d, strides, pads, fuse, input, weight,
-                                   bias, output);
-                builder.AddConv(
-                    input, strides[1], strides[0], pads[2], pads[3], pads[0],
-                    pads[1], fuse, weight,
-                    (bias != "" ? dnn::make_optional(bias) : dnn::nullopt),
-                    output, quant_info);
+                // auto generated layer reader start
+            case DNN::LayerType::CONV_2D: {
+                UNPACK_LAYER_QUANT(CONV_2D, input, weight, bias, padding_left,
+                                   padding_right, padding_top, padding_bottom,
+                                   stride_x, stride_y, fuse_code, nchw,
+                                   dilation_x, dilation_y);
+                const dnn::optional<std::string> bias_right_type =
+                    (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
+
+                TRY(builder.AddLayer_CONV_2D(
+                    input, weight, bias_right_type, padding_left, padding_right,
+                    padding_top, padding_bottom, stride_x, stride_y, fuse_code,
+                    nchw, dilation_x, dilation_y, output, quant_info));
                 break;
             }
-            case DNN::LayerType::DepthwiseConv2D: {
-                UNPACK_LAYER_QUANT(depthwise_conv2d, strides, pads, multiplier,
-                                   fuse, input, weight, bias, output);
-                builder.AddDepthWiseConv(
-                    input, strides[1], strides[0], pads[2], pads[3], pads[1],
-                    pads[0], fuse, multiplier, weight,
-                    (bias != "" ? dnn::make_optional(bias) : dnn::nullopt),
-                    output, quant_info);
+            case DNN::LayerType::AVERAGE_POOL_2D: {
+                UNPACK_LAYER_QUANT(AVERAGE_POOL_2D, input, padding_left,
+                                   padding_right, padding_top, padding_bottom,
+                                   stride_x, stride_y, kernel_width,
+                                   kernel_height, fuse_code);
+
+                TRY(builder.AddLayer_AVERAGE_POOL_2D(
+                    input, padding_left, padding_right, padding_top,
+                    padding_bottom, stride_x, stride_y, kernel_width,
+                    kernel_height, fuse_code, output, quant_info));
                 break;
             }
-            case DNN::LayerType::AvePool: {
-                UNPACK_LAYER_QUANT(avepool, strides, pads, kernel_shape, fuse,
-                                   input, output);
-                builder.AddPool(
-                    input, strides[1], strides[0], pads[1], pads[3], pads[0],
-                    pads[2], kernel_shape[0], kernel_shape[1], fuse,
-                    ModelBuilder::PoolingType::AVE_POOL, output, quant_info);
+            case DNN::LayerType::MAX_POOL_2D: {
+                UNPACK_LAYER_QUANT(MAX_POOL_2D, input, padding_left,
+                                   padding_right, padding_top, padding_bottom,
+                                   stride_x, stride_y, kernel_width,
+                                   kernel_height, fuse_code);
+
+                TRY(builder.AddLayer_MAX_POOL_2D(
+                    input, padding_left, padding_right, padding_top,
+                    padding_bottom, stride_x, stride_y, kernel_width,
+                    kernel_height, fuse_code, output, quant_info));
                 break;
             }
-            case DNN::LayerType::MaxPool: {
-                UNPACK_LAYER_QUANT(maxpool, strides, pads, kernel_shape, fuse,
-                                   input, output);
-                builder.AddPool(
-                    input, strides[1], strides[0], pads[1], pads[3], pads[0],
-                    pads[2], kernel_shape[0], kernel_shape[1], fuse,
-                    ModelBuilder::PoolingType::MAX_POOL, output, quant_info);
+            case DNN::LayerType::RELU: {
+                UNPACK_LAYER_QUANT(RELU, input);
+
+                TRY(builder.AddLayer_RELU(input, output));
                 break;
             }
-            case DNN::LayerType::Relu: {
-                ADD_LAYER(relu, ReLU, input, output);
+            case DNN::LayerType::SOFTMAX: {
+                UNPACK_LAYER_QUANT(SOFTMAX, input, beta);
+
+                TRY(builder.AddLayer_SOFTMAX(input, beta, output));
                 break;
             }
-            case DNN::LayerType::Add: {
-                ADD_LAYER_QUANT(add, Add, input1, input2, fuse, output);
+            case DNN::LayerType::FULLY_CONNECTED: {
+                UNPACK_LAYER_QUANT(FULLY_CONNECTED, input, weight, bias,
+                                   fuse_code);
+                const dnn::optional<std::string> bias_right_type =
+                    (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
+
+                TRY(builder.AddLayer_FULLY_CONNECTED(input, weight,
+                                                     bias_right_type, fuse_code,
+                                                     output, quant_info));
                 break;
             }
-            case DNN::LayerType::AddScalar: {
-                ADD_LAYER(add_scalar, Add, input1, input2, fuse, output);
+            case DNN::LayerType::ADD: {
+                UNPACK_LAYER_QUANT(ADD, input1, input2, fuse_code);
+
+                TRY(builder.AddLayer_ADD(input1, input2, fuse_code, output,
+                                         quant_info));
                 break;
             }
-            case DNN::LayerType::Mul: {
-                ADD_LAYER_QUANT(mul, Mul, input1, input2, fuse, output);
+            case DNN::LayerType::CONCATENATION: {
+                UNPACK_LAYER_QUANT(CONCATENATION, inputs, axis);
+
+                TRY(builder.AddLayer_CONCATENATION(inputs, axis, output));
                 break;
             }
-            case DNN::LayerType::MulScalar: {
-                ADD_LAYER(mul_scalar, Mul, input1, input2, fuse, output);
+            case DNN::LayerType::DEPTHWISE_CONV_2D: {
+                UNPACK_LAYER_QUANT(DEPTHWISE_CONV_2D, input, weight, bias,
+                                   padding_left, padding_right, padding_top,
+                                   padding_bottom, stride_x, stride_y,
+                                   depth_multiplier, fuse_code);
+                const dnn::optional<std::string> bias_right_type =
+                    (bias == "") ? dnn::nullopt : dnn::make_optional(bias);
+
+                TRY(builder.AddLayer_DEPTHWISE_CONV_2D(
+                    input, weight, bias_right_type, padding_left, padding_right,
+                    padding_top, padding_bottom, stride_x, stride_y,
+                    depth_multiplier, fuse_code, output, quant_info));
                 break;
             }
-            case DNN::LayerType::FC: {
-                UNPACK_LAYER_QUANT(fc, input, weight, bias, fuse, output);
-                builder.AddFC(
-                    input, fuse, weight,
-                    (bias != "" ? dnn::make_optional(bias) : dnn::nullopt),
-                    output, quant_info);
+            case DNN::LayerType::BATCH_TO_SPACE_ND: {
+                UNPACK_LAYER_QUANT(BATCH_TO_SPACE_ND, input, block_sizes);
+
+                TRY(builder.AddLayer_BATCH_TO_SPACE_ND(input, block_sizes,
+                                                       output));
                 break;
             }
-            case DNN::LayerType::Softmax: {
-                UNPACK_LAYER(softmax, input, output);
-                builder.AddSoftmax(input, 1.f, output);
+            case DNN::LayerType::SPACE_TO_BATCH_ND: {
+                UNPACK_LAYER_QUANT(SPACE_TO_BATCH_ND, input, block_sizes, pads);
+
+                TRY(builder.AddLayer_SPACE_TO_BATCH_ND(input, block_sizes, pads,
+                                                       output));
                 break;
             }
-            case DNN::LayerType::Concat: {
-                ADD_LAYER(concat, Concat, inputs, axis, output)
+            case DNN::LayerType::STRIDED_SLICE: {
+                UNPACK_LAYER_QUANT(STRIDED_SLICE, input, starts, ends, strides,
+                                   begin_mask, end_mask, shrink_axis_mask);
+
+                TRY(builder.AddLayer_STRIDED_SLICE(input, starts, ends, strides,
+                                                   begin_mask, end_mask,
+                                                   shrink_axis_mask, output));
                 break;
             }
-            case DNN::LayerType::Dequantize: {
-                ADD_LAYER(dequantize, Dequantize, input, output);
+            case DNN::LayerType::MUL: {
+                UNPACK_LAYER_QUANT(MUL, input1, input2, fuse_code);
+
+                TRY(builder.AddLayer_MUL(input1, input2, fuse_code, output,
+                                         quant_info));
                 break;
             }
-            case DNN::LayerType::BatchToSpace: {
-                ADD_LAYER(batch_to_space, BatchToSpaceND, input, block_sizes,
-                          output);
+            case DNN::LayerType::DEQUANTIZE: {
+                UNPACK_LAYER_QUANT(DEQUANTIZE, input);
+
+                TRY(builder.AddLayer_DEQUANTIZE(input, output));
                 break;
             }
-            case DNN::LayerType::SpaceToBatch: {
-                ADD_LAYER(space_to_batch, SpaceToBatchND, input, block_sizes,
-                          pads, output);
+            case DNN::LayerType::LOCAL_RESPONSE_NORMALIZATION: {
+                UNPACK_LAYER_QUANT(LOCAL_RESPONSE_NORMALIZATION, input, radius,
+                                   bias, alpha, beta);
+
+                TRY(builder.AddLayer_LOCAL_RESPONSE_NORMALIZATION(
+                    input, radius, bias, alpha, beta, output));
                 break;
             }
-            case DNN::LayerType::StridedSlice: {
-                ADD_LAYER(strided_slice, StridedSlice, input, starts, ends,
-                          strides, begin_mask, end_mask, shrink_axis_mask,
-                          output);
+            case DNN::LayerType::TANH: {
+                UNPACK_LAYER_QUANT(TANH, input);
+
+                TRY(builder.AddLayer_TANH(input, output));
                 break;
             }
-            case DNN::LayerType::LRN: {
-                ADD_LAYER(lrn, LRN, input, radius, bias, alpha, beta, output);
+            case DNN::LayerType::FLOOR: {
+                UNPACK_LAYER_QUANT(FLOOR, input);
+
+                TRY(builder.AddLayer_FLOOR(input, output));
                 break;
             }
-            case DNN::LayerType::Tanh: {
-                ADD_LAYER(tanh, Tanh, input, output);
+            case DNN::LayerType::LOGISTIC: {
+                UNPACK_LAYER_QUANT(LOGISTIC, input);
+
+                TRY(builder.AddLayer_LOGISTIC(input, output));
                 break;
             }
-            case DNN::LayerType::Floor: {
-                ADD_LAYER(floor, Floor, input, output);
+            case DNN::LayerType::PRELU: {
+                UNPACK_LAYER_QUANT(PRELU, input, alpha);
+
+                TRY(builder.AddLayer_PRELU(input, alpha, output));
                 break;
             }
-            case DNN::LayerType::Logistic: {
-                ADD_LAYER(logistic, Logistic, input, output);
+            case DNN::LayerType::POW: {
+                UNPACK_LAYER_QUANT(POW, input, exp);
+
+                TRY(builder.AddLayer_POW(input, exp, output));
                 break;
             }
+            case DNN::LayerType::NEG: {
+                UNPACK_LAYER_QUANT(NEG, input);
+
+                TRY(builder.AddLayer_NEG(input, output));
+                break;
+            }
+            case DNN::LayerType::MINIMUM: {
+                UNPACK_LAYER_QUANT(MINIMUM, input1, input2);
+
+                TRY(builder.AddLayer_MINIMUM(input1, input2, output));
+                break;
+            }
+            case DNN::LayerType::MAXIMUM: {
+                UNPACK_LAYER_QUANT(MAXIMUM, input1, input2);
+
+                TRY(builder.AddLayer_MAXIMUM(input1, input2, output));
+                break;
+            }
+            case DNN::LayerType::LOG: {
+                UNPACK_LAYER_QUANT(LOG, input);
+
+                TRY(builder.AddLayer_LOG(input, output));
+                break;
+            }
+                // auto generated layer reader end
+                // case DNN::LayerType::CONV_2D: {
+                //     UNPACK_LAYER_QUANT(CONV_2D, strides, pads, fuse, input,
+                //     weight,
+                //                        bias, output);
+                //     builder.AddCONV_2D(
+                //         input, strides[1], strides[0], pads[2], pads[3],
+                //         pads[0], pads[1], fuse, weight, (bias != "" ?
+                //         dnn::make_optional(bias) : dnn::nullopt), output,
+                //         quant_info);
+                //     break;
+                // }
+                // case DNN::LayerType::DepthwiseConv2D: {
+                //     UNPACK_LAYER_QUANT(depthwise_conv2d, strides, pads,
+                //     multiplier,
+                //                        fuse, input, weight, bias, output);
+                //     builder.AddDepthWiseConv(
+                //         input, strides[1], strides[0], pads[2], pads[3],
+                //         pads[1], pads[0], fuse, multiplier, weight, (bias !=
+                //         "" ? dnn::make_optional(bias) : dnn::nullopt),
+                //         output, quant_info);
+                //     break;
+                // }
+                // case DNN::LayerType::AvePool: {
+                //     UNPACK_LAYER_QUANT(avepool, strides, pads, kernel_shape,
+                //     fuse,
+                //                        input, output);
+                //     builder.AddPool(
+                //         input, strides[1], strides[0], pads[1], pads[3],
+                //         pads[0], pads[2], kernel_shape[0], kernel_shape[1],
+                //         fuse, ModelBuilder::PoolingType::AVE_POOL, output,
+                //         quant_info);
+                //     break;
+                // }
+                // case DNN::LayerType::MaxPool: {
+                //     UNPACK_LAYER_QUANT(maxpool, strides, pads, kernel_shape,
+                //     fuse,
+                //                        input, output);
+                //     builder.AddPool(
+                //         input, strides[1], strides[0], pads[1], pads[3],
+                //         pads[0], pads[2], kernel_shape[0], kernel_shape[1],
+                //         fuse, ModelBuilder::PoolingType::MAX_POOL, output,
+                //         quant_info);
+                //     break;
+                // }
+                // case DNN::LayerType::Relu: {
+                //     ADD_LAYER(relu, ReLU, input, output);
+                //     break;
+                // }
+                // case DNN::LayerType::Add: {
+                //     ADD_LAYER_QUANT(add, Add, input1, input2, fuse, output);
+                //     break;
+                // }
+                // case DNN::LayerType::AddScalar: {
+                //     ADD_LAYER(add_scalar, Add, input1, input2, fuse, output);
+                //     break;
+                // }
+                // case DNN::LayerType::Mul: {
+                //     ADD_LAYER_QUANT(mul, Mul, input1, input2, fuse, output);
+                //     break;
+                // }
+                // case DNN::LayerType::MulScalar: {
+                //     ADD_LAYER(mul_scalar, Mul, input1, input2, fuse, output);
+                //     break;
+                // }
+                // case DNN::LayerType::FC: {
+                //     UNPACK_LAYER_QUANT(fc, input, weight, bias, fuse,
+                //     output); builder.AddFC(
+                //         input, fuse, weight,
+                //         (bias != "" ? dnn::make_optional(bias) :
+                //         dnn::nullopt), output, quant_info);
+                //     break;
+                // }
+                // case DNN::LayerType::Softmax: {
+                //     UNPACK_LAYER(softmax, input, output);
+                //     builder.AddSoftmax(input, 1.f, output);
+                //     break;
+                // }
+                // case DNN::LayerType::Concat: {
+                //     ADD_LAYER(concat, Concat, inputs, axis, output)
+                //     break;
+                // }
+                // case DNN::LayerType::Dequantize: {
+                //     ADD_LAYER(dequantize, Dequantize, input, output);
+                //     break;
+                // }
+                // case DNN::LayerType::BatchToSpace: {
+                //     ADD_LAYER(batch_to_space, BatchToSpaceND, input,
+                //     block_sizes,
+                //               output);
+                //     break;
+                // }
+                // case DNN::LayerType::SpaceToBatch: {
+                //     ADD_LAYER(space_to_batch, SpaceToBatchND, input,
+                //     block_sizes,
+                //               pads, output);
+                //     break;
+                // }
+                // case DNN::LayerType::StridedSlice: {
+                //     ADD_LAYER(strided_slice, StridedSlice, input, starts,
+                //     ends,
+                //               strides, begin_mask, end_mask,
+                //               shrink_axis_mask, output);
+                //     break;
+                // }
+                // case DNN::LayerType::LRN: {
+                //     ADD_LAYER(lrn, LRN, input, radius, bias, alpha, beta,
+                //     output); break;
+                // }
+                // case DNN::LayerType::Tanh: {
+                //     ADD_LAYER(tanh, Tanh, input, output);
+                //     break;
+                // }
+                // case DNN::LayerType::Floor: {
+                //     ADD_LAYER(floor, Floor, input, output);
+                //     break;
+                // }
+                // case DNN::LayerType::Logistic: {
+                //     ADD_LAYER(logistic, Logistic, input, output);
+                //     break;
+                // }
         }
     }
+    return Unit();
 }
 
 /**
  * It is designed to read a regular file. For reading file in assets folder of
  * Android app, read the content into a char array and call readFromBuffer
  *
- * It will throw an exception when opening file failed
+ * It will return an unexpected object when opening file failed
  *
  * @param filepath , like "/data/local/tmp/squeezenet.daq"
  * @param builder a ModelBuilder object
  */
-void DaqReader::ReadDaq(const std::string &filepath, ModelBuilder &builder,
-                        const bool use_mmap) {
+expected<Unit, std::string> DaqReader::ReadDaq(const std::string &filepath,
+                                               ModelBuilder &builder,
+                                               const bool use_mmap) {
     if (use_mmap) {
         const auto fd = open(filepath.c_str(), O_RDONLY);
-        ReadDaq(fd, builder);
+        return ReadDaq(fd, builder);
     } else {
         std::ifstream file(filepath, std::ios::binary | std::ios::ate);
         std::streamsize size = file.tellg();
         file.seekg(0, std::ios::beg);
         std::unique_ptr<uint8_t[]> buf(new uint8_t[size]);
         if (!file.read(reinterpret_cast<char *>(buf.get()), size)) {
-            throw std::invalid_argument("Read file error");
+            return make_unexpected("Read file error");
         }
-        ReadDaq(std::move(buf), builder);
+        return ReadDaq(std::move(buf), builder);
     }
 }
 
-void DaqReader::ReadDaq(const int &fd, ModelBuilder &builder,
-                        const off_t offset, size_t fsize) {
+expected<Unit, std::string> DaqReader::ReadDaq(const int &fd,
+                                               ModelBuilder &builder,
+                                               const off_t offset,
+                                               size_t fsize) {
     if (fd == -1) {
-        throw std::invalid_argument("Open file error " + std::to_string(errno));
+        return make_unexpected("Open file error " + std::to_string(errno));
     }
     if (fsize == 0) {
         fsize = static_cast<size_t>(lseek(fd, offset, SEEK_END));
     }
     auto data = mmap(nullptr, fsize, PROT_READ, MAP_PRIVATE, fd, offset);
     if (data == MAP_FAILED) {
-        throw std::invalid_argument("mmap failed, errno = " +
-                                    std::to_string(errno));
+        return make_unexpected("mmap failed, errno = " + std::to_string(errno));
     }
     builder.SetMemory(fd, fsize, offset);
     builder.SetBasePtr(static_cast<unsigned char *>(data));
     auto ret = close(fd);
     if (ret == -1) {
-        throw std::runtime_error("close file error, errno = " +
-                                 std::to_string(errno));
+        return make_unexpected("close file error, errno = " +
+                               std::to_string(errno));
     }
     VLOG(4) << "Read daq from mmap";
-    ReadDaqImpl(static_cast<const uint8_t *>(data), builder);
+    return ReadDaqImpl(static_cast<const uint8_t *>(data), builder);
 }
 
-void DaqReader::ReadDaq(std::unique_ptr<uint8_t[]> buf, ModelBuilder &builder) {
-    ReadDaq(buf.get(), builder);
+expected<Unit, std::string> DaqReader::ReadDaq(std::unique_ptr<uint8_t[]> buf,
+                                               ModelBuilder &builder) {
+    TRY(ReadDaq(buf.get(), builder));
     builder.RegisterBufferPointer(std::move(buf));
+    return Unit();
 }
 
-void DaqReader::ReadDaq(const uint8_t *buf, ModelBuilder &builder) {
+expected<Unit, std::string> DaqReader::ReadDaq(const uint8_t *buf,
+                                               ModelBuilder &builder) {
     VLOG(4) << "Read daq from buffer";
-    ReadDaqImpl(buf, builder);
+    return ReadDaqImpl(buf, builder);
 }
 
-void ReadDaqImpl(const uint8_t *buf, ModelBuilder &builder) {
+expected<Unit, std::string> ReadDaqImpl(const uint8_t *buf,
+                                        ModelBuilder &builder) {
     builder.Prepare();  // a daq file should be a full model, so prepare here
     auto model = DNN::GetModel(buf);
+    if (!CheckVersion(model)) {
+        return make_unexpected(
+            "The model is out-dated. Please re-generated your model");
+    }
     AddInitializersFromBuffer(*model, builder);
     AddInputs(*model, builder);
-    AddLayers(*model, builder);
+    TRY(AddLayers(*model, builder));
     AddOutputs(*model, builder);
+    return Unit();
 }
 }  // namespace dnn

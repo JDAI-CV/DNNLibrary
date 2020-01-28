@@ -1,7 +1,8 @@
 import io
+import subprocess
 import yaml
 from enum import Enum
-from typing import Tuple
+from typing import Dict
 
 str_io = io.StringIO()
 
@@ -13,8 +14,11 @@ class Target(Enum):
 
 
 def clang_format(filename: str):
-    import subprocess
     subprocess.run(['clang-format', '-i', filename])
+
+
+def compile_fbs():
+    subprocess.run(['flatc', '--cpp', '--scoped-enums', '-o', 'include/common/', 'common/daq.fbs'])
 
 
 def cogout(txt):
@@ -25,7 +29,19 @@ def cogoutl(txt):
     print(txt, file=str_io)
 
 
-def get_param(elem: dict) -> Tuple[str, str]:
+def param_to_string_in_declaration(param: Dict[str, str]) -> str:
+    ret = param['type'] + ' ' + param['name']
+    if 'default' in param:
+        ret += '=' + param['default']
+    return ret
+
+
+def param_to_string_in_definition(param: Dict[str, str]) -> str:
+    ret = param['type'] + ' ' + param['name']
+    return ret
+
+
+def get_param(elem: dict) -> Dict[str, str]:
     """
     get parameter in function signature from yaml element, e.g.
     -
@@ -36,15 +52,20 @@ def get_param(elem: dict) -> Tuple[str, str]:
     :return: A tuple, (type, name)
     """
     if elem['cpp_type'] == 'str':
-        return 'const std::string &', elem['name']
+        ret = {'type': 'const std::string &', 'name': elem['name']}
     elif elem['cpp_type'] == 'optional_str':
-        return 'const dnn::optional<std::string> &', elem['name']
+        ret = {'type': 'const dnn::optional<std::string> &', 'name': elem['name']}
     elif elem['cpp_type'] == 'str_list':
-        return 'const std::vector<std::string> &', elem['name']
+        ret = {'type': 'const std::vector<std::string> &', 'name': elem['name']}
     elif elem['cpp_type'] == 'int32_list':
-        return 'const std::vector<int32_t> &', elem['name']
+        ret = {'type': 'const std::vector<int32_t> &', 'name': elem['name']}
     else:
-        return elem['cpp_type'], elem['name']
+        ret = {'type': elem['cpp_type'], 'name': elem['name']}
+    # If we make some input (e.g. api 29 new input) optional, the outputs (after inputs in arg list)
+    # have to be optional too, so disable it.
+    # if 'default' in elem:
+        # ret['default'] = elem['default']
+    return ret
 
 
 def add_optional_bias():
@@ -62,7 +83,7 @@ def add_optional_bias():
                 bias_idx_val = FillOperand(bias_val, 
                         {Type::TENSOR_INT32, bias_dimen, input_scale * weight_scale}, 0);
             } else {
-                throw std::invalid_argument("Unknown type " + typeToStr(weight_type));
+                return make_unexpected("Unknown type " + typeToStr(weight_type));
             }
         } else {
             bias_idx_val = operand_indexes_.at(bias.value());
@@ -92,6 +113,10 @@ input_indexes.push_back(operand_indexes_.at(x));
         raise Exception('Unknown cpp_type {}'.format(operand['cpp_type']))
 
 
+def has_fuse_code_attr(op: dict):
+    return any([x['predefined'] == 'fuse_code' for x in op['input']])
+
+
 def infer_cfg(cfg, target: Target):
     next_pos = 0
     for i, op in enumerate(cfg):
@@ -99,17 +124,17 @@ def infer_cfg(cfg, target: Target):
             op['input'] = []
         if 'base_input_num' not in op or op['base_input_num'] == 1:
             op['input'].insert(0,
-                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                               {'name': 'input', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'is_onnx_attr': False,
                                 'needed_by_shaper': True})
         elif op['base_input_num'] == 2:
-            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+            op['input'] = [{'name': 'input1', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'is_onnx_attr': False,
                             'needed_by_shaper': True},
-                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'input': True,
+                           {'name': 'input2', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'is_onnx_attr': False,
                             'needed_by_shaper': True}] \
                           + op['input']
         elif op['base_input_num'] == 'n':
             op['input'].insert(0,
-                               {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'input': True,
+                               {'name': 'inputs', 'nnapi_type': 'tensor', 'cpp_type': 'str_list', 'is_onnx_attr': False,
                                 'needed_by_shaper': True})
         elif op['base_input_num'] == 0:
             pass
@@ -122,24 +147,25 @@ def infer_cfg(cfg, target: Target):
 
         if 'output' not in op:
             op['output'] = [{'name': 'output', 'nnapi_type': 'tensor', 'cpp_type': 'str', 'needed_by_shaper': True}]
-        if 'shaper' not in op:
-            op['shaper'] = op['name']
-        if 'nnapi' not in op:
-            op['nnapi'] = op['name'].upper()
-        if 'dnn' not in op:
-            op['dnn'] = op['name']
-        if 'fused' not in op:
-            op['fused'] = False
+        assert 'shaper' in op
+        assert 'dnn' not in op
+        assert 'name' not in op
+        # if 'shaper' not in op:
+        #     op['shaper'] = op['nnapi']
+        # if 'nnapi' not in op:
+        #     op['nnapi'] = op['name'].upper()
+        # if 'dnn' not in op:
+        #     op['dnn'] = op['name']
         if target == Target.ModelBuilder and 'nnapi_input' in op:
             op['input'].extend(op['nnapi_input'])
         elif target == Target.OnnxConverter and 'dnn_input' in op:
             op['input'].extend(op['dnn_input'])
-        if op['fused'] and target == Target.ModelBuilder:
-            op['input'].append({'name': 'fuse_code', 'nnapi_type': 'scalar', 'cpp_type': 'int32_t'})
         if 'support_quant_asymm' not in op:
             op['support_quant_asymm'] = False
-        if 'converter' not in op:
-            op['converter'] = True
+        if 'converter_simple' not in op:
+            op['converter_simple'] = True
+        if 'builder_simple' not in op:
+            op['builder_simple'] = True
         if 'output_tensor_type' not in op:
             op['output_tensor_type'] = 'auto'
         for ipt in op['input']:
@@ -149,17 +175,21 @@ def infer_cfg(cfg, target: Target):
                 ipt['name'] = 'bias'
                 ipt['nnapi_type'] = 'tensor'
                 ipt['cpp_type'] = 'optional_str'
-                ipt['input'] = True
+                ipt['is_onnx_attr'] = False
                 ipt['convert_func'] = 'OnnxToNnapiIdentity'
-            if 'input' not in ipt:
-                ipt['input'] = False
+            elif ipt['predefined'] == 'fuse_code':
+                ipt['name'] = 'fuse_code'
+                ipt['nnapi_type'] = 'scalar'
+                ipt['cpp_type'] = 'FuseCode'
+            if 'is_onnx_attr' not in ipt:
+                ipt['is_onnx_attr'] = True
             if 'convert_func' not in ipt:
                 ipt['convert_func'] = 'OnnxToNnapiAxes0231'
             if 'needed_by_shaper' not in ipt:
                 ipt['needed_by_shaper'] = False
 
 
-def update_code(file: str, label: str) -> None:
+def update_code(file: str, label: str, reformat: bool=True) -> None:
     """
     replace the text surrounded by "label start" and "label end" to new_code
     :param file: the .cpp or .h file
@@ -172,11 +202,13 @@ def update_code(file: str, label: str) -> None:
         idx1 = s.find(start) + len(start)
         end = '// {} end'.format(label)
         idx2 = s.find(end)
+        assert start in s and end in s
     with open(file, 'w') as f:
         new_s = s[:idx1] + str_io.getvalue() + s[idx2:]
         f.write(new_s)
     str_io = io.StringIO()
-    clang_format(file)
+    if reformat:
+        clang_format(file)
 
 
 def generate_onnx_converter():
@@ -186,12 +218,12 @@ def generate_onnx_converter():
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void OnnxConverter::AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str}) {{")
-        if op['fused']:
-            cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
+        params_str = ', '.join(map(param_to_string_in_definition, params))
+        cogoutl(f"void OnnxConverter::WriteDaqLayer_{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str}) {{")
+        # if has_fuse_code_attr(op):
+            # cogoutl(f"const auto activation = FindActivation(model_proto_, output);")
         for x in op['input']:
-            if x['input']:
+            if not x['is_onnx_attr']:
                 if x['cpp_type'] == 'str':
                     cogoutl(f"""
                     {{
@@ -236,17 +268,20 @@ def generate_onnx_converter():
                 return f"&{x['name']}_fb"
             elif x['cpp_type'] == 'int32_list':
                 return f"&{x['name']}"
+            elif x['predefined'] == 'fuse_code':
+                return f"ConvertFuseCodeType({x['name']})"
             else:
                 return x['name']
 
-        cogout(f"const auto param = DNN::Create{op['dnn']}Direct(builder_, ")
+        cogout(f"const auto input_param = DNN::Create{op['nnapi']}_InputDirect(builder_, ")
         cogout(', '.join(list(map(get_input_param, op['input']))))
-        if op['fused']:
-            cogout(', ConvertFuseCodeType(activation.second)')
-        cogout(', ')
+        cogoutl(');')
+        # cogout(', ')
+        cogout(f"const auto output_param = DNN::Create{op['nnapi']}_OutputDirect(builder_, ")
         cogout(', '.join(list(map(lambda x: f"{x['name']}.c_str()", op['output']))))
         cogoutl(');')
-        cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['dnn']}, ")
+        cogout(f"const auto param = DNN::Create{op['nnapi']}(builder_, input_param, output_param);")
+        cogout(f"const auto layer = DNN::CreateLayer(builder_, DNN::LayerType::{op['nnapi']}, ")
         cogout(''.join(['0, '] * (op['pos'])))
         cogoutl('param);')
         cogoutl('layers_.push_back(layer);')
@@ -256,8 +291,8 @@ def generate_onnx_converter():
     for i, op in enumerate(cfg):
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl(f"void AddLayer{op['name']}{'' if op['converter'] else 'Impl'}({params_str});")
+        params_str = ', '.join(map(param_to_string_in_declaration, params))
+        cogoutl(f"void WriteDaqLayer_{op['nnapi']}{'' if op['converter_simple'] else 'Impl'}({params_str});")
     update_code('include/tools/onnx2daq/OnnxConverter.h', 'OnnxConverter auto generated methods')
 
 
@@ -266,9 +301,72 @@ def generate_daq_reader():
         cfg = yaml.load(f)
     infer_cfg(cfg, Target.DaqReader)
     for i, op in enumerate(cfg):
-        cogoutl(f'case DNN::LayerType::{op["dnn"]}:')
-        cogoutl(f'return "{op["dnn"]}";')
+        cogoutl(f'case DNN::LayerType::{op["nnapi"]}:')
+        cogoutl(f'return "{op["nnapi"]}";')
     update_code('dnnlibrary/DaqReader.cpp', 'DaqReader auto generated layer_type_to_str')
+    for i, op in enumerate(cfg):
+        cogoutl(f"case DNN::LayerType::{op['nnapi']}: {{")
+
+        arg_names = [x['name'] for x in op['input']]
+        cogoutl(f"UNPACK_LAYER_QUANT({op['nnapi']}, {', '.join(arg_names)});")
+        arg_names += [x['name'] for x in op['output']]
+        for i, x in enumerate(op['input']):
+            if x['cpp_type'] == 'optional_str':
+                cogoutl(f"const dnn::optional<std::string> {x['name']}_right_type "
+                        f"= ({x['name']} == \"\") ? dnn::nullopt : dnn::make_optional({x['name']});")
+                arg_names[i] = f"{x['name']}_right_type"
+        if op['support_quant_asymm']:
+            arg_names += ['quant_info']
+        cogoutl(f"""
+                TRY(builder.AddLayer_{op['nnapi']}({', '.join(arg_names)}));
+                break;
+            }}""")
+    update_code('dnnlibrary/DaqReader.cpp', 'auto generated layer reader')
+
+
+def generate_fbs():
+    with open('ops.yml') as f:
+        cfg = yaml.load(f)
+    # The target of fbs is the same as onnx converter
+    infer_cfg(cfg, Target.OnnxConverter)
+
+    d = {
+        'int32_list': '[int]',
+        'int32_t': 'int',
+        'str': 'string',
+        'optional_str': 'string',
+        'str_list': '[string]',
+        'float': 'float',
+        'FuseCode': 'FuseCode',
+        'bool': 'bool',
+    }
+    for i, op in enumerate(cfg):
+        cogoutl(f"table {op['nnapi']}_Input {{")
+        for x in op['input']:
+            cogoutl(f"    {x['name']}: {d[x['cpp_type']]};")
+        cogoutl('}')
+        cogoutl('')
+
+        cogoutl(f"table {op['nnapi']}_Output {{")
+        for x in op['output']:
+            cogoutl(f"    {x['name']}: {d[x['cpp_type']]};")
+        cogoutl('}')
+        cogoutl('')
+
+        cogoutl(f"table {op['nnapi']} {{")
+        cogoutl(f"    input: {op['nnapi']}_Input;")
+        cogoutl(f"    output: {op['nnapi']}_Output;")
+        cogoutl('}')
+        cogoutl('')
+    update_code('common/daq.fbs', 'Auto generated tables', reformat=False)
+
+    for i, op in enumerate(cfg):
+        cogoutl(f"    {op['nnapi']}_param:{op['nnapi']};")
+    update_code('common/daq.fbs', 'Auto generated fields', reformat=False)
+    for i, op in enumerate(cfg):
+        cogoutl(f"    {op['nnapi']},")
+    update_code('common/daq.fbs', 'Auto generated layer types', reformat=False)
+    compile_fbs()
 
 
 def generate_model_builder():
@@ -281,12 +379,20 @@ def generate_model_builder():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
-            params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index ModelBuilder::Add{}({}) {{".format(op['name'], params_str))
+            params.append({'type': 'const dnn::optional<QuantInfo> &', 'name': 'output_quant_info'})
+        params_str = ', '.join(map(param_to_string_in_definition, params))
+        cogoutl("expected<Unit, std::string> ModelBuilder::AddLayer_{}{}({}) {{".format(
+            op['nnapi'], '' if op['builder_simple'] else '_Impl', params_str))
         cogoutl(f'if (nnapi_->android_sdk_version < {op["api"]}) {{'
-                f'throw std::runtime_error("{op["name"]} requires API {op["api"]}");'
+                f'return make_unexpected("{op["nnapi"]} requires API {op["api"]}");'
                 f'}}')
+        for ipt in op['input']:
+            if 'default' in ipt and 'api' in ipt:
+                cogoutl(f'''
+                    if ({ipt['name']} != {ipt['default']} && nnapi_->android_sdk_version < {ipt['api']}) {{
+                        return make_unexpected("Input \\"{ipt['name']}\\" of {op["nnapi"]} requires API {ipt["api"]}");
+                    }}
+                ''')
         tensor_input = list(filter(lambda x: x['nnapi_type'] == 'tensor', op['input']))
         scalar_input = list(filter(lambda x: x['nnapi_type'] == 'scalar', op['input']))
 
@@ -294,8 +400,14 @@ def generate_model_builder():
         for x in tensor_input:
             cogoutl(add_tensor_operand(x))
         # cogoutl('IndexSeq input_indexes{{{}}};'.format(', '.join([x['name'] + "_idx" for x in tensor_input])))
-        if len(scalar_input) > 0:
-            cogoutl('AddScalarOperands(input_indexes, {});'.format(', '.join([x['name'] for x in scalar_input])))
+        for x in scalar_input:
+            if 'api' in x:
+                cogoutl(f"""
+                    if (android_api_level() > {x['api']}) {{
+                        AddScalarOperands(input_indexes, {x['name']});
+                    }}""")
+            else:
+                cogoutl(f"AddScalarOperands(input_indexes, {x['name']});")
         cogoutl('shaper_.{}({});'.format(op['shaper'],
                                          ', '.join([x['name'] for x in ipt_opt if x['needed_by_shaper']])))
         if op['output_tensor_type'] != 'auto':
@@ -315,8 +427,9 @@ def generate_model_builder():
         cogout(
             '''RegisterOperand(output, output_idx, operand_type);
     imm_blob_outputs_.insert(output);
-    return output_idx;
+    return Unit();
     }
+    
     '''
         )
     update_code('dnnlibrary/ModelBuilderImpl.cpp', 'ModelBuilder auto generated methods')
@@ -326,13 +439,22 @@ def generate_model_builder():
         ipt_opt = op['input'] + op['output']
         params = list(map(get_param, ipt_opt))
         if op['support_quant_asymm']:
-            params.append(('const dnn::optional<QuantInfo> &', 'output_quant_info'))
-        params_str = ', '.join(map(lambda param: "{} {}".format(*param), params))
-        cogoutl("ModelBuilder::Index Add{}({});".format(op['name'], params_str))
+            params.append({'type': 'const dnn::optional<QuantInfo> &', 'name': 'output_quant_info', 'default': 'dnn::nullopt'})
+        params_str = ', '.join(map(param_to_string_in_declaration, params))
+        cogoutl("expected<Unit, std::string> AddLayer_{}({});".format(
+            op['nnapi'], params_str))
+
+        # if op['builder_simple'] is not True, we generate both AddLayer_* and AddLayer_*_Impl declaration
+        if not op['builder_simple']:
+            cogoutl('private:')
+            cogoutl("expected<Unit, std::string> AddLayer_{}_Impl({});".format(
+                op['nnapi'], params_str))
+            cogoutl('public:')
     update_code('include/dnnlibrary/ModelBuilder.h', 'ModelBuilder auto generated methods')
 
 
 def main():
+    generate_fbs()
     generate_model_builder()
     generate_onnx_converter()
     generate_daq_reader()

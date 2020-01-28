@@ -2,6 +2,8 @@
 #define DNNLIBRARY_HELPER_H
 
 #include <common/log_helper.h>
+#include <glog/logging.h>
+
 #include <numeric>
 #include <vector>
 
@@ -23,12 +25,26 @@ using css = const std::string;
 #define FE_7(WHAT, X, ...) WHAT(X) FE_6(WHAT, __VA_ARGS__)
 #define FE_8(WHAT, X, ...) WHAT(X) FE_7(WHAT, __VA_ARGS__)
 #define FE_9(WHAT, X, ...) WHAT(X) FE_8(WHAT, __VA_ARGS__)
+#define FE_10(WHAT, X, ...) WHAT(X) FE_9(WHAT, __VA_ARGS__)
+#define FE_11(WHAT, X, ...) WHAT(X) FE_10(WHAT, __VA_ARGS__)
+#define FE_12(WHAT, X, ...) WHAT(X) FE_11(WHAT, __VA_ARGS__)
+#define FE_13(WHAT, X, ...) WHAT(X) FE_12(WHAT, __VA_ARGS__)
+#define FE_14(WHAT, X, ...) WHAT(X) FE_13(WHAT, __VA_ARGS__)
+#define FE_15(WHAT, X, ...) WHAT(X) FE_14(WHAT, __VA_ARGS__)
+#define FE_16(WHAT, X, ...) WHAT(X) FE_15(WHAT, __VA_ARGS__)
+#define FE_17(WHAT, X, ...) WHAT(X) FE_16(WHAT, __VA_ARGS__)
+#define FE_18(WHAT, X, ...) WHAT(X) FE_17(WHAT, __VA_ARGS__)
+#define FE_19(WHAT, X, ...) WHAT(X) FE_18(WHAT, __VA_ARGS__)
+#define FE_20(WHAT, X, ...) WHAT(X) FE_19(WHAT, __VA_ARGS__)
 //... repeat as needed
 
-#define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, NAME, ...) NAME
-#define FOR_EACH(action, ...)                                              \
-    GET_MACRO(__VA_ARGS__, FE_9, FE_8, FE_7, FE_6, FE_5, FE_4, FE_3, FE_2, \
-              FE_1)                                                        \
+#define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, \
+                  _15, _16, _17, _18, _19, _20, NAME, ...)                     \
+    NAME
+#define FOR_EACH(action, ...)                                                 \
+    GET_MACRO(__VA_ARGS__, FE_20, FE_19, FE_18, FE_17, FE_16, FE_15, FE_14,   \
+              FE_13, FE_12, FE_11, FE_10, FE_9, FE_8, FE_7, FE_6, FE_5, FE_4, \
+              FE_3, FE_2, FE_1)                                               \
     (action, __VA_ARGS__)
 
 #define FORZS(var, end, step) \

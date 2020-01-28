@@ -6,12 +6,12 @@
 #ifndef NNAPIEXAMPLE_MODEL_H
 #define NNAPIEXAMPLE_MODEL_H
 
-#include <memory>
-#include <vector>
-
 #include <common/Shaper.h>
 #include <common/StrKeyMap.h>
 #include <dnnlibrary/NeuralNetworksWrapper.h>
+
+#include <memory>
+#include <vector>
 
 namespace dnn {
 class Model {
@@ -54,6 +54,8 @@ class Model {
     void Predict(const std::vector<T *> &inputs);
 
     ~Model();
+    Model(const Model &) = delete;
+    Model &operator=(const Model &) = delete;
     void SetOutputBuffer(const int32_t index, float *buffer);
     void SetOutputBuffer(const int32_t index, uint8_t *buffer);
     void SetOutputBuffer(const int32_t index, char *buffer);
@@ -64,6 +66,6 @@ class Model {
     std::vector<std::string> GetInputs();
     std::vector<std::string> GetOutputs();
 };
-}
+}  // namespace dnn
 
 #endif  // NNAPIEXAMPLE_MODEL_H

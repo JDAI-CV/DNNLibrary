@@ -1,16 +1,16 @@
+#include <common/Shaper.h>
+#include <common/StrKeyMap.h>
+#include <common/helper.h>
+#include <common/internal_vars.h>
+#include <glog/logging.h>
+#include <onnx/optimizer/optimize.h>
+#include <onnx/shape_inference/implementation.h>
 #include <tools/onnx2daq/OnnxConverter.h>
 
 #include <fstream>
 #include <map>
 #include <numeric>
 #include <string>
-
-#include <common/Shaper.h>
-#include <common/StrKeyMap.h>
-#include <common/helper.h>
-#include <glog/logging.h>
-#include <onnx/optimizer/optimize.h>
-#include <onnx/shape_inference/implementation.h>
 #ifdef __ANDROID__
 #include <dnnlibrary/nnapi_implementation.h>
 #endif
@@ -31,37 +31,36 @@ std::string OnnxConverter::m(const std::string &str) const {
 
 DNN::FuseCode OnnxConverter::ConvertFuseCodeType(FuseCode fuse_code) {
     switch (fuse_code) {
-        case FuseCode::FUSED_NONE:
+        case FuseCode::NONE:
             return DNN::FuseCode::None;
-        case FuseCode::FUSED_RELU:
+        case FuseCode::RELU:
             return DNN::FuseCode::Relu;
-        case FuseCode::FUSED_RELU1:
+        case FuseCode::RELU1:
             return DNN::FuseCode::Relu1;
-        case FuseCode::FUSED_RELU6:
+        case FuseCode::RELU6:
             return DNN::FuseCode::Relu6;
     }
     throw std::invalid_argument("Invalid FuseCode");
 }
 
-std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
-          OnnxConverter::FuseCode>
+std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>, FuseCode>
 OnnxConverter::FindActivation(const ONNX_NAMESPACE::ModelProto &model_proto,
                               css &output_name) {
     std::pair<dnn::optional<std::pair<int, ONNX_NAMESPACE::NodeProto>>,
               FuseCode>
-        activation{{}, FuseCode::FUSED_NONE};
+        activation{{}, FuseCode::NONE};
     int i = 0;
     for (const auto &_node : model_proto.graph().node()) {
         if (!_node.input().empty() && output_name == _node.input(0) &&
             _node.op_type() == "Relu") {
             // If there are two branches after a conv/pool and both branches has
             // a relu on the top, we have to add two normal relu layers
-            if (activation.second != FuseCode::FUSED_NONE) {
-                return {{}, FuseCode::FUSED_NONE};
+            if (activation.second != FuseCode::NONE) {
+                return {{}, FuseCode::NONE};
             }
             const auto node_pair = std::make_pair(i, _node);
-            activation = std::make_pair(dnn::make_optional(node_pair),
-                                        FuseCode::FUSED_RELU);
+            activation =
+                std::make_pair(dnn::make_optional(node_pair), FuseCode::RELU);
         }
         i++;
     }
@@ -682,34 +681,76 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
         }
         if (op == "Conv") {
             VLOG(5) << "Start converting Conv";
-            const auto strides = helper.get("strides", vector<int>{1, 1});
-            const auto pads = helper.get("pads", vector<int>{0, 0, 0, 0});
-            const auto dilations = helper.get("dilations", vector<int>{1, 1});
-            CHECK_EQ(pads.size(), 4ul);
-            CHECK_EQ(strides.size(), 2ul);
-            CHECK_EQ(dilations.size(), 2ul);
+            // onnx strides are in the order height, width
+            // while nnapi strides are in the order width, height
+            const auto onnx_strides = helper.get("strides", vector<int>{1, 1});
+            // onnx pads are in the order top, left, bottom, right
+            // while nnapi pads is in the order left, right, top, bottom
+            const auto onnx_pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+            // onnx dilations is in the order height, width
+            // while nnapi dilations are in the order width, height
+            const auto onnx_dilations =
+                helper.get("dilations", vector<int>{1, 1});
+            CHECK_EQ(onnx_pads.size(), 4ul);
+            CHECK_EQ(onnx_strides.size(), 2ul);
+            CHECK_EQ(onnx_dilations.size(), 2ul);
+            const decltype(onnx_strides) nnapi_strides{onnx_strides[1],
+                                                       onnx_strides[0]};
+            const decltype(onnx_pads) nnapi_pads{onnx_pads[1], onnx_pads[3],
+                                                 onnx_pads[0], onnx_pads[2]};
+            const decltype(onnx_dilations) nnapi_dilations{onnx_dilations[1],
+                                                           onnx_dilations[0]};
             const auto group = helper.get("group", 1);
             dnn::optional<string> bias_name;
             if (node.input_size() >= 3) {
                 bias_name = m(node.input(2));
             }
+            const auto input_name = m(node.input(0));
+            const auto output_name = m(node.output(0));
 
             const auto ori_weight_name = m(node.input(1));
-            AddConv(m(node.input(0)), strides, pads, dilations, group,
-                    ori_weight_name, bias_name, m(node.output(0)));
+            if (!onnx_tensors_.has(ori_weight_name)) {
+                throw std::invalid_argument(
+                    "The weight of convolution must be known");
+            }
+            const auto &onnx_weight = onnx_tensors_.at(ori_weight_name);
+            const auto act = FindActivation(model_proto_, output_name);
+            if (group == 1) {
+                VLOG(5) << "Vanilla conv";
+                WriteDaqLayer_CONV_2D(
+                    input_name, ori_weight_name, bias_name, onnx_pads[1],
+                    onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1],
+                    onnx_strides[0], act.second, false, 1, 1, output_name);
+            } else if (onnx_weight.shape[1] == 1) {  // depthwise
+                VLOG(5) << "Depthwise conv";
+                WriteDaqLayer_DEPTHWISE_CONV_2D(
+                    input_name, ori_weight_name, bias_name, onnx_pads[1],
+                    onnx_pads[3], onnx_pads[0], onnx_pads[2], onnx_strides[1],
+                    onnx_strides[0], onnx_weight.shape[0] / group, act.second,
+                    output_name);
+            } else {
+                // TODO: Support it
+                throw std::invalid_argument("group != 1 is not supported");
+            }
             VLOG(5) << "Converting Conv completed";
         } else if (op == "AveragePool" || op == "MaxPool" ||
                    op == "GlobalAveragePool" || op == "GlobalMaxPool") {
             VLOG(5) << "Start converting Pool";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            vector<int> strides, pads, kernel_shape;
+            const auto act = FindActivation(model_proto_, output_name).second;
             if (op == "AveragePool" || op == "MaxPool") {
-                strides = helper.get("strides", vector<int>{1, 1});
-                pads = helper.get("pads", vector<int>{0, 0, 0, 0});
+                vector<int> nnapi_strides, nnapi_pads, kernel_shape;
                 kernel_shape = helper.get("kernel_shape", vector<int>{0, 0});
                 const auto count_include_pad =
                     helper.get("count_include_pad", 0);
+                const auto onnx_strides =
+                    helper.get("strides", vector<int>{1, 1});
+                const auto onnx_pads =
+                    helper.get("pads", vector<int>{0, 0, 0, 0});
+                nnapi_strides = {onnx_strides[1], onnx_strides[0]};
+                nnapi_pads = {onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                              onnx_pads[2]};
                 if (count_include_pad == 1) {
                     throw std::invalid_argument(
                         "count_include_pad == 1 is not supported");
@@ -722,22 +763,40 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
                 if (helper.get("auto_pad", "NOTSET") != "NOTSET") {
                     throw std::invalid_argument("auto_pad is not supported");
                 }
+                CHECK_EQ(nnapi_pads.size(), 4ul);
+                CHECK_EQ(kernel_shape.size(), 2ul);
+                CHECK_EQ(nnapi_strides.size(), 2ul);
+                // kernel_shape of onnx model is [height, width]
+                if (op == "AveragePool") {
+                    WriteDaqLayer_AVERAGE_POOL_2D(
+                        input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                        onnx_pads[2], onnx_strides[1], onnx_strides[0],
+                        kernel_shape[1], kernel_shape[0], act, output_name);
+                } else {
+                    WriteDaqLayer_MAX_POOL_2D(
+                        input_name, onnx_pads[1], onnx_pads[3], onnx_pads[0],
+                        onnx_pads[2], onnx_strides[1], onnx_strides[0],
+                        kernel_shape[1], kernel_shape[0], act, output_name);
+                }
             } else {
-                strides = {0, 0};
-                pads = {0, 0, 0, 0};
-                kernel_shape = {-1, -1};  // -1 for global
+                const auto input_height = shaper_[input_name][1];
+                const auto input_width = shaper_[input_name][2];
+                if (op == "GlobalAveragePool") {
+                    WriteDaqLayer_AVERAGE_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
+                                                  input_width, input_height,
+                                                  act, output_name);
+                } else {
+                    WriteDaqLayer_MAX_POOL_2D(input_name, 0, 0, 0, 0, 1, 1,
+                                              input_width, input_height, act,
+                                              output_name);
+                }
             }
-            CHECK_EQ(pads.size(), 4ul);
-            CHECK_EQ(kernel_shape.size(), 2ul);
-            CHECK_EQ(strides.size(), 2ul);
-            AddLayerPool(op, input_name, kernel_shape, pads, strides,
-                         output_name);
             VLOG(5) << "Converting Pool completed";
         } else if (op == "Relu") {
             VLOG(5) << "Start converting Relu";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerReLU(input_name, output_name);
+            WriteDaqLayer_RELU(input_name, output_name);
             VLOG(5) << "Converting Relu completed";
 
         } else if (op == "PRelu") {
@@ -745,41 +804,30 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto input_name = m(node.input(0));
             const auto slope_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            const auto imm1_name = output_name + "_imm1";
-            const auto imm2_name = output_name + "_imm2";
-            const auto imm3_name = output_name + "_imm3";
-            const auto imm4_name = output_name + "_imm4";
-            if (onnx_tensors_[slope_name].shape != Shape{1}) {
-                // TODO: support it
-                throw std::invalid_argument("Only support one element slope.");
-            }
-            AddLayerReLU(input_name, imm1_name);
-            AddLayerMul(input_name, -onnx_tensors_[slope_name].data[0],
-                        imm2_name);
-            AddLayerReLU(imm2_name, imm3_name);
-            AddLayerMul(imm3_name, -1.f, imm4_name);
-            AddLayerAdd(imm1_name, imm4_name, output_name);
-            // TODO:
+            WriteDaqLayer_PRELU(input_name, slope_name, output_name);
             VLOG(5) << "Converting PRelu completed";
         } else if (op == "Add") {
             VLOG(5) << "Start converting Add";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            AddLayerAdd(input1_name, input2_name, output_name);
+            const auto act = FindActivation(model_proto_, output_name).second;
+            WriteDaqLayer_ADD(input1_name, input2_name, act, output_name);
             VLOG(5) << "Converting Add completed";
         } else if (op == "Mul") {
             VLOG(5) << "Start converting Mul";
             const auto input1_name = m(node.input(0));
             const auto input2_name = m(node.input(1));
             const auto output_name = m(node.output(0));
-            AddLayerMul(input1_name, input2_name, output_name);
+            const auto act = FindActivation(model_proto_, output_name).second;
+            WriteDaqLayer_MUL(input1_name, input2_name, act, output_name);
             VLOG(5) << "Converting Mul completed";
         } else if (op == "Gemm") {
             VLOG(5) << "Start converting Gemm";
             const auto input_name = m(node.input(0));
             const auto weight_name = m(node.input(1));
             const auto output_name = m(node.output(0));
+            const auto act = FindActivation(model_proto_, output_name).second;
             dnn::optional<string> bias_name;
             if (node.input_size() >= 3) {
                 bias_name = m(node.input(2));
@@ -789,7 +837,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto alpha = helper.get("alpha", 1.0f);
             const auto beta = helper.get("beta", 1.0f);
             if (transA == 0 && transB == 1 && alpha == 1.f && beta == 1.f) {
-                AddLayerFC(input_name, weight_name, bias_name, output_name);
+                WriteDaqLayer_FULLY_CONNECTED(input_name, weight_name,
+                                              bias_name, act, output_name);
             } else {
                 throw std::invalid_argument(
                     "Only transA == 0, transB == 1, alpha == 1.0 and beta == "
@@ -802,7 +851,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             VLOG(5) << "Start converting Softmax";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerSoftmax(input_name, output_name);
+            WriteDaqLayer_SOFTMAX(input_name, 1.f, output_name);
             VLOG(5) << "Converting Softmax completed";
         } else if (op == "Concat") {
             VLOG(5) << "Start converting Concat";
@@ -813,8 +862,8 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const uint32_t axis_nchw_to_nhwc[4]{0, 3, 1, 2};
             const auto axis = helper.get("axis", 1);
             const auto output_name = m(node.output(0));
-            AddLayerConcat(concat_inputs_str, axis_nchw_to_nhwc[axis],
-                           output_name);
+            WriteDaqLayer_CONCATENATION(concat_inputs_str,
+                                        axis_nchw_to_nhwc[axis], output_name);
             VLOG(5) << "Converting Concat completed";
         } else if (op == "Dropout") {
             VLOG(5) << "Start converting Dropout";
@@ -841,6 +890,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto eps = helper.get("epsilon", 1e-5f);
 
             const auto output_name = m(node.output(0));
+            const auto act = FindActivation(model_proto_, output_name).second;
 
             vector<float> a, b;
             FORZ(i, scale_tensor.shape[0]) {
@@ -865,8 +915,10 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             shaper_.AddShape(tensor_b_name, scale_tensor.shape);
             tensors_.push_back(flat_tensor_a);
             tensors_.push_back(flat_tensor_b);
-            AddLayerMul(input_name, tensor_a_name, tensor_imm_product_name);
-            AddLayerAdd(tensor_imm_product_name, tensor_b_name, output_name);
+            WriteDaqLayer_MUL(input_name, tensor_a_name, FuseCode::NONE,
+                              tensor_imm_product_name);
+            WriteDaqLayer_ADD(tensor_imm_product_name, tensor_b_name, act,
+                              output_name);
 
             VLOG(5) << "Converting BatchNormalization completed";
         } else if (op == "Reshape") {
@@ -891,26 +943,26 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             const auto radius = (size - 1) / 2;
             alpha /= size;  // The implementation of ONNX LRN is not the same as
                             // that of NNAPI LRN
-            AddLayerLRN(node.input(0), radius, bias, alpha, beta,
-                        node.output(0));
+            WriteDaqLayer_LOCAL_RESPONSE_NORMALIZATION(
+                node.input(0), radius, bias, alpha, beta, node.output(0));
             VLOG(5) << "Converting LRN completed";
         } else if (op == "Tanh") {
             VLOG(5) << "Start converting Tanh";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerTanh(input_name, output_name);
+            WriteDaqLayer_TANH(input_name, output_name);
             VLOG(5) << "Converting Tanh completed";
         } else if (op == "Floor") {
             VLOG(5) << "Start converting Floor";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerFloor(input_name, output_name);
+            WriteDaqLayer_FLOOR(input_name, output_name);
             VLOG(5) << "Converting Floor completed";
         } else if (op == "Sigmoid") {
             VLOG(5) << "Start converting Sigmoid";
             const auto input_name = m(node.input(0));
             const auto output_name = m(node.output(0));
-            AddLayerLogistic(input_name, output_name);
+            WriteDaqLayer_LOGISTIC(input_name, output_name);
             VLOG(5) << "Converting Sigmoid completed";
         } else {
             throw std::invalid_argument("Unsupported operator " + op);
@@ -920,7 +972,7 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
             if (std::find(dequantize_after_.begin(), dequantize_after_.end(),
                           output) != dequantize_after_.end()) {
                 css dequant_output = output + "_dequant";
-                AddLayerDequantize(output, dequant_output);
+                WriteDaqLayer_DEQUANTIZE(output, dequant_output);
                 name_map_[output] = dequant_output;
             }
         }
@@ -933,9 +985,9 @@ void OnnxConverter::Convert(const ONNX_NAMESPACE::ModelProto &model_proto,
     const auto flat_quant_infos =
         builder_.CreateVector(ConvertQuantInfosToFbs());
     const auto flat_outputs = builder_.CreateVector(outputs);
-    const auto flat_model =
-        DNN::CreateModel(builder_, flat_layers, flat_tensors, flat_inputs,
-                         flat_quant_infos, flat_outputs);
+    const auto flat_model = DNN::CreateModel(
+        builder_, flat_layers, flat_tensors, flat_inputs, flat_quant_infos,
+        flat_outputs, dnn::CURRENT_MODEL_VERSION);
 
     builder_.Finish(flat_model);
 
